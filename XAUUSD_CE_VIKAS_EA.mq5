@@ -1,9 +1,9 @@
 //+------------------------------------------------------------------+
 //|                                           XAUUSD_CE_VIKAS_EA.mq5 |
-//|                                        Copyright 2024, Partner   |
+//|                                        Copyright 2026, Partner   |
 //|                                             XAUUSD M5 Strategy   |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2024, Trading Partner"
+#property copyright "Copyright 2026, Trading Partner"
 #property link      ""
 #property version   "1.05"
 #property strict
