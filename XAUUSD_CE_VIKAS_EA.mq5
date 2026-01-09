@@ -5,8 +5,13 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2024, Trading Partner"
 #property link      ""
-#property version   "1.00"
+#property version   "1.05"
 #property strict
+
+//+------------------------------------------------------------------+
+//| Include FIRST - before any CTrade usage                          |
+//+------------------------------------------------------------------+
+#include <Trade\Trade.mqh>
 
 //+------------------------------------------------------------------+
 //| ENUMS                                                            |
@@ -52,7 +57,7 @@ input double   InpVIKAS_Multiplier = 5.0;     // VIKAS ATR Multiplier
 input group "=== SQZMOM SETTINGS ==="
 input int      InpSQZ_BBLength = 20;          // BB Length
 input double   InpSQZ_BBMult = 2.0;           // BB MultFactor
-input int      InpSQZ_KCLength = 20;          // KC Length
+input int      InpSQZ_KCLength = 10;          // KC Length (IMPORTANT: 10!)
 input double   InpSQZ_KCMult = 1.5;           // KC MultFactor
 
 input group "=== RISK MANAGEMENT ==="
@@ -60,6 +65,14 @@ input int      InpSL_Buffer = 100;            // SL Buffer from CE line (pips)
 input int      InpTP_Min = 188;               // Hard TP Min (pips) - for WEAK signals
 input int      InpTP_Max = 212;               // Hard TP Max (pips) - for WEAK signals
 input int      InpMaxArrowDistance = 2;       // Max candles between CE and VIKAS arrow
+
+input group "=== TRADING HOURS ==="
+input int      InpStartDay = 0;               // Start Day (0=Sunday)
+input int      InpStartHour = 0;              // Start Hour
+input int      InpStartMinute = 5;            // Start Minute
+input int      InpEndDay = 5;                 // End Day (5=Friday)
+input int      InpEndHour = 12;               // End Hour
+input int      InpEndMinute = 0;              // End Minute
 
 //+------------------------------------------------------------------+
 //| GLOBAL VARIABLES                                                 |
@@ -75,25 +88,17 @@ bool g_useTrailing = false;
 
 // CE state tracking
 ENUM_CE_DIRECTION g_lastCE_Direction = CE_NONE;
-ENUM_CE_DIRECTION g_pendingCE_Direction = CE_NONE;
-bool g_pendingConfirmation = false;
-datetime g_pendingCE_Time = 0;
-int g_pendingCE_CandleIndex = 0;
 
-// VIKAS arrow tracking
-int g_lastVikasArrowCandle = -999;
-ENUM_TRADE_DIRECTION g_lastVikasArrowDirection = TRADE_NONE;
+// VIKAS arrow tracking (stores candle index where arrow appeared)
+int g_vikasArrowHistory[10];  // Last 10 arrows
+ENUM_TRADE_DIRECTION g_vikasArrowDirHistory[10];
+datetime g_vikasArrowTimeHistory[10];
 
 // Candle tracking
 datetime g_lastBarTime = 0;
 
 // Trade object
 CTrade trade;
-
-//+------------------------------------------------------------------+
-//| Include                                                          |
-//+------------------------------------------------------------------+
-#include <Trade\Trade.mqh>
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -108,10 +113,21 @@ int OnInit()
    // Initialize CE direction
    g_lastCE_Direction = GetCE_Direction(1);
 
-   Print("=== XAUUSD CE VIKAS EA Initialized ===");
+   // Initialize VIKAS arrow history
+   ArrayInitialize(g_vikasArrowHistory, -999);
+   ArrayInitialize(g_vikasArrowDirHistory, TRADE_NONE);
+   ArrayInitialize(g_vikasArrowTimeHistory, 0);
+
+   // Check for existing position on init
+   CheckExistingPosition();
+
+   Print("=== XAUUSD CE VIKAS EA v1.05 Initialized ===");
    Print("Lot Size: ", InpLotSize);
    Print("SL Buffer: ", InpSL_Buffer, " pips");
    Print("TP Range: ", InpTP_Min, "-", InpTP_Max, " pips");
+   Print("SQZMOM KC Length: ", InpSQZ_KCLength);
+   Print("Trading Hours: ", DayToString(InpStartDay), " ", InpStartHour, ":", InpStartMinute,
+         " - ", DayToString(InpEndDay), " ", InpEndHour, ":", InpEndMinute);
 
    return(INIT_SUCCEEDED);
 }
@@ -133,6 +149,12 @@ void OnTick()
    if(!IsNewBar())
       return;
 
+   // Check trading hours
+   if(!IsTradingTime())
+   {
+      return;
+   }
+
    // Get current bar index (1 = last closed candle)
    int shift = 1;
 
@@ -146,76 +168,119 @@ void OnTick()
       {
          Print(">>> OPPOSITE CE SIGNAL - Closing position immediately!");
          ClosePosition();
-
-         // Store new CE as pending
-         g_pendingCE_Direction = currentCE;
-         g_pendingConfirmation = true;
-         g_pendingCE_Time = iTime(_Symbol, PERIOD_CURRENT, shift);
-         g_pendingCE_CandleIndex = 0;
          g_lastCE_Direction = currentCE;
-         return;
+         // Continue to check for new trade
       }
    }
 
-   //--- STEP 2: Detect new CE event
+   // Update VIKAS arrow tracking FIRST
+   UpdateVikasArrowHistory(shift);
+
+   //--- STEP 2: Detect CE event and check confirmations on SAME candle
    ENUM_CE_DIRECTION currentCE = GetCE_Direction(shift);
 
    if(currentCE != g_lastCE_Direction && currentCE != CE_NONE)
    {
-      Print(">>> CE Direction Change Detected: ", EnumToString(currentCE));
+      Print(">>> CE Direction Change Detected: ", EnumToString(currentCE), " at candle ", shift);
 
-      g_pendingCE_Direction = currentCE;
-      g_pendingConfirmation = true;
-      g_pendingCE_Time = iTime(_Symbol, PERIOD_CURRENT, shift);
-      g_pendingCE_CandleIndex = 0;
-      g_lastCE_Direction = currentCE;
+      // CE is the BOSS - now check servants (VIKAS color and SQZMOM) on SAME candle
+      int vikasTrend = GetVIKAS_Trend(shift);
+      double sqzValue = GetSQZMOM_Value(shift);
 
-      // Track VIKAS arrow
-      CheckVikasArrow(shift);
-   }
+      bool vikasConfirmed = false;
+      bool sqzmomConfirmed = false;
 
-   //--- STEP 3: Check for N+1 confirmation
-   if(g_pendingConfirmation && g_currentTrade == TRADE_NONE)
-   {
-      g_pendingCE_CandleIndex++;
+      // Check VIKAS color
+      if(currentCE == CE_BUY && vikasTrend == 1)
+         vikasConfirmed = true;
+      if(currentCE == CE_SELL && vikasTrend == -1)
+         vikasConfirmed = true;
 
-      if(g_pendingCE_CandleIndex == 1)  // This is N+1 candle
+      // Check SQZMOM sign
+      if(currentCE == CE_BUY && sqzValue > 0)
+         sqzmomConfirmed = true;
+      if(currentCE == CE_SELL && sqzValue < 0)
+         sqzmomConfirmed = true;
+
+      Print("SAME CANDLE Check - VIKAS Trend: ", vikasTrend, " (need ", (currentCE == CE_BUY ? "1" : "-1"), ") = ", vikasConfirmed);
+      Print("SAME CANDLE Check - SQZMOM: ", sqzValue, " (need ", (currentCE == CE_BUY ? ">0" : "<0"), ") = ", sqzmomConfirmed);
+
+      if(vikasConfirmed && sqzmomConfirmed && g_currentTrade == TRADE_NONE)
       {
-         // Check confirmation conditions
-         bool vikasConfirmed = CheckVikasColor(shift, g_pendingCE_Direction);
-         bool sqzmomConfirmed = CheckSQZMOM(shift, g_pendingCE_Direction);
+         // Determine signal strength
+         ENUM_SIGNAL_TYPE sigType = DetermineSignalType(shift, currentCE);
 
-         Print("N+1 Confirmation Check - VIKAS: ", vikasConfirmed, " SQZMOM: ", sqzmomConfirmed);
+         Print("Signal Type: ", EnumToString(sigType));
 
-         if(vikasConfirmed && sqzmomConfirmed)
+         if(sigType != SIGNAL_NONE)
          {
-            // Determine signal strength
-            g_signalType = DetermineSignalType(shift);
-
-            Print("Signal Type: ", EnumToString(g_signalType));
-
-            if(g_signalType != SIGNAL_NONE)
-            {
-               OpenTrade(g_pendingCE_Direction, g_signalType);
-            }
+            OpenTrade(currentCE, sigType);
          }
-         else
-         {
-            Print("Confirmation FAILED - Discarding CE event");
-         }
-
-         g_pendingConfirmation = false;
       }
+      else if(!vikasConfirmed || !sqzmomConfirmed)
+      {
+         Print("Confirmation FAILED on same candle - VIKAS: ", vikasConfirmed, " SQZMOM: ", sqzmomConfirmed);
+      }
+
+      g_lastCE_Direction = currentCE;
    }
 
-   //--- STEP 4: Manage open position (trailing for STRONG signals)
+   //--- STEP 3: Manage open position (trailing for STRONG signals)
    if(g_currentTrade != TRADE_NONE && g_useTrailing)
    {
       ManageTrailingStop();
    }
+}
 
-   // Update VIKAS arrow tracking
-   CheckVikasArrow(shift);
+//+------------------------------------------------------------------+
+//| Check if within trading hours                                    |
+//+------------------------------------------------------------------+
+bool IsTradingTime()
+{
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+
+   int currentDay = dt.day_of_week;
+   int currentMinutes = dt.hour * 60 + dt.min;
+
+   int startMinutes = InpStartHour * 60 + InpStartMinute;
+   int endMinutes = InpEndHour * 60 + InpEndMinute;
+
+   // Saturday - no trading
+   if(currentDay == 6)
+      return false;
+
+   // Sunday before start time
+   if(currentDay == InpStartDay && currentMinutes < startMinutes)
+      return false;
+
+   // Friday after end time
+   if(currentDay == InpEndDay && currentMinutes >= endMinutes)
+      return false;
+
+   // After Friday (Saturday handled above)
+   if(currentDay > InpEndDay)
+      return false;
+
+   return true;
+}
+
+//+------------------------------------------------------------------+
+//| Convert day number to string                                     |
+//+------------------------------------------------------------------+
+string DayToString(int day)
+{
+   switch(day)
+   {
+      case 0: return "Sunday";
+      case 1: return "Monday";
+      case 2: return "Tuesday";
+      case 3: return "Wednesday";
+      case 4: return "Thursday";
+      case 5: return "Friday";
+      case 6: return "Saturday";
+   }
+   return "Unknown";
 }
 
 //+------------------------------------------------------------------+
@@ -362,120 +427,145 @@ int GetVIKAS_Trend(int shift)
 }
 
 //+------------------------------------------------------------------+
-//| Check VIKAS Color (GREEN = bullish, RED = bearish)               |
+//| Update VIKAS Arrow History                                       |
 //+------------------------------------------------------------------+
-bool CheckVikasColor(int shift, ENUM_CE_DIRECTION ceDirection)
-{
-   int vikasTrend = GetVIKAS_Trend(shift);
-
-   if(ceDirection == CE_BUY && vikasTrend == 1)
-      return true;
-   if(ceDirection == CE_SELL && vikasTrend == -1)
-      return true;
-
-   return false;
-}
-
-//+------------------------------------------------------------------+
-//| Check for VIKAS Arrow (trend change)                             |
-//+------------------------------------------------------------------+
-void CheckVikasArrow(int shift)
+void UpdateVikasArrowHistory(int shift)
 {
    int currentTrend = GetVIKAS_Trend(shift);
    int prevTrend = GetVIKAS_Trend(shift + 1);
 
    if(currentTrend != prevTrend)
    {
-      g_lastVikasArrowCandle = shift;
-      g_lastVikasArrowDirection = (currentTrend == 1) ? TRADE_LONG : TRADE_SHORT;
-      Print("VIKAS Arrow detected at candle ", shift, " Direction: ", EnumToString(g_lastVikasArrowDirection));
+      // Shift history
+      for(int i = 9; i > 0; i--)
+      {
+         g_vikasArrowHistory[i] = g_vikasArrowHistory[i-1];
+         g_vikasArrowDirHistory[i] = g_vikasArrowDirHistory[i-1];
+         g_vikasArrowTimeHistory[i] = g_vikasArrowTimeHistory[i-1];
+      }
+
+      // Store new arrow
+      g_vikasArrowHistory[0] = shift;
+      g_vikasArrowDirHistory[0] = (currentTrend == 1) ? TRADE_LONG : TRADE_SHORT;
+      g_vikasArrowTimeHistory[0] = iTime(_Symbol, PERIOD_CURRENT, shift);
+
+      Print("VIKAS Arrow detected at candle ", shift, " Direction: ", EnumToString(g_vikasArrowDirHistory[0]),
+            " Time: ", TimeToString(g_vikasArrowTimeHistory[0]));
    }
 }
 
 //+------------------------------------------------------------------+
-//| SQZMOM CALCULATION                                               |
+//| SQZMOM CALCULATION - LINEAR REGRESSION VERSION                   |
 //+------------------------------------------------------------------+
 double GetSQZMOM_Value(int shift)
 {
-   double close = iClose(_Symbol, PERIOD_CURRENT, shift);
+   int len = InpSQZ_KCLength;  // KC Length = 10
 
-   // Calculate linear regression of (close - avg(avg(highest, lowest), sma))
-   double highestHigh = GetHighest(PRICE_HIGH, InpSQZ_KCLength, shift);
-   double lowestLow = GetLowest(PRICE_LOW, InpSQZ_KCLength, shift);
-   double smaClose = CalculateSMA(InpSQZ_KCLength, shift);
+   // Build array of source values for linear regression
+   double source[];
+   ArrayResize(source, len);
 
-   double avg1 = (highestHigh + lowestLow) / 2.0;
-   double avg2 = (avg1 + smaClose) / 2.0;
-   double val = close - avg2;
-
-   // Simple approximation of linreg
-   double sum = 0;
-   for(int i = 0; i < InpSQZ_KCLength; i++)
+   for(int i = 0; i < len; i++)
    {
       double c = iClose(_Symbol, PERIOD_CURRENT, shift + i);
-      double hh = GetHighest(PRICE_HIGH, InpSQZ_KCLength, shift + i);
-      double ll = GetLowest(PRICE_LOW, InpSQZ_KCLength, shift + i);
-      double sma = CalculateSMA(InpSQZ_KCLength, shift + i);
-      double a1 = (hh + ll) / 2.0;
-      double a2 = (a1 + sma) / 2.0;
-      sum += (c - a2);
+      double hh = GetHighest(PRICE_HIGH, len, shift + i);
+      double ll = GetLowest(PRICE_LOW, len, shift + i);
+      double sma = CalculateSMA(len, shift + i);
+
+      double avg1 = (hh + ll) / 2.0;
+      double avg2 = (avg1 + sma) / 2.0;
+
+      source[i] = c - avg2;
    }
 
-   return sum / InpSQZ_KCLength;
+   // Calculate Linear Regression with offset 0
+   double linregValue = CalculateLinReg(source, len, 0);
+
+   return linregValue;
 }
 
 //+------------------------------------------------------------------+
-//| Check SQZMOM Confirmation                                        |
+//| Calculate Linear Regression                                      |
 //+------------------------------------------------------------------+
-bool CheckSQZMOM(int shift, ENUM_CE_DIRECTION ceDirection)
+double CalculateLinReg(double &source[], int length, int offset)
 {
-   double sqzValue = GetSQZMOM_Value(shift);
+   // Linear regression formula: y = mx + b
+   // We calculate the value at position 'offset' from the start
 
-   if(ceDirection == CE_BUY && sqzValue > 0)
-      return true;
-   if(ceDirection == CE_SELL && sqzValue < 0)
-      return true;
+   double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+   int n = length;
 
-   return false;
+   for(int i = 0; i < n; i++)
+   {
+      double x = i;
+      double y = source[i];
+      sumX += x;
+      sumY += y;
+      sumXY += x * y;
+      sumX2 += x * x;
+   }
+
+   double slope = 0;
+   double intercept = 0;
+
+   double denom = n * sumX2 - sumX * sumX;
+   if(MathAbs(denom) > 0.0000001)
+   {
+      slope = (n * sumXY - sumX * sumY) / denom;
+      intercept = (sumY - slope * sumX) / n;
+   }
+   else
+   {
+      intercept = sumY / n;
+   }
+
+   // Return value at offset position (offset 0 = most recent)
+   return intercept + slope * offset;
 }
 
 //+------------------------------------------------------------------+
 //| Determine Signal Type (STRONG or WEAK)                           |
 //+------------------------------------------------------------------+
-ENUM_SIGNAL_TYPE DetermineSignalType(int shift)
+ENUM_SIGNAL_TYPE DetermineSignalType(int ceShift, ENUM_CE_DIRECTION ceDirection)
 {
-   // Check distance between CE signal and VIKAS arrow
-   int distance = MathAbs(shift - g_lastVikasArrowCandle);
+   // Find nearest VIKAS arrow in the same direction
+   datetime ceTime = iTime(_Symbol, PERIOD_CURRENT, ceShift);
 
-   // Check if directions match
-   bool directionsMatch = false;
-   if(g_pendingCE_Direction == CE_BUY && g_lastVikasArrowDirection == TRADE_LONG)
-      directionsMatch = true;
-   if(g_pendingCE_Direction == CE_SELL && g_lastVikasArrowDirection == TRADE_SHORT)
-      directionsMatch = true;
+   for(int i = 0; i < 10; i++)
+   {
+      if(g_vikasArrowHistory[i] < 0)
+         continue;
 
-   if(!directionsMatch)
-   {
-      Print("Directions don't match - CE: ", EnumToString(g_pendingCE_Direction),
-            " VIKAS: ", EnumToString(g_lastVikasArrowDirection));
-      return SIGNAL_WEAK;  // Default to weak if no arrow match
+      // Check direction match
+      bool dirMatch = false;
+      if(ceDirection == CE_BUY && g_vikasArrowDirHistory[i] == TRADE_LONG)
+         dirMatch = true;
+      if(ceDirection == CE_SELL && g_vikasArrowDirHistory[i] == TRADE_SHORT)
+         dirMatch = true;
+
+      if(!dirMatch)
+         continue;
+
+      // Calculate distance in candles
+      int distance = MathAbs(ceShift - g_vikasArrowHistory[i]);
+
+      Print("Found VIKAS arrow at distance ", distance, " candles, Direction: ", EnumToString(g_vikasArrowDirHistory[i]));
+
+      if(distance == 0)
+      {
+         Print("STRONG SIGNAL - CE and VIKAS arrow on same candle");
+         return SIGNAL_STRONG;
+      }
+      else if(distance <= InpMaxArrowDistance)
+      {
+         Print("WEAK SIGNAL - CE and VIKAS arrow ", distance, " candles apart");
+         return SIGNAL_WEAK;
+      }
    }
 
-   if(distance == 0)
-   {
-      Print("STRONG SIGNAL - CE and VIKAS arrow on same candle");
-      return SIGNAL_STRONG;
-   }
-   else if(distance <= InpMaxArrowDistance)
-   {
-      Print("WEAK SIGNAL - CE and VIKAS arrow ", distance, " candles apart");
-      return SIGNAL_WEAK;
-   }
-   else
-   {
-      Print("Signal too weak - ", distance, " candles apart, max allowed: ", InpMaxArrowDistance);
-      return SIGNAL_NONE;
-   }
+   // No arrow found within range - default to WEAK
+   Print("No matching VIKAS arrow within ", InpMaxArrowDistance, " candles - defaulting to WEAK");
+   return SIGNAL_WEAK;
 }
 
 //+------------------------------------------------------------------+
@@ -778,6 +868,8 @@ void CheckExistingPosition()
          g_entryPrice = PositionGetDouble(POSITION_PRICE_OPEN);
          g_currentSL = PositionGetDouble(POSITION_SL);
          g_currentTP = PositionGetDouble(POSITION_TP);
+
+         Print("Existing position found: ", EnumToString(g_currentTrade));
       }
    }
 }
