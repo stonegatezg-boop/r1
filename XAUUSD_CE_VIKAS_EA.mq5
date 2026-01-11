@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.10"
+#property version   "1.11"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -102,7 +102,7 @@ int OnInit()
    RecalculateIndicators();
    CheckExistingPosition();
 
-   Print("=== CE VIKAS EA v1.10 ===");
+   Print("=== CE VIKAS EA v1.11 ===");
    Print("Instrument: ", g_instrumentName, " PipMult: ", g_pipMultiplier);
    Print("CE Period: ", InpCE_Period, " Mult: ", InpCE_Multiplier);
    Print("VIKAS Period: ", InpVIKAS_Period, " Mult: ", InpVIKAS_Multiplier);
@@ -180,15 +180,16 @@ void CalcCE_AtBar(int shift)
 
    double close = iClose(_Symbol, PERIOD_CURRENT, shift);
 
+   // Direction change - compare current close to PREVIOUS stops (like TradingView)
    int dir = prevDir;
    if(prevDir == 1)
    {
-      if(close < longStop)
+      if(close < prevLongStop)  // FIXED: use previous stop, not current
          dir = -1;
    }
    else
    {
-      if(close > shortStop)
+      if(close > prevShortStop)  // FIXED: use previous stop, not current
          dir = 1;
    }
 
