@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.13"
+#property version   "1.14"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -102,7 +102,7 @@ int OnInit()
    RecalculateIndicators();
    CheckExistingPosition();
 
-   Print("=== CE VIKAS EA v1.13 ===");
+   Print("=== CE VIKAS EA v1.14 ===");
    Print("Instrument: ", g_instrumentName, " PipMult: ", g_pipMultiplier);
    Print("CE Period: ", InpCE_Period, " Mult: ", InpCE_Multiplier);
    Print("VIKAS Period: ", InpVIKAS_Period, " Mult: ", InpVIKAS_Multiplier);
@@ -212,9 +212,10 @@ void CalcVIKAS_AtBar(int shift)
    }
    atr /= InpVIKAS_Period;
 
-   double hl2 = (iHigh(_Symbol, PERIOD_CURRENT, shift) + iLow(_Symbol, PERIOD_CURRENT, shift)) / 2.0;
-   double up = hl2 - InpVIKAS_Multiplier * atr;
-   double dn = hl2 + InpVIKAS_Multiplier * atr;
+   // VIKAS uses LOW as source (not HL2!) - matching TradingView settings
+   double src = iLow(_Symbol, PERIOD_CURRENT, shift);
+   double up = src - InpVIKAS_Multiplier * atr;
+   double dn = src + InpVIKAS_Multiplier * atr;
 
    double prevUp = g_VIKAS_Up[shift + 1];
    double prevDn = g_VIKAS_Dn[shift + 1];
