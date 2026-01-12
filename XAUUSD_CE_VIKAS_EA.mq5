@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.12"
+#property version   "1.13"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -102,7 +102,7 @@ int OnInit()
    RecalculateIndicators();
    CheckExistingPosition();
 
-   Print("=== CE VIKAS EA v1.12 ===");
+   Print("=== CE VIKAS EA v1.13 ===");
    Print("Instrument: ", g_instrumentName, " PipMult: ", g_pipMultiplier);
    Print("CE Period: ", InpCE_Period, " Mult: ", InpCE_Multiplier);
    Print("VIKAS Period: ", InpVIKAS_Period, " Mult: ", InpVIKAS_Multiplier);
@@ -180,18 +180,15 @@ void CalcCE_AtBar(int shift)
 
    double close = iClose(_Symbol, PERIOD_CURRENT, shift);
 
-   // Direction change - compare current close to PREVIOUS stops (like TradingView)
-   int dir = prevDir;
-   if(prevDir == 1)
-   {
-      if(close < prevLongStop)  // FIXED: use previous stop, not current
-         dir = -1;
-   }
+   // Direction change - MUST match TradingView's ternary logic exactly:
+   // dir := close > shortStopPrev ? 1 : close < longStopPrev ? -1 : dir
+   int dir;
+   if(close > prevShortStop)
+      dir = 1;   // Bullish - this check comes FIRST (like TradingView)
+   else if(close < prevLongStop)
+      dir = -1;  // Bearish - only if not already bullish
    else
-   {
-      if(close > prevShortStop)  // FIXED: use previous stop, not current
-         dir = 1;
-   }
+      dir = prevDir;  // No change
 
    g_CE_LongStop[shift] = longStop;
    g_CE_ShortStop[shift] = shortStop;
