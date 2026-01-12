@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.15"
+#property version   "1.16"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -43,6 +43,8 @@ input int    InpSL_Buffer = 100;
 input int    InpTP_Min = 188;
 input int    InpTP_Max = 212;
 input int    InpMaxArrowDistance = 2;
+input int    InpBreakEvenPips = 50;        // Pips profit to move SL to BE (0=off)
+input int    InpBreakEvenOffset = 5;       // Pips above/below entry for BE
 
 input group "=== TRADING HOURS ==="
 input int    InpStartDay = 0;
@@ -59,6 +61,7 @@ ENUM_TRADE_DIRECTION g_currentTrade = TRADE_NONE;
 ENUM_SIGNAL_TYPE g_signalType = SIGNAL_NONE;
 double g_entryPrice = 0, g_currentSL = 0, g_currentTP = 0;
 bool g_useTrailing = false;
+bool g_breakEvenApplied = false;
 datetime g_lastBarTime = 0;
 CTrade trade;
 
@@ -302,11 +305,16 @@ double GetSQZMOM(int shift)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   // TRAILING - check on EVERY TICK, not just new bar!
-   if(g_currentTrade != TRADE_NONE && g_useTrailing)
+   // BREAK EVEN & TRAILING - check on EVERY TICK!
+   if(g_currentTrade != TRADE_NONE)
    {
-      RecalculateIndicators();  // Need fresh CE values
-      ManageTrailing();
+      CheckBreakEven();  // Check break-even first
+
+      if(g_useTrailing)
+      {
+         RecalculateIndicators();  // Need fresh CE values
+         ManageTrailing();
+      }
    }
 
    // Signal checking - only on new bar
@@ -428,9 +436,11 @@ void OpenTrade(int direction, ENUM_SIGNAL_TYPE sigType)
       if(trade.Buy(InpLotSize, _Symbol, price, sl, tp, ""))
       {
          g_currentTrade = TRADE_LONG;
+         g_entryPrice = price;
          g_currentSL = sl;
          g_currentTP = tp;
          g_signalType = sigType;
+         g_breakEvenApplied = false;
          Print(">>> LONG OPENED!");
       }
       else
@@ -461,9 +471,11 @@ void OpenTrade(int direction, ENUM_SIGNAL_TYPE sigType)
       if(trade.Sell(InpLotSize, _Symbol, price, sl, tp, ""))
       {
          g_currentTrade = TRADE_SHORT;
+         g_entryPrice = price;
          g_currentSL = sl;
          g_currentTP = tp;
          g_signalType = sigType;
+         g_breakEvenApplied = false;
          Print(">>> SHORT OPENED!");
       }
       else
@@ -519,6 +531,63 @@ void ManageTrailing()
          Print(">>> TRAILING SL DOWN: ", g_currentSL, " -> ", newSL);
          if(ModifySL(newSL))
             g_currentSL = newSL;
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Check Break Even                                                 |
+//+------------------------------------------------------------------+
+void CheckBreakEven()
+{
+   if(g_breakEvenApplied || g_currentTrade == TRADE_NONE) return;
+   if(InpBreakEvenPips <= 0) return;
+
+   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+   double pipVal = point * g_pipMultiplier;
+   double beThreshold = InpBreakEvenPips * pipVal;
+   double beOffset = InpBreakEvenOffset * pipVal;
+   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+
+   double currentPrice;
+   double profit;
+
+   if(g_currentTrade == TRADE_LONG)
+   {
+      currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+      profit = currentPrice - g_entryPrice;
+
+      if(profit >= beThreshold)
+      {
+         double newSL = NormalizeDouble(g_entryPrice + beOffset, digits);
+         if(newSL > g_currentSL)
+         {
+            Print(">>> BREAK EVEN LONG: Entry=", g_entryPrice, " newSL=", newSL);
+            if(ModifySL(newSL))
+            {
+               g_currentSL = newSL;
+               g_breakEvenApplied = true;
+            }
+         }
+      }
+   }
+   else if(g_currentTrade == TRADE_SHORT)
+   {
+      currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+      profit = g_entryPrice - currentPrice;
+
+      if(profit >= beThreshold)
+      {
+         double newSL = NormalizeDouble(g_entryPrice - beOffset, digits);
+         if(newSL < g_currentSL)
+         {
+            Print(">>> BREAK EVEN SHORT: Entry=", g_entryPrice, " newSL=", newSL);
+            if(ModifySL(newSL))
+            {
+               g_currentSL = newSL;
+               g_breakEvenApplied = true;
+            }
+         }
       }
    }
 }
