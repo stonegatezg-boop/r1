@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.16"
+#property version   "1.17"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -352,10 +352,16 @@ void OnTick()
       Print("VIKAS Arrow at shift ", shift, " dir: ", currVIKAS);
    }
 
+   // DEBUG: Log CE values every bar to find mismatch
+   double closePrice = iClose(_Symbol, PERIOD_CURRENT, shift);
+   Print("BAR: CE[", shift, "]=", currCE, " LongStop=", g_CE_LongStop[shift],
+         " ShortStop=", g_CE_ShortStop[shift], " Close=", closePrice);
+
    if(currCE != prevCE)
    {
       Print("========================================");
       Print(">>> CE FLIP at shift ", shift, " | prev=", prevCE, " curr=", currCE);
+      Print("    PrevLongStop=", g_CE_LongStop[shift+1], " PrevShortStop=", g_CE_ShortStop[shift+1]);
 
       bool vikasOK = (currCE == currVIKAS);
       double sqz = GetSQZMOM(shift);
