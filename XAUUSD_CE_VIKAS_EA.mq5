@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.11"
+#property version   "1.12"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -102,7 +102,7 @@ int OnInit()
    RecalculateIndicators();
    CheckExistingPosition();
 
-   Print("=== CE VIKAS EA v1.11 ===");
+   Print("=== CE VIKAS EA v1.12 ===");
    Print("Instrument: ", g_instrumentName, " PipMult: ", g_pipMultiplier);
    Print("CE Period: ", InpCE_Period, " Mult: ", InpCE_Multiplier);
    Print("VIKAS Period: ", InpVIKAS_Period, " Mult: ", InpVIKAS_Multiplier);
@@ -418,7 +418,7 @@ void OpenTrade(int direction, ENUM_SIGNAL_TYPE sigType)
 
       Print(">>> LONG: Price=", price, " SL=", sl, " TP=", tp);
 
-      if(trade.Buy(InpLotSize, _Symbol, price, sl, tp, "CE_VIKAS_LONG"))
+      if(trade.Buy(InpLotSize, _Symbol, price, sl, tp, ""))
       {
          g_currentTrade = TRADE_LONG;
          g_currentSL = sl;
@@ -451,7 +451,7 @@ void OpenTrade(int direction, ENUM_SIGNAL_TYPE sigType)
 
       Print(">>> SHORT: Price=", price, " SL=", sl, " TP=", tp);
 
-      if(trade.Sell(InpLotSize, _Symbol, price, sl, tp, "CE_VIKAS_SHORT"))
+      if(trade.Sell(InpLotSize, _Symbol, price, sl, tp, ""))
       {
          g_currentTrade = TRADE_SHORT;
          g_currentSL = sl;
