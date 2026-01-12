@@ -1,11 +1,11 @@
 //+------------------------------------------------------------------+
 //|                                           XAUUSD_CE_VIKAS_EA.mq5 |
 //|                                        Copyright 2026, Partner   |
-//|                                     XAUUSD / BTCUSD M5 Strategy  |
+//|                              XAUUSD / XAGUSD / BTCUSD M5 Strategy |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.14"
+#property version   "1.15"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -15,7 +15,7 @@
 //+------------------------------------------------------------------+
 enum ENUM_SIGNAL_TYPE { SIGNAL_NONE=0, SIGNAL_STRONG=1, SIGNAL_WEAK=2 };
 enum ENUM_TRADE_DIRECTION { TRADE_NONE=0, TRADE_LONG=1, TRADE_SHORT=-1 };
-enum ENUM_INSTRUMENT_TYPE { INSTRUMENT_UNKNOWN=0, INSTRUMENT_XAUUSD=1, INSTRUMENT_BTCUSD=2, INSTRUMENT_FOREX=3 };
+enum ENUM_INSTRUMENT_TYPE { INSTRUMENT_UNKNOWN=0, INSTRUMENT_XAUUSD=1, INSTRUMENT_XAGUSD=2, INSTRUMENT_BTCUSD=3 };
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS - MATCHED TO TRADINGVIEW                        |
@@ -36,6 +36,7 @@ input double InpVIKAS_Multiplier = 2.8;   // VIKAS Multiplier (TV default: 2.8)
 
 input group "=== SQZMOM (TV: KC=10) ==="
 input int    InpSQZ_KCLength = 10;        // KC Length (TV default: 10)
+input double InpSQZ_MinThreshold = 0.5;   // Min SQZMOM (0.5 for XAU, 50 for BTC)
 
 input group "=== RISK ==="
 input int    InpSL_Buffer = 100;
@@ -301,6 +302,14 @@ double GetSQZMOM(int shift)
 //+------------------------------------------------------------------+
 void OnTick()
 {
+   // TRAILING - check on EVERY TICK, not just new bar!
+   if(g_currentTrade != TRADE_NONE && g_useTrailing)
+   {
+      RecalculateIndicators();  // Need fresh CE values
+      ManageTrailing();
+   }
+
+   // Signal checking - only on new bar
    if(!IsNewBar()) return;
    if(!IsTradingTime()) return;
 
@@ -342,10 +351,12 @@ void OnTick()
 
       bool vikasOK = (currCE == currVIKAS);
       double sqz = GetSQZMOM(shift);
-      bool sqzOK = (currCE == 1 && sqz > 0) || (currCE == -1 && sqz < 0);
+      // SQZMOM must match direction AND exceed minimum threshold
+      bool sqzOK = (currCE == 1 && sqz > InpSQZ_MinThreshold) ||
+                   (currCE == -1 && sqz < -InpSQZ_MinThreshold);
 
       Print("    VIKAS=", currVIKAS, " OK=", vikasOK);
-      Print("    SQZMOM=", DoubleToString(sqz, 2), " OK=", sqzOK);
+      Print("    SQZMOM=", DoubleToString(sqz, 2), " threshold=", InpSQZ_MinThreshold, " OK=", sqzOK);
 
       if(vikasOK && sqzOK && g_currentTrade == TRADE_NONE)
       {
@@ -357,9 +368,7 @@ void OnTick()
          Print("    NO TRADE - confirmation failed");
       Print("========================================");
    }
-
-   if(g_currentTrade != TRADE_NONE && g_useTrailing)
-      ManageTrailing();
+   // Trailing is now handled at the start of OnTick() on every tick
 }
 
 //+------------------------------------------------------------------+
@@ -465,6 +474,8 @@ void OpenTrade(int direction, ENUM_SIGNAL_TYPE sigType)
 //+------------------------------------------------------------------+
 //| Manage Trailing                                                  |
 //+------------------------------------------------------------------+
+datetime g_lastTrailLog = 0;  // Rate limit logging
+
 void ManageTrailing()
 {
    if(!g_useTrailing || g_currentTrade == TRADE_NONE) return;
@@ -477,11 +488,20 @@ void ManageTrailing()
    double ceStop = (g_currentTrade == TRADE_LONG) ? g_CE_LongStop[1] : g_CE_ShortStop[1];
    double newSL;
 
+   // Log every 30 seconds max
+   bool shouldLog = (TimeCurrent() - g_lastTrailLog >= 30);
+
    if(g_currentTrade == TRADE_LONG)
    {
       newSL = NormalizeDouble(ceStop - slBuf, digits);
+      if(shouldLog)
+      {
+         Print("TRAIL LONG: CE=", ceStop, " newSL=", newSL, " currSL=", g_currentSL);
+         g_lastTrailLog = TimeCurrent();
+      }
       if(newSL > g_currentSL)
       {
+         Print(">>> TRAILING SL UP: ", g_currentSL, " -> ", newSL);
          if(ModifySL(newSL))
             g_currentSL = newSL;
       }
@@ -489,8 +509,14 @@ void ManageTrailing()
    else
    {
       newSL = NormalizeDouble(ceStop + slBuf, digits);
+      if(shouldLog)
+      {
+         Print("TRAIL SHORT: CE=", ceStop, " newSL=", newSL, " currSL=", g_currentSL);
+         g_lastTrailLog = TimeCurrent();
+      }
       if(newSL < g_currentSL)
       {
+         Print(">>> TRAILING SL DOWN: ", g_currentSL, " -> ", newSL);
          if(ModifySL(newSL))
             g_currentSL = newSL;
       }
@@ -541,7 +567,12 @@ void DetectInstrument()
    if(StringFind(_Symbol, "XAU") >= 0 || StringFind(_Symbol, "GOLD") >= 0)
    {
       g_instrumentType = INSTRUMENT_XAUUSD;
-      g_pipMultiplier = 10;
+      g_pipMultiplier = 10;  // XAUUSD: 1 pip = $0.10
+   }
+   else if(StringFind(_Symbol, "XAG") >= 0 || StringFind(_Symbol, "SILVER") >= 0)
+   {
+      g_instrumentType = INSTRUMENT_XAGUSD;
+      g_pipMultiplier = 100;  // XAGUSD: typically 3 decimals, 1 pip = $0.001
    }
    else if(StringFind(_Symbol, "BTC") >= 0)
    {
@@ -553,8 +584,9 @@ void DetectInstrument()
    }
    else
    {
-      g_instrumentType = INSTRUMENT_FOREX;
+      g_instrumentType = INSTRUMENT_UNKNOWN;
       g_pipMultiplier = 10;
+      Print("WARNING: Unknown instrument! EA optimized for XAU, XAG, BTC only.");
    }
 }
 
