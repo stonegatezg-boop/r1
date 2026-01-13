@@ -343,6 +343,13 @@ void OnTick()
       }
    }
 
+   // When CE flips, reset lastTradeCE to allow new entry
+   if(currCE != prevCE)
+   {
+      Print(">>> CE FLIP: ", prevCE, " -> ", currCE, " (resetting lastTradeCE)");
+      g_lastTradeCE = 0;  // Allow trading on this new CE direction
+   }
+
    // Track VIKAS arrows for STRONG/WEAK signal detection
    if(currVIKAS != prevVIKAS)
    {
