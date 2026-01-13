@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.18"
+#property version   "1.19"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -62,6 +62,7 @@ ENUM_SIGNAL_TYPE g_signalType = SIGNAL_NONE;
 double g_entryPrice = 0, g_currentSL = 0, g_currentTP = 0;
 bool g_useTrailing = false;
 bool g_breakEvenApplied = false;
+int g_lastTradeCE = 0;  // CE direction of last trade (prevents re-entry without new CE)
 datetime g_lastBarTime = 0;
 CTrade trade;
 
@@ -106,7 +107,7 @@ int OnInit()
    RecalculateIndicators();
    CheckExistingPosition();
 
-   Print("=== CE VIKAS EA v1.18 ===");
+   Print("=== CE VIKAS EA v1.19 ===");
    Print("Instrument: ", g_instrumentName, " PipMult: ", g_pipMultiplier);
    Print("CE Period: ", InpCE_Period, " Mult: ", InpCE_Multiplier);
    Print("VIKAS Period: ", InpVIKAS_Period, " Mult: ", InpVIKAS_Multiplier);
@@ -359,34 +360,43 @@ void OnTick()
    double closePrice = iClose(_Symbol, PERIOD_CURRENT, shift);
    Print("BAR: CE=", currCE, " VIKAS=", currVIKAS, " SQZMOM=", DoubleToString(sqz, 2), " Close=", closePrice);
 
-   // === NEW LOGIC: Open trade when ALL indicators align ===
+   // === LOGIC: Open trade when ALL indicators align AND new CE direction ===
    if(g_currentTrade == TRADE_NONE)
    {
+      // Must be NEW CE direction (different from last trade)
+      bool newCE = (currCE != g_lastTradeCE);
+
       // ALL GREEN = LONG
       bool allLong = (currCE == 1) && (currVIKAS == 1) && (sqz > InpSQZ_MinThreshold);
 
       // ALL RED = SHORT
       bool allShort = (currCE == -1) && (currVIKAS == -1) && (sqz < -InpSQZ_MinThreshold);
 
-      if(allLong)
+      if(allLong && newCE)
       {
          Print("========================================");
-         Print(">>> ALL GREEN - Opening LONG");
+         Print(">>> ALL GREEN + NEW CE - Opening LONG");
          Print("    CE=", currCE, " VIKAS=", currVIKAS, " SQZMOM=", DoubleToString(sqz, 2));
          ENUM_SIGNAL_TYPE sigType = GetSignalType(shift, 1);
          Print("    Signal: ", EnumToString(sigType));
          OpenTrade(1, sigType);
+         g_lastTradeCE = 1;  // Remember we traded on this CE
          Print("========================================");
       }
-      else if(allShort)
+      else if(allShort && newCE)
       {
          Print("========================================");
-         Print(">>> ALL RED - Opening SHORT");
+         Print(">>> ALL RED + NEW CE - Opening SHORT");
          Print("    CE=", currCE, " VIKAS=", currVIKAS, " SQZMOM=", DoubleToString(sqz, 2));
          ENUM_SIGNAL_TYPE sigType = GetSignalType(shift, -1);
          Print("    Signal: ", EnumToString(sigType));
          OpenTrade(-1, sigType);
+         g_lastTradeCE = -1;  // Remember we traded on this CE
          Print("========================================");
+      }
+      else if((allLong || allShort) && !newCE)
+      {
+         Print("SKIP: All aligned but waiting for new CE (lastCE=", g_lastTradeCE, ")");
       }
    }
    // Trailing is now handled at the start of OnTick() on every tick
