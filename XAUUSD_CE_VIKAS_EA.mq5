@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.19"
+#property version   "1.20"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -40,11 +40,13 @@ input double InpSQZ_MinThreshold = 0.5;   // Min SQZMOM (0.5 for XAU, 50 for BTC
 
 input group "=== RISK ==="
 input int    InpSL_Buffer = 100;
-input int    InpTP_Min = 188;
-input int    InpTP_Max = 212;
+input int    InpTP_Min = 191;             // TP min pips (~200)
+input int    InpTP_Max = 214;             // TP max pips (~200)
 input int    InpMaxArrowDistance = 2;
 input int    InpBreakEvenPips = 50;        // Pips profit to move SL to BE (0=off)
 input int    InpBreakEvenOffset = 5;       // Pips above/below entry for BE
+input int    InpDelayMin = 2;              // Min delay seconds (anti-bot)
+input int    InpDelayMax = 8;              // Max delay seconds (anti-bot)
 
 input group "=== TRADING HOURS ==="
 input int    InpStartDay = 0;
@@ -65,6 +67,12 @@ bool g_breakEvenApplied = false;
 int g_lastTradeCE = 0;  // CE direction of last trade (prevents re-entry without new CE)
 datetime g_lastBarTime = 0;
 CTrade trade;
+
+// Anti-bot delay
+int g_pendingSignal = 0;           // 0=none, 1=LONG, -1=SHORT
+ENUM_SIGNAL_TYPE g_pendingType = SIGNAL_NONE;
+datetime g_pendingTime = 0;
+int g_delaySeconds = 0;
 
 ENUM_INSTRUMENT_TYPE g_instrumentType = INSTRUMENT_UNKNOWN;
 int g_pipMultiplier = 10;
@@ -107,7 +115,7 @@ int OnInit()
    RecalculateIndicators();
    CheckExistingPosition();
 
-   Print("=== CE VIKAS EA v1.19 ===");
+   Print("=== CE VIKAS EA v1.20 ===");
    Print("Instrument: ", g_instrumentName, " PipMult: ", g_pipMultiplier);
    Print("CE Period: ", InpCE_Period, " Mult: ", InpCE_Multiplier);
    Print("VIKAS Period: ", InpVIKAS_Period, " Mult: ", InpVIKAS_Multiplier);
@@ -318,6 +326,19 @@ void OnTick()
       }
    }
 
+   // Execute pending signal after delay (anti-bot)
+   if(g_pendingSignal != 0 && g_currentTrade == TRADE_NONE)
+   {
+      if(TimeCurrent() >= g_pendingTime + g_delaySeconds)
+      {
+         Print(">>> DELAYED EXECUTION after ", g_delaySeconds, " seconds");
+         OpenTrade(g_pendingSignal, g_pendingType);
+         g_lastTradeCE = g_pendingSignal;
+         g_pendingSignal = 0;
+         g_pendingType = SIGNAL_NONE;
+      }
+   }
+
    // Signal checking - only on new bar
    if(!IsNewBar()) return;
    if(!IsTradingTime()) return;
@@ -368,7 +389,7 @@ void OnTick()
    Print("BAR: CE=", currCE, " VIKAS=", currVIKAS, " SQZMOM=", DoubleToString(sqz, 2), " Close=", closePrice);
 
    // === LOGIC: Open trade when ALL indicators align AND new CE direction ===
-   if(g_currentTrade == TRADE_NONE)
+   if(g_currentTrade == TRADE_NONE && g_pendingSignal == 0)
    {
       // Must be NEW CE direction (different from last trade)
       bool newCE = (currCE != g_lastTradeCE);
@@ -382,23 +403,33 @@ void OnTick()
       if(allLong && newCE)
       {
          Print("========================================");
-         Print(">>> ALL GREEN + NEW CE - Opening LONG");
+         Print(">>> ALL GREEN + NEW CE - SIGNAL LONG");
          Print("    CE=", currCE, " VIKAS=", currVIKAS, " SQZMOM=", DoubleToString(sqz, 2));
          ENUM_SIGNAL_TYPE sigType = GetSignalType(shift, 1);
          Print("    Signal: ", EnumToString(sigType));
-         OpenTrade(1, sigType);
-         g_lastTradeCE = 1;  // Remember we traded on this CE
+
+         // Set pending signal with random delay
+         g_pendingSignal = 1;
+         g_pendingType = sigType;
+         g_pendingTime = TimeCurrent();
+         g_delaySeconds = InpDelayMin + MathRand() % (InpDelayMax - InpDelayMin + 1);
+         Print("    Delay: ", g_delaySeconds, " seconds");
          Print("========================================");
       }
       else if(allShort && newCE)
       {
          Print("========================================");
-         Print(">>> ALL RED + NEW CE - Opening SHORT");
+         Print(">>> ALL RED + NEW CE - SIGNAL SHORT");
          Print("    CE=", currCE, " VIKAS=", currVIKAS, " SQZMOM=", DoubleToString(sqz, 2));
          ENUM_SIGNAL_TYPE sigType = GetSignalType(shift, -1);
          Print("    Signal: ", EnumToString(sigType));
-         OpenTrade(-1, sigType);
-         g_lastTradeCE = -1;  // Remember we traded on this CE
+
+         // Set pending signal with random delay
+         g_pendingSignal = -1;
+         g_pendingType = sigType;
+         g_pendingTime = TimeCurrent();
+         g_delaySeconds = InpDelayMin + MathRand() % (InpDelayMax - InpDelayMin + 1);
+         Print("    Delay: ", g_delaySeconds, " seconds");
          Print("========================================");
       }
       else if((allLong || allShort) && !newCE)
