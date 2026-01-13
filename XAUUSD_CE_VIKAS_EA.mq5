@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.17"
+#property version   "1.18"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -106,7 +106,7 @@ int OnInit()
    RecalculateIndicators();
    CheckExistingPosition();
 
-   Print("=== CE VIKAS EA v1.14 ===");
+   Print("=== CE VIKAS EA v1.18 ===");
    Print("Instrument: ", g_instrumentName, " PipMult: ", g_pipMultiplier);
    Print("CE Period: ", InpCE_Period, " Mult: ", InpCE_Multiplier);
    Print("VIKAS Period: ", InpVIKAS_Period, " Mult: ", InpVIKAS_Multiplier);
@@ -329,7 +329,9 @@ void OnTick()
    int prevCE = g_CE_Dir[shift + 1];
    int currVIKAS = g_VIKAS_Trend[shift];
    int prevVIKAS = g_VIKAS_Trend[shift + 1];
+   double sqz = GetSQZMOM(shift);
 
+   // Close on opposite CE
    if(g_currentTrade != TRADE_NONE)
    {
       if((g_currentTrade == TRADE_LONG && currCE == -1) ||
@@ -340,6 +342,7 @@ void OnTick()
       }
    }
 
+   // Track VIKAS arrows for STRONG/WEAK signal detection
    if(currVIKAS != prevVIKAS)
    {
       for(int i = 9; i > 0; i--)
@@ -352,35 +355,39 @@ void OnTick()
       Print("VIKAS Arrow at shift ", shift, " dir: ", currVIKAS);
    }
 
-   // DEBUG: Log CE values every bar to find mismatch
+   // DEBUG: Log values every bar
    double closePrice = iClose(_Symbol, PERIOD_CURRENT, shift);
-   Print("BAR: CE[", shift, "]=", currCE, " LongStop=", g_CE_LongStop[shift],
-         " ShortStop=", g_CE_ShortStop[shift], " Close=", closePrice);
+   Print("BAR: CE=", currCE, " VIKAS=", currVIKAS, " SQZMOM=", DoubleToString(sqz, 2), " Close=", closePrice);
 
-   if(currCE != prevCE)
+   // === NEW LOGIC: Open trade when ALL indicators align ===
+   if(g_currentTrade == TRADE_NONE)
    {
-      Print("========================================");
-      Print(">>> CE FLIP at shift ", shift, " | prev=", prevCE, " curr=", currCE);
-      Print("    PrevLongStop=", g_CE_LongStop[shift+1], " PrevShortStop=", g_CE_ShortStop[shift+1]);
+      // ALL GREEN = LONG
+      bool allLong = (currCE == 1) && (currVIKAS == 1) && (sqz > InpSQZ_MinThreshold);
 
-      bool vikasOK = (currCE == currVIKAS);
-      double sqz = GetSQZMOM(shift);
-      // SQZMOM must match direction AND exceed minimum threshold
-      bool sqzOK = (currCE == 1 && sqz > InpSQZ_MinThreshold) ||
-                   (currCE == -1 && sqz < -InpSQZ_MinThreshold);
+      // ALL RED = SHORT
+      bool allShort = (currCE == -1) && (currVIKAS == -1) && (sqz < -InpSQZ_MinThreshold);
 
-      Print("    VIKAS=", currVIKAS, " OK=", vikasOK);
-      Print("    SQZMOM=", DoubleToString(sqz, 2), " threshold=", InpSQZ_MinThreshold, " OK=", sqzOK);
-
-      if(vikasOK && sqzOK && g_currentTrade == TRADE_NONE)
+      if(allLong)
       {
-         ENUM_SIGNAL_TYPE sigType = GetSignalType(shift, currCE);
+         Print("========================================");
+         Print(">>> ALL GREEN - Opening LONG");
+         Print("    CE=", currCE, " VIKAS=", currVIKAS, " SQZMOM=", DoubleToString(sqz, 2));
+         ENUM_SIGNAL_TYPE sigType = GetSignalType(shift, 1);
          Print("    Signal: ", EnumToString(sigType));
-         OpenTrade(currCE, sigType);
+         OpenTrade(1, sigType);
+         Print("========================================");
       }
-      else
-         Print("    NO TRADE - confirmation failed");
-      Print("========================================");
+      else if(allShort)
+      {
+         Print("========================================");
+         Print(">>> ALL RED - Opening SHORT");
+         Print("    CE=", currCE, " VIKAS=", currVIKAS, " SQZMOM=", DoubleToString(sqz, 2));
+         ENUM_SIGNAL_TYPE sigType = GetSignalType(shift, -1);
+         Print("    Signal: ", EnumToString(sigType));
+         OpenTrade(-1, sigType);
+         Print("========================================");
+      }
    }
    // Trailing is now handled at the start of OnTick() on every tick
 }
