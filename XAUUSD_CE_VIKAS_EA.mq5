@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.20"
+#property version   "1.21"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -115,7 +115,7 @@ int OnInit()
    RecalculateIndicators();
    CheckExistingPosition();
 
-   Print("=== CE VIKAS EA v1.20 ===");
+   Print("=== CE VIKAS EA v1.21 ===");
    Print("Instrument: ", g_instrumentName, " PipMult: ", g_pipMultiplier);
    Print("CE Period: ", InpCE_Period, " Mult: ", InpCE_Multiplier);
    Print("VIKAS Period: ", InpVIKAS_Period, " Mult: ", InpVIKAS_Multiplier);
@@ -210,6 +210,10 @@ void CalcCE_AtBar(int shift)
 
 //+------------------------------------------------------------------+
 //| CALCULATE VIKAS AT SPECIFIC BAR                                  |
+//| TradingView logic:                                               |
+//| lowerBand := lowerBand > prevLowerBand or close[1] < prevLowerBand ? lowerBand : prevLowerBand |
+//| upperBand := upperBand < prevUpperBand or close[1] > prevUpperBand ? upperBand : prevUpperBand |
+//| trend := close > prevUpperBand ? 1 : close < prevLowerBand ? -1 : nz(trend[1], 1) |
 //+------------------------------------------------------------------+
 void CalcVIKAS_AtBar(int shift)
 {
@@ -225,38 +229,45 @@ void CalcVIKAS_AtBar(int shift)
    }
    atr /= InpVIKAS_Period;
 
-   // VIKAS uses LOW as source (not HL2!) - matching TradingView settings
+   // VIKAS uses LOW as source - matching TradingView settings
    double src = iLow(_Symbol, PERIOD_CURRENT, shift);
-   double up = src - InpVIKAS_Multiplier * atr;
-   double dn = src + InpVIKAS_Multiplier * atr;
+   double lowerBand = src - InpVIKAS_Multiplier * atr;  // Support line
+   double upperBand = src + InpVIKAS_Multiplier * atr;  // Resistance line
 
-   double prevUp = g_VIKAS_Up[shift + 1];
-   double prevDn = g_VIKAS_Dn[shift + 1];
+   double prevLower = g_VIKAS_Up[shift + 1];
+   double prevUpper = g_VIKAS_Dn[shift + 1];
    int prevTrend = g_VIKAS_Trend[shift + 1];
    double prevClose = iClose(_Symbol, PERIOD_CURRENT, shift + 1);
 
-   if(prevUp > 0 && prevClose > prevUp)
-      up = MathMax(up, prevUp);
+   // TradingView band ratcheting logic:
+   // lowerBand ratchets UP unless: new band is higher OR price broke below prev band
+   if(prevLower > 0)
+   {
+      if(!(lowerBand > prevLower || prevClose < prevLower))
+         lowerBand = prevLower;
+   }
 
-   if(prevDn > 0 && prevClose < prevDn)
-      dn = MathMin(dn, prevDn);
+   // upperBand ratchets DOWN unless: new band is lower OR price broke above prev band
+   if(prevUpper > 0)
+   {
+      if(!(upperBand < prevUpper || prevClose > prevUpper))
+         upperBand = prevUpper;
+   }
 
    double close = iClose(_Symbol, PERIOD_CURRENT, shift);
 
-   int trend = prevTrend;
-   if(prevTrend == 1)
-   {
-      if(close < prevUp)
-         trend = -1;
-   }
+   // TradingView trend logic (exact ternary order):
+   // trend := close > prevUpperBand ? 1 : close < prevLowerBand ? -1 : nz(trend[1], 1)
+   int trend;
+   if(close > prevUpper && prevUpper > 0)
+      trend = 1;   // Bullish - price broke above upper band
+   else if(close < prevLower && prevLower > 0)
+      trend = -1;  // Bearish - price broke below lower band
    else
-   {
-      if(close > prevDn)
-         trend = 1;
-   }
+      trend = prevTrend;  // No change
 
-   g_VIKAS_Up[shift] = up;
-   g_VIKAS_Dn[shift] = dn;
+   g_VIKAS_Up[shift] = lowerBand;
+   g_VIKAS_Dn[shift] = upperBand;
    g_VIKAS_Trend[shift] = trend;
 }
 
@@ -314,6 +325,31 @@ double GetSQZMOM(int shift)
 //+------------------------------------------------------------------+
 void OnTick()
 {
+   // CHECK IF POSITION WAS CLOSED EXTERNALLY (SL/TP hit)
+   if(g_currentTrade != TRADE_NONE)
+   {
+      bool posExists = false;
+      if(PositionSelect(_Symbol))
+      {
+         // Verify it's our position by magic number
+         if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
+            posExists = true;
+      }
+
+      if(!posExists)
+      {
+         // Position closed via SL/TP - reset state
+         Print(">>> POSITION CLOSED EXTERNALLY (SL/TP hit)");
+         Print("    Previous trade dir=", g_currentTrade, " lastTradeCE=", g_lastTradeCE);
+         g_currentTrade = TRADE_NONE;
+         g_useTrailing = false;
+         g_breakEvenApplied = false;
+         g_pendingSignal = 0;  // Clear any pending signal
+         g_pendingType = SIGNAL_NONE;
+         // NOTE: g_lastTradeCE is NOT reset - requires new CE for re-entry
+      }
+   }
+
    // BREAK EVEN & TRAILING - check on EVERY TICK!
    if(g_currentTrade != TRADE_NONE)
    {
@@ -384,9 +420,16 @@ void OnTick()
       Print("VIKAS Arrow at shift ", shift, " dir: ", currVIKAS);
    }
 
-   // DEBUG: Log values every bar
+   // DEBUG: Log values every bar with VIKAS line values for comparison
    double closePrice = iClose(_Symbol, PERIOD_CURRENT, shift);
+   double vikasUp = g_VIKAS_Up[shift];    // Lower band (support)
+   double vikasDn = g_VIKAS_Dn[shift];    // Upper band (resistance)
+   double ceLong = g_CE_LongStop[shift];
+   double ceShort = g_CE_ShortStop[shift];
+
    Print("BAR: CE=", currCE, " VIKAS=", currVIKAS, " SQZMOM=", DoubleToString(sqz, 2), " Close=", closePrice);
+   Print("     VIKAS UpTrend=", DoubleToString(vikasUp, 2), " DnTrend=", DoubleToString(vikasDn, 2),
+         " | CE LongStop=", DoubleToString(ceLong, 2), " ShortStop=", DoubleToString(ceShort, 2));
 
    // === LOGIC: Open trade when ALL indicators align AND new CE direction ===
    if(g_currentTrade == TRADE_NONE && g_pendingSignal == 0)
