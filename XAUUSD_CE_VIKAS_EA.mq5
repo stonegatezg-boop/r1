@@ -5,17 +5,10 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Trading Partner"
 #property link      ""
-#property version   "1.22"
+#property version   "1.23"
 #property strict
 
 #include <Trade\Trade.mqh>
-
-//+------------------------------------------------------------------+
-//| ENUMS                                                            |
-//+------------------------------------------------------------------+
-enum ENUM_SIGNAL_TYPE { SIGNAL_NONE=0, SIGNAL_STRONG=1, SIGNAL_WEAK=2 };
-enum ENUM_TRADE_DIRECTION { TRADE_NONE=0, TRADE_LONG=1, TRADE_SHORT=-1 };
-enum ENUM_INSTRUMENT_TYPE { INSTRUMENT_UNKNOWN=0, INSTRUMENT_XAUUSD=1, INSTRUMENT_XAGUSD=2, INSTRUMENT_BTCUSD=3 };
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                 |
@@ -25,69 +18,69 @@ input double InpLotSize = 0.2;
 input int    InpMagicNumber = 123456;
 input int    InpSlippage = 30;
 
-input group "=== CHANDELIER EXIT (TV: 10, 3) ==="
+input group "=== CHANDELIER EXIT ==="
 input int    InpCE_Period = 10;
 input double InpCE_Multiplier = 3.0;
-input bool   InpCE_UseClose = true;
 
-input group "=== VIKAS SUPERTREND (TV: 18, 2.8) ==="
+input group "=== VIKAS SUPERTREND ==="
 input int    InpVIKAS_Period = 18;
 input double InpVIKAS_Multiplier = 2.8;
+input bool   InpUseVIKAS = true;          // Use VIKAS filter? (false = only CE+SQZMOM)
 
-input group "=== SQZMOM (TV: KC=10) ==="
-input int    InpSQZ_KCLength = 10;
-input double InpSQZ_MinThreshold = 0.5;   // XAU=0.5, BTC=50, XAG=0.05
+input group "=== SQZMOM ==="
+input int    InpSQZ_Length = 10;
+input double InpSQZ_MinThreshold = 0.0;   // Min threshold (0 = any positive/negative)
 
 input group "=== RISK ==="
-input int    InpSL_Buffer = 100;          // SL buffer pips from CE line
-input int    InpTP_Min = 191;             // TP min pips
-input int    InpTP_Max = 214;             // TP max pips
+input int    InpSL_Buffer = 100;
+input int    InpTP_Min = 191;
+input int    InpTP_Max = 214;
 input int    InpBreakEvenPips = 50;
 input int    InpBreakEvenOffset = 5;
 input int    InpDelayMin = 2;
 input int    InpDelayMax = 8;
 
 input group "=== TRADING HOURS ==="
-input int    InpStartDay = 0;
+input bool   InpUseTradingHours = false;
 input int    InpStartHour = 0;
-input int    InpStartMinute = 5;
-input int    InpEndDay = 5;
-input int    InpEndHour = 12;
-input int    InpEndMinute = 0;
+input int    InpEndHour = 23;
 
 //+------------------------------------------------------------------+
 //| GLOBAL VARIABLES                                                 |
 //+------------------------------------------------------------------+
-ENUM_TRADE_DIRECTION g_currentTrade = TRADE_NONE;
-ENUM_SIGNAL_TYPE g_signalType = SIGNAL_NONE;
+enum ENUM_TRADE_DIR { DIR_NONE=0, DIR_LONG=1, DIR_SHORT=-1 };
+
+ENUM_TRADE_DIR g_currentTrade = DIR_NONE;
 double g_entryPrice = 0, g_currentSL = 0, g_currentTP = 0;
 bool g_breakEvenApplied = false;
 int g_lastTradeCE = 0;
+int g_prevCE = 0;
 datetime g_lastBarTime = 0;
 CTrade trade;
 
+// Pending signal
 int g_pendingSignal = 0;
-ENUM_SIGNAL_TYPE g_pendingType = SIGNAL_NONE;
 datetime g_pendingTime = 0;
 int g_delaySeconds = 0;
 
-ENUM_INSTRUMENT_TYPE g_instrumentType = INSTRUMENT_UNKNOWN;
+// Instrument
 int g_pipMultiplier = 10;
 string g_instrumentName = "";
 
-int g_historySize = 300;
+// Indicator arrays
+int g_historySize = 500;
 int g_CE_Dir[];
 double g_CE_LongStop[];
 double g_CE_ShortStop[];
-int g_VIKAS_Trend[];
-double g_VIKAS_Up[];
-double g_VIKAS_Dn[];
+int g_VIKAS_Dir[];
+double g_VIKAS_Line[];
 
 //+------------------------------------------------------------------+
-//| Expert initialization                                            |
+//| INIT                                                             |
 //+------------------------------------------------------------------+
 int OnInit()
 {
+   MathSrand((uint)TimeLocal());
    DetectInstrument();
 
    trade.SetExpertMagicNumber(InpMagicNumber);
@@ -97,79 +90,126 @@ int OnInit()
    ArrayResize(g_CE_Dir, g_historySize);
    ArrayResize(g_CE_LongStop, g_historySize);
    ArrayResize(g_CE_ShortStop, g_historySize);
-   ArrayResize(g_VIKAS_Trend, g_historySize);
-   ArrayResize(g_VIKAS_Up, g_historySize);
-   ArrayResize(g_VIKAS_Dn, g_historySize);
+   ArrayResize(g_VIKAS_Dir, g_historySize);
+   ArrayResize(g_VIKAS_Line, g_historySize);
 
-   RecalculateIndicators();
+   ArrayInitialize(g_CE_Dir, 0);
+   ArrayInitialize(g_VIKAS_Dir, 0);
+
+   // Calculate initial indicators
+   RecalculateAll();
    CheckExistingPosition();
 
-   Print("=== CE VIKAS EA v1.22 ===");
-   Print("Instrument: ", g_instrumentName, " PipMult: ", g_pipMultiplier);
-   Print("Lot: ", InpLotSize, " TP: ", InpTP_Min, "-", InpTP_Max, " SL Buffer: ", InpSL_Buffer);
+   // Initialize prevCE
+   g_prevCE = g_CE_Dir[1];
+
+   Print("========================================");
+   Print("=== CE VIKAS EA v1.23 STARTED ===");
+   Print("Instrument: ", g_instrumentName);
+   Print("PipMultiplier: ", g_pipMultiplier);
+   Print("UseVIKAS: ", InpUseVIKAS);
+   Print("SQZMOM Threshold: ", InpSQZ_MinThreshold);
+   Print("========================================");
 
    return(INIT_SUCCEEDED);
 }
 
 //+------------------------------------------------------------------+
-//| RECALCULATE ALL INDICATORS                                       |
+//| Detect Instrument                                                |
 //+------------------------------------------------------------------+
-void RecalculateIndicators()
+void DetectInstrument()
 {
-   int bars = MathMin(iBars(_Symbol, PERIOD_CURRENT), g_historySize);
-   int startBar = bars - 1;
+   g_instrumentName = _Symbol;
+   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
 
-   g_CE_Dir[startBar] = 1;
-   g_CE_LongStop[startBar] = 0;
-   g_CE_ShortStop[startBar] = 0;
-   g_VIKAS_Trend[startBar] = 1;
-   g_VIKAS_Up[startBar] = 0;
-   g_VIKAS_Dn[startBar] = 0;
-
-   for(int shift = startBar - 1; shift >= 0; shift--)
+   if(StringFind(_Symbol, "XAU") >= 0 || StringFind(_Symbol, "GOLD") >= 0)
    {
-      CalcCE_AtBar(shift);
-      CalcVIKAS_AtBar(shift);
+      g_pipMultiplier = 10;
+   }
+   else if(StringFind(_Symbol, "XAG") >= 0 || StringFind(_Symbol, "SILVER") >= 0)
+   {
+      g_pipMultiplier = 100;
+   }
+   else if(StringFind(_Symbol, "BTC") >= 0)
+   {
+      if(point >= 1.0) g_pipMultiplier = 1;
+      else if(point >= 0.1) g_pipMultiplier = 10;
+      else if(point >= 0.01) g_pipMultiplier = 100;
+      else g_pipMultiplier = 1000;
+   }
+   else
+   {
+      g_pipMultiplier = 10;
    }
 }
 
 //+------------------------------------------------------------------+
-//| CALCULATE CE AT SPECIFIC BAR                                     |
+//| ATR Calculation                                                  |
 //+------------------------------------------------------------------+
-void CalcCE_AtBar(int shift)
+double CalcATR(int period, int shift)
 {
-   if(shift < 0 || shift >= g_historySize - 1) return;
-
-   double atr = 0;
-   for(int i = 0; i < InpCE_Period; i++)
+   double sum = 0;
+   for(int i = 0; i < period; i++)
    {
       double h = iHigh(_Symbol, PERIOD_CURRENT, shift + i);
       double l = iLow(_Symbol, PERIOD_CURRENT, shift + i);
       double pc = iClose(_Symbol, PERIOD_CURRENT, shift + i + 1);
-      atr += MathMax(h - l, MathMax(MathAbs(h - pc), MathAbs(l - pc)));
+      sum += MathMax(h - l, MathMax(MathAbs(h - pc), MathAbs(l - pc)));
    }
-   atr /= InpCE_Period;
-   double atrMult = InpCE_Multiplier * atr;
+   return sum / period;
+}
 
-   double highest = -DBL_MAX, lowest = DBL_MAX;
-   for(int i = 0; i < InpCE_Period; i++)
+//+------------------------------------------------------------------+
+//| Recalculate All Indicators                                       |
+//+------------------------------------------------------------------+
+void RecalculateAll()
+{
+   int bars = MathMin(iBars(_Symbol, PERIOD_CURRENT), g_historySize - 1);
+   if(bars < 50) return;
+
+   // Initialize oldest bar
+   int start = bars - 1;
+   g_CE_Dir[start] = 1;
+   g_CE_LongStop[start] = 0;
+   g_CE_ShortStop[start] = 0;
+   g_VIKAS_Dir[start] = 1;
+   g_VIKAS_Line[start] = 0;
+
+   // Calculate from oldest to newest
+   for(int i = start - 1; i >= 0; i--)
    {
-      double val = InpCE_UseClose ? iClose(_Symbol, PERIOD_CURRENT, shift + i)
-                                  : iHigh(_Symbol, PERIOD_CURRENT, shift + i);
-      if(val > highest) highest = val;
+      CalcCE(i);
+      CalcVIKAS(i);
+   }
+}
 
-      val = InpCE_UseClose ? iClose(_Symbol, PERIOD_CURRENT, shift + i)
-                           : iLow(_Symbol, PERIOD_CURRENT, shift + i);
-      if(val < lowest) lowest = val;
+//+------------------------------------------------------------------+
+//| Calculate Chandelier Exit                                        |
+//+------------------------------------------------------------------+
+void CalcCE(int shift)
+{
+   if(shift < 0 || shift >= g_historySize - 1) return;
+
+   double atr = CalcATR(InpCE_Period, shift) * InpCE_Multiplier;
+
+   // Find highest/lowest close in period
+   double highest = iClose(_Symbol, PERIOD_CURRENT, shift);
+   double lowest = iClose(_Symbol, PERIOD_CURRENT, shift);
+   for(int i = 1; i < InpCE_Period; i++)
+   {
+      double c = iClose(_Symbol, PERIOD_CURRENT, shift + i);
+      if(c > highest) highest = c;
+      if(c < lowest) lowest = c;
    }
 
-   double longStop = highest - atrMult;
-   double shortStop = lowest + atrMult;
+   double longStop = highest - atr;
+   double shortStop = lowest + atr;
 
+   // Ratchet
    double prevLongStop = g_CE_LongStop[shift + 1];
    double prevShortStop = g_CE_ShortStop[shift + 1];
-   int prevDir = g_CE_Dir[shift + 1];
    double prevClose = iClose(_Symbol, PERIOD_CURRENT, shift + 1);
+   int prevDir = g_CE_Dir[shift + 1];
 
    if(prevLongStop > 0 && prevClose > prevLongStop)
       longStop = MathMax(longStop, prevLongStop);
@@ -177,12 +217,12 @@ void CalcCE_AtBar(int shift)
    if(prevShortStop > 0 && prevClose < prevShortStop)
       shortStop = MathMin(shortStop, prevShortStop);
 
+   // Direction - TradingView logic
    double close = iClose(_Symbol, PERIOD_CURRENT, shift);
-
    int dir;
-   if(close > prevShortStop)
+   if(close > prevShortStop && prevShortStop > 0)
       dir = 1;
-   else if(close < prevLongStop)
+   else if(close < prevLongStop && prevLongStop > 0)
       dir = -1;
    else
       dir = prevDir;
@@ -193,87 +233,86 @@ void CalcCE_AtBar(int shift)
 }
 
 //+------------------------------------------------------------------+
-//| CALCULATE VIKAS AT SPECIFIC BAR                                  |
+//| Calculate VIKAS SuperTrend                                       |
 //+------------------------------------------------------------------+
-void CalcVIKAS_AtBar(int shift)
+void CalcVIKAS(int shift)
 {
    if(shift < 0 || shift >= g_historySize - 1) return;
 
-   double atr = 0;
-   for(int i = 0; i < InpVIKAS_Period; i++)
-   {
-      double h = iHigh(_Symbol, PERIOD_CURRENT, shift + i);
-      double l = iLow(_Symbol, PERIOD_CURRENT, shift + i);
-      double pc = iClose(_Symbol, PERIOD_CURRENT, shift + i + 1);
-      atr += MathMax(h - l, MathMax(MathAbs(h - pc), MathAbs(l - pc)));
-   }
-   atr /= InpVIKAS_Period;
+   double atr = CalcATR(InpVIKAS_Period, shift) * InpVIKAS_Multiplier;
 
+   // Source = Low (as per user settings)
    double src = iLow(_Symbol, PERIOD_CURRENT, shift);
-   double lowerBand = src - InpVIKAS_Multiplier * atr;
-   double upperBand = src + InpVIKAS_Multiplier * atr;
+   double upperBand = src + atr;
+   double lowerBand = src - atr;
 
-   double prevLower = g_VIKAS_Up[shift + 1];
-   double prevUpper = g_VIKAS_Dn[shift + 1];
-   int prevTrend = g_VIKAS_Trend[shift + 1];
+   double prevUpper = g_VIKAS_Line[shift + 1];
+   double prevLower = g_VIKAS_Line[shift + 1];
+   int prevDir = g_VIKAS_Dir[shift + 1];
    double prevClose = iClose(_Symbol, PERIOD_CURRENT, shift + 1);
 
-   if(prevLower > 0)
-   {
-      if(!(lowerBand > prevLower || prevClose < prevLower))
-         lowerBand = prevLower;
-   }
+   // For first calculation
+   if(prevDir == 0) prevDir = 1;
 
-   if(prevUpper > 0)
-   {
-      if(!(upperBand < prevUpper || prevClose > prevUpper))
-         upperBand = prevUpper;
-   }
-
+   // Simplified SuperTrend logic
    double close = iClose(_Symbol, PERIOD_CURRENT, shift);
+   int dir;
 
-   int trend;
-   if(close > prevUpper && prevUpper > 0)
-      trend = 1;
-   else if(close < prevLower && prevLower > 0)
-      trend = -1;
+   if(prevDir == 1)
+   {
+      // Was in uptrend
+      lowerBand = MathMax(lowerBand, g_VIKAS_Line[shift + 1]);
+      if(close < lowerBand)
+         dir = -1;  // Switch to downtrend
+      else
+         dir = 1;
+      g_VIKAS_Line[shift] = (dir == 1) ? lowerBand : upperBand;
+   }
    else
-      trend = prevTrend;
+   {
+      // Was in downtrend
+      upperBand = MathMin(upperBand, g_VIKAS_Line[shift + 1]);
+      if(close > upperBand)
+         dir = 1;   // Switch to uptrend
+      else
+         dir = -1;
+      g_VIKAS_Line[shift] = (dir == -1) ? upperBand : lowerBand;
+   }
 
-   g_VIKAS_Up[shift] = lowerBand;
-   g_VIKAS_Dn[shift] = upperBand;
-   g_VIKAS_Trend[shift] = trend;
+   g_VIKAS_Dir[shift] = dir;
 }
 
 //+------------------------------------------------------------------+
-//| SQZMOM CALCULATION                                               |
+//| Calculate SQZMOM                                                 |
 //+------------------------------------------------------------------+
-double GetSQZMOM(int shift)
+double CalcSQZMOM(int shift)
 {
-   int len = InpSQZ_KCLength;
+   int len = InpSQZ_Length;
+
+   // Find highest/lowest
+   double highest = iHigh(_Symbol, PERIOD_CURRENT, shift);
+   double lowest = iLow(_Symbol, PERIOD_CURRENT, shift);
+   for(int i = 1; i < len; i++)
+   {
+      double h = iHigh(_Symbol, PERIOD_CURRENT, shift + i);
+      double l = iLow(_Symbol, PERIOD_CURRENT, shift + i);
+      if(h > highest) highest = h;
+      if(l < lowest) lowest = l;
+   }
+
+   // SMA
+   double sma = 0;
+   for(int i = 0; i < len; i++)
+      sma += iClose(_Symbol, PERIOD_CURRENT, shift + i);
+   sma /= len;
+
+   double mid = ((highest + lowest) / 2.0 + sma) / 2.0;
+
+   // Linear regression
    double source[];
    ArrayResize(source, len);
-
    for(int i = 0; i < len; i++)
-   {
-      double c = iClose(_Symbol, PERIOD_CURRENT, shift + i);
-      double hh = -DBL_MAX, ll = DBL_MAX;
-
-      for(int j = 0; j < len; j++)
-      {
-         double h = iHigh(_Symbol, PERIOD_CURRENT, shift + i + j);
-         double l = iLow(_Symbol, PERIOD_CURRENT, shift + i + j);
-         if(h > hh) hh = h;
-         if(l < ll) ll = l;
-      }
-
-      double sma = 0;
-      for(int j = 0; j < len; j++)
-         sma += iClose(_Symbol, PERIOD_CURRENT, shift + i + j);
-      sma /= len;
-
-      source[i] = c - ((hh + ll) / 2.0 + sma) / 2.0;
-   }
+      source[i] = iClose(_Symbol, PERIOD_CURRENT, shift + i) - mid;
 
    double sumX=0, sumY=0, sumXY=0, sumX2=0;
    for(int i = 0; i < len; i++)
@@ -295,304 +334,17 @@ double GetSQZMOM(int shift)
 }
 
 //+------------------------------------------------------------------+
-//| Expert tick function                                             |
-//+------------------------------------------------------------------+
-void OnTick()
-{
-   // Check if position closed externally (SL/TP)
-   if(g_currentTrade != TRADE_NONE)
-   {
-      bool posExists = false;
-      if(PositionSelect(_Symbol))
-      {
-         if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
-            posExists = true;
-      }
-
-      if(!posExists)
-      {
-         Print(">>> POSITION CLOSED (SL/TP)");
-         g_currentTrade = TRADE_NONE;
-         g_breakEvenApplied = false;
-         g_pendingSignal = 0;
-         g_pendingType = SIGNAL_NONE;
-      }
-   }
-
-   // Break even check
-   if(g_currentTrade != TRADE_NONE)
-      CheckBreakEven();
-
-   // Execute pending signal after delay
-   if(g_pendingSignal != 0 && g_currentTrade == TRADE_NONE)
-   {
-      if(TimeCurrent() >= g_pendingTime + g_delaySeconds)
-      {
-         Print(">>> EXECUTING after ", g_delaySeconds, "s delay");
-         OpenTrade(g_pendingSignal, g_pendingType);
-         g_lastTradeCE = g_pendingSignal;
-         g_pendingSignal = 0;
-         g_pendingType = SIGNAL_NONE;
-      }
-   }
-
-   if(!IsNewBar()) return;
-   if(!IsTradingTime()) return;
-
-   RecalculateIndicators();
-
-   int shift = 1;
-   int currCE = g_CE_Dir[shift];
-   int prevCE = g_CE_Dir[shift + 1];
-   int currVIKAS = g_VIKAS_Trend[shift];
-   double sqz = GetSQZMOM(shift);
-
-   // Close on opposite CE
-   if(g_currentTrade != TRADE_NONE)
-   {
-      if((g_currentTrade == TRADE_LONG && currCE == -1) ||
-         (g_currentTrade == TRADE_SHORT && currCE == 1))
-      {
-         Print(">>> CE FLIP - Closing");
-         ClosePosition();
-      }
-   }
-
-   // Reset lastTradeCE on CE flip
-   if(currCE != prevCE)
-   {
-      Print(">>> CE FLIP: ", prevCE, " -> ", currCE);
-      g_lastTradeCE = 0;
-   }
-
-   // Debug
-   Print("BAR: CE=", currCE, " VIKAS=", currVIKAS, " SQZ=", DoubleToString(sqz, 2));
-
-   // Entry logic
-   if(g_currentTrade == TRADE_NONE && g_pendingSignal == 0)
-   {
-      bool newCE = (currCE != g_lastTradeCE);
-      bool allLong = (currCE == 1) && (currVIKAS == 1) && (sqz > InpSQZ_MinThreshold);
-      bool allShort = (currCE == -1) && (currVIKAS == -1) && (sqz < -InpSQZ_MinThreshold);
-
-      if(allLong && newCE)
-      {
-         Print(">>> ALL GREEN - LONG");
-         g_pendingSignal = 1;
-         g_pendingType = SIGNAL_WEAK;
-         g_pendingTime = TimeCurrent();
-         g_delaySeconds = InpDelayMin + MathRand() % (InpDelayMax - InpDelayMin + 1);
-      }
-      else if(allShort && newCE)
-      {
-         Print(">>> ALL RED - SHORT");
-         g_pendingSignal = -1;
-         g_pendingType = SIGNAL_WEAK;
-         g_pendingTime = TimeCurrent();
-         g_delaySeconds = InpDelayMin + MathRand() % (InpDelayMax - InpDelayMin + 1);
-      }
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Open Trade                                                       |
-//+------------------------------------------------------------------+
-void OpenTrade(int direction, ENUM_SIGNAL_TYPE sigType)
-{
-   if(g_currentTrade != TRADE_NONE) return;
-
-   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
-   double pipVal = point * g_pipMultiplier;
-   double slBuf = InpSL_Buffer * pipVal;
-
-   double ceStop = (direction == 1) ? g_CE_LongStop[1] : g_CE_ShortStop[1];
-   double price, sl, tp;
-
-   int rtp = InpTP_Min + MathRand() % (InpTP_Max - InpTP_Min + 1);
-
-   Print(">>> pipVal=", pipVal, " rtp=", rtp);
-
-   if(direction == 1)
-   {
-      price = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-      sl = ceStop - slBuf;
-      tp = price + rtp * pipVal;
-
-      sl = NormalizeDouble(sl, digits);
-      tp = NormalizeDouble(tp, digits);
-
-      Print(">>> LONG: Price=", price, " SL=", sl, " TP=", tp);
-
-      if(trade.Buy(InpLotSize, _Symbol, price, sl, tp, ""))
-      {
-         g_currentTrade = TRADE_LONG;
-         g_entryPrice = price;
-         g_currentSL = sl;
-         g_currentTP = tp;
-         g_breakEvenApplied = false;
-         Print(">>> LONG OPENED!");
-      }
-      else
-         Print(">>> FAILED: ", GetLastError());
-   }
-   else
-   {
-      price = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-      sl = ceStop + slBuf;
-      tp = price - rtp * pipVal;
-
-      sl = NormalizeDouble(sl, digits);
-      tp = NormalizeDouble(tp, digits);
-
-      Print(">>> SHORT: Price=", price, " SL=", sl, " TP=", tp);
-
-      if(trade.Sell(InpLotSize, _Symbol, price, sl, tp, ""))
-      {
-         g_currentTrade = TRADE_SHORT;
-         g_entryPrice = price;
-         g_currentSL = sl;
-         g_currentTP = tp;
-         g_breakEvenApplied = false;
-         Print(">>> SHORT OPENED!");
-      }
-      else
-         Print(">>> FAILED: ", GetLastError());
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Check Break Even                                                 |
-//+------------------------------------------------------------------+
-void CheckBreakEven()
-{
-   if(g_breakEvenApplied || g_currentTrade == TRADE_NONE) return;
-   if(InpBreakEvenPips <= 0) return;
-
-   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-   double pipVal = point * g_pipMultiplier;
-   double beThreshold = InpBreakEvenPips * pipVal;
-   double beOffset = InpBreakEvenOffset * pipVal;
-   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
-
-   double currentPrice, profit;
-
-   if(g_currentTrade == TRADE_LONG)
-   {
-      currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-      profit = currentPrice - g_entryPrice;
-
-      if(profit >= beThreshold)
-      {
-         double newSL = NormalizeDouble(g_entryPrice + beOffset, digits);
-         if(newSL > g_currentSL)
-         {
-            Print(">>> BREAK EVEN LONG: ", newSL);
-            if(ModifySL(newSL))
-            {
-               g_currentSL = newSL;
-               g_breakEvenApplied = true;
-            }
-         }
-      }
-   }
-   else if(g_currentTrade == TRADE_SHORT)
-   {
-      currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-      profit = g_entryPrice - currentPrice;
-
-      if(profit >= beThreshold)
-      {
-         double newSL = NormalizeDouble(g_entryPrice - beOffset, digits);
-         if(newSL < g_currentSL)
-         {
-            Print(">>> BREAK EVEN SHORT: ", newSL);
-            if(ModifySL(newSL))
-            {
-               g_currentSL = newSL;
-               g_breakEvenApplied = true;
-            }
-         }
-      }
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Modify SL                                                        |
-//+------------------------------------------------------------------+
-bool ModifySL(double newSL)
-{
-   if(!PositionSelect(_Symbol)) return false;
-   ulong ticket = PositionGetInteger(POSITION_TICKET);
-   double tp = PositionGetDouble(POSITION_TP);
-   return trade.PositionModify(ticket, newSL, tp);
-}
-
-//+------------------------------------------------------------------+
-//| Close Position                                                   |
-//+------------------------------------------------------------------+
-void ClosePosition()
-{
-   if(PositionSelect(_Symbol))
-   {
-      ulong ticket = PositionGetInteger(POSITION_TICKET);
-      if(trade.PositionClose(ticket))
-      {
-         Print(">>> Position Closed");
-         g_currentTrade = TRADE_NONE;
-      }
-   }
-   else
-      g_currentTrade = TRADE_NONE;
-}
-
-//+------------------------------------------------------------------+
-//| Detect Instrument                                                |
-//+------------------------------------------------------------------+
-void DetectInstrument()
-{
-   g_instrumentName = _Symbol;
-   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-
-   if(StringFind(_Symbol, "XAU") >= 0 || StringFind(_Symbol, "GOLD") >= 0)
-   {
-      g_instrumentType = INSTRUMENT_XAUUSD;
-      g_pipMultiplier = 10;
-   }
-   else if(StringFind(_Symbol, "XAG") >= 0 || StringFind(_Symbol, "SILVER") >= 0)
-   {
-      g_instrumentType = INSTRUMENT_XAGUSD;
-      g_pipMultiplier = 100;
-   }
-   else if(StringFind(_Symbol, "BTC") >= 0)
-   {
-      g_instrumentType = INSTRUMENT_BTCUSD;
-      if(point >= 1.0) g_pipMultiplier = 1;
-      else if(point >= 0.1) g_pipMultiplier = 10;
-      else if(point >= 0.01) g_pipMultiplier = 100;
-      else g_pipMultiplier = 1000;
-   }
-   else
-   {
-      g_instrumentType = INSTRUMENT_UNKNOWN;
-      g_pipMultiplier = 10;
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Check Trading Time                                               |
+//| Check Trading Hours                                              |
 //+------------------------------------------------------------------+
 bool IsTradingTime()
 {
+   if(!InpUseTradingHours) return true;
+
    MqlDateTime dt;
    TimeToStruct(TimeCurrent(), dt);
-   int day = dt.day_of_week;
-   int mins = dt.hour * 60 + dt.min;
 
-   if(day == 6) return false;
-   if(day == InpStartDay && mins < InpStartHour * 60 + InpStartMinute) return false;
-   if(day == InpEndDay && mins >= InpEndHour * 60 + InpEndMinute) return false;
-   if(day > InpEndDay) return false;
+   if(dt.day_of_week == 0 || dt.day_of_week == 6) return false;
+   if(dt.hour < InpStartHour || dt.hour > InpEndHour) return false;
 
    return true;
 }
@@ -616,17 +368,306 @@ bool IsNewBar()
 //+------------------------------------------------------------------+
 void CheckExistingPosition()
 {
-   if(PositionSelect(_Symbol))
+   g_currentTrade = DIR_NONE;
+
+   for(int i = PositionsTotal()-1; i >= 0; i--)
    {
-      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
+      ulong ticket = PositionGetTicket(i);
+      if(ticket <= 0) continue;
+
+      if(PositionGetString(POSITION_SYMBOL) == _Symbol &&
+         PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
       {
          g_currentTrade = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
-                          ? TRADE_LONG : TRADE_SHORT;
+                          ? DIR_LONG : DIR_SHORT;
+         g_entryPrice = PositionGetDouble(POSITION_PRICE_OPEN);
          g_currentSL = PositionGetDouble(POSITION_SL);
          g_currentTP = PositionGetDouble(POSITION_TP);
+         break;
       }
    }
 }
 
-void OnDeinit(const int reason) { Print("=== EA Stopped ==="); }
+//+------------------------------------------------------------------+
+//| OnTick                                                           |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // Check if position closed externally
+   if(g_currentTrade != DIR_NONE)
+   {
+      bool found = false;
+      for(int i = PositionsTotal()-1; i >= 0; i--)
+      {
+         ulong ticket = PositionGetTicket(i);
+         if(ticket <= 0) continue;
+         if(PositionGetString(POSITION_SYMBOL) == _Symbol &&
+            PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
+         {
+            found = true;
+            break;
+         }
+      }
+      if(!found)
+      {
+         Print(">>> POSITION CLOSED (SL/TP)");
+         g_currentTrade = DIR_NONE;
+         g_breakEvenApplied = false;
+         g_pendingSignal = 0;
+      }
+   }
+
+   // Break even
+   if(g_currentTrade != DIR_NONE)
+      ManageBreakEven();
+
+   // Execute pending signal
+   if(g_pendingSignal != 0 && g_currentTrade == DIR_NONE)
+   {
+      if(TimeCurrent() >= g_pendingTime + g_delaySeconds)
+      {
+         ExecuteTrade(g_pendingSignal);
+         g_lastTradeCE = g_pendingSignal;
+         g_pendingSignal = 0;
+      }
+   }
+
+   // Only on new bar
+   if(!IsNewBar()) return;
+   if(!IsTradingTime()) return;
+
+   // Recalculate indicators
+   RecalculateAll();
+
+   int shift = 1;  // Use closed bar
+   int currCE = g_CE_Dir[shift];
+   int currVIKAS = g_VIKAS_Dir[shift];
+   double sqz = CalcSQZMOM(shift);
+   double close = iClose(_Symbol, PERIOD_CURRENT, shift);
+
+   // Debug output
+   Print("----------------------------------------");
+   Print("BAR: ", TimeToString(iTime(_Symbol, PERIOD_CURRENT, shift)));
+   Print("Close: ", close);
+   Print("CE: ", currCE, " (1=LONG, -1=SHORT)");
+   Print("VIKAS: ", currVIKAS, " (1=LONG, -1=SHORT)");
+   Print("SQZMOM: ", DoubleToString(sqz, 2));
+   Print("CE Line: Long=", DoubleToString(g_CE_LongStop[shift], 2),
+         " Short=", DoubleToString(g_CE_ShortStop[shift], 2));
+   Print("VIKAS Line: ", DoubleToString(g_VIKAS_Line[shift], 2));
+   Print("UseVIKAS: ", InpUseVIKAS, " | Threshold: ", InpSQZ_MinThreshold);
+   Print("g_lastTradeCE: ", g_lastTradeCE, " | g_currentTrade: ", g_currentTrade);
+
+   // Close on opposite CE
+   if(g_currentTrade != DIR_NONE)
+   {
+      if((g_currentTrade == DIR_LONG && currCE == -1) ||
+         (g_currentTrade == DIR_SHORT && currCE == 1))
+      {
+         Print(">>> OPPOSITE CE - CLOSING");
+         ClosePosition();
+      }
+   }
+
+   // Reset lastTradeCE on CE flip
+   if(currCE != g_prevCE)
+   {
+      Print(">>> CE FLIP: ", g_prevCE, " -> ", currCE, " (resetting lastTradeCE)");
+      g_lastTradeCE = 0;
+   }
+   g_prevCE = currCE;
+
+   // Entry logic
+   if(g_currentTrade == DIR_NONE && g_pendingSignal == 0)
+   {
+      bool newCE = (currCE != g_lastTradeCE);
+
+      // Check conditions
+      bool ceLong = (currCE == 1);
+      bool ceShort = (currCE == -1);
+
+      bool vikasLong = !InpUseVIKAS || (currVIKAS == 1);
+      bool vikasShort = !InpUseVIKAS || (currVIKAS == -1);
+
+      bool sqzLong = (sqz > InpSQZ_MinThreshold);
+      bool sqzShort = (sqz < -InpSQZ_MinThreshold);
+
+      Print("Conditions LONG: CE=", ceLong, " VIKAS=", vikasLong, " SQZ=", sqzLong, " newCE=", newCE);
+      Print("Conditions SHORT: CE=", ceShort, " VIKAS=", vikasShort, " SQZ=", sqzShort, " newCE=", newCE);
+
+      bool allLong = ceLong && vikasLong && sqzLong;
+      bool allShort = ceShort && vikasShort && sqzShort;
+
+      if(allLong && newCE)
+      {
+         Print(">>> SIGNAL: ALL GREEN - QUEUE LONG");
+         g_pendingSignal = 1;
+         g_pendingTime = TimeCurrent();
+         g_delaySeconds = InpDelayMin + MathRand() % (InpDelayMax - InpDelayMin + 1);
+         Print(">>> Delay: ", g_delaySeconds, " seconds");
+      }
+      else if(allShort && newCE)
+      {
+         Print(">>> SIGNAL: ALL RED - QUEUE SHORT");
+         g_pendingSignal = -1;
+         g_pendingTime = TimeCurrent();
+         g_delaySeconds = InpDelayMin + MathRand() % (InpDelayMax - InpDelayMin + 1);
+         Print(">>> Delay: ", g_delaySeconds, " seconds");
+      }
+      else
+      {
+         if(!newCE && (allLong || allShort))
+            Print(">>> BLOCKED: Waiting for new CE (lastTradeCE=", g_lastTradeCE, ")");
+         else if(!allLong && !allShort)
+            Print(">>> NO SIGNAL: Conditions not met");
+      }
+   }
+
+   Print("----------------------------------------");
+}
+
+//+------------------------------------------------------------------+
+//| Execute Trade                                                    |
+//+------------------------------------------------------------------+
+void ExecuteTrade(int direction)
+{
+   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+   double pipVal = point * g_pipMultiplier;
+   double slBuf = InpSL_Buffer * pipVal;
+
+   double ceStop = (direction == 1) ? g_CE_LongStop[1] : g_CE_ShortStop[1];
+   int rtp = InpTP_Min + MathRand() % (InpTP_Max - InpTP_Min + 1);
+
+   double price, sl, tp;
+
+   Print(">>> EXECUTING: dir=", direction, " pipVal=", pipVal, " rtp=", rtp);
+
+   if(direction == 1)
+   {
+      price = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+      sl = ceStop - slBuf;
+      tp = price + rtp * pipVal;
+
+      sl = NormalizeDouble(sl, digits);
+      tp = NormalizeDouble(tp, digits);
+
+      Print(">>> BUY: Price=", price, " SL=", sl, " TP=", tp);
+
+      if(trade.Buy(InpLotSize, _Symbol, price, sl, tp, "CE-VIKAS"))
+      {
+         g_currentTrade = DIR_LONG;
+         g_entryPrice = price;
+         g_currentSL = sl;
+         g_currentTP = tp;
+         g_breakEvenApplied = false;
+         Print(">>> BUY SUCCESS!");
+      }
+      else
+         Print(">>> BUY FAILED: Error ", GetLastError());
+   }
+   else
+   {
+      price = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+      sl = ceStop + slBuf;
+      tp = price - rtp * pipVal;
+
+      sl = NormalizeDouble(sl, digits);
+      tp = NormalizeDouble(tp, digits);
+
+      Print(">>> SELL: Price=", price, " SL=", sl, " TP=", tp);
+
+      if(trade.Sell(InpLotSize, _Symbol, price, sl, tp, "CE-VIKAS"))
+      {
+         g_currentTrade = DIR_SHORT;
+         g_entryPrice = price;
+         g_currentSL = sl;
+         g_currentTP = tp;
+         g_breakEvenApplied = false;
+         Print(">>> SELL SUCCESS!");
+      }
+      else
+         Print(">>> SELL FAILED: Error ", GetLastError());
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Close Position                                                   |
+//+------------------------------------------------------------------+
+void ClosePosition()
+{
+   for(int i = PositionsTotal()-1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket <= 0) continue;
+
+      if(PositionGetString(POSITION_SYMBOL) == _Symbol &&
+         PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
+      {
+         if(trade.PositionClose(ticket))
+         {
+            Print(">>> Position Closed");
+            g_currentTrade = DIR_NONE;
+         }
+         break;
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Break Even                                                       |
+//+------------------------------------------------------------------+
+void ManageBreakEven()
+{
+   if(g_breakEvenApplied || InpBreakEvenPips <= 0) return;
+
+   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+   double pipVal = point * g_pipMultiplier;
+   double beThreshold = InpBreakEvenPips * pipVal;
+   double beOffset = InpBreakEvenOffset * pipVal;
+   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+
+   for(int i = PositionsTotal()-1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket <= 0) continue;
+
+      if(PositionGetString(POSITION_SYMBOL) == _Symbol &&
+         PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
+      {
+         double open = PositionGetDouble(POSITION_PRICE_OPEN);
+         double sl = PositionGetDouble(POSITION_SL);
+         double tp = PositionGetDouble(POSITION_TP);
+         int dir = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? 1 : -1;
+
+         double price = (dir == 1) ? SymbolInfoDouble(_Symbol, SYMBOL_BID)
+                                   : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+
+         double profit = dir * (price - open);
+
+         if(profit >= beThreshold)
+         {
+            double newSL = NormalizeDouble(open + dir * beOffset, digits);
+            if((dir == 1 && newSL > sl) || (dir == -1 && newSL < sl))
+            {
+               if(trade.PositionModify(ticket, newSL, tp))
+               {
+                  g_currentSL = newSL;
+                  g_breakEvenApplied = true;
+                  Print(">>> BREAK EVEN: ", newSL);
+               }
+            }
+         }
+         break;
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//| OnDeinit                                                         |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   Print("=== EA STOPPED ===");
+}
 //+------------------------------------------------------------------+
