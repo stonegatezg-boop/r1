@@ -1,16 +1,15 @@
 //+------------------------------------------------------------------+
 //|                                                          4i2o.mq5 |
-//|                                                        Version 1.2 |
+//|                                                        Version 1.3 |
 //|                                     Chandelier Exit + RSI Filter   |
 //|                                                                    |
-//|  CE logic is 1:1 replica of TradingView PineScript implementation  |
-//|  - Trailing stop state persists across bars                        |
-//|  - No look-ahead bias                                              |
-//|  - No repaint: signals from closed candles only                    |
+//|  v1.3 FIXES:                                                       |
+//|  - CE window: EXACTLY CE_ATR_Period bars, no partial windows       |
+//|  - Pip model: SYMBOL_TRADE_TICK_SIZE based, broker-safe            |
 //+------------------------------------------------------------------+
 #property copyright "4i2o"
 #property link      ""
-#property version   "1.2"
+#property version   "1.3"
 #property strict
 
 #include <Trade/Trade.mqh>
@@ -45,11 +44,10 @@ int      g_atrHandle        = INVALID_HANDLE;
 int      g_rsiHandle        = INVALID_HANDLE;
 CTrade   g_trade;
 
-// Persistent CE state (survives across ticks)
-double   g_longStop         = 0;
-double   g_shortStop        = 0;
-int      g_direction        = 0;        // 1 = long, -1 = short
-bool     g_ceInitialized    = false;
+// Cached tick/pip values (initialized in OnInit)
+double   g_tickSize         = 0;
+double   g_pipSize          = 0;
+int      g_digits           = 0;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                    |
@@ -92,6 +90,13 @@ int OnInit()
       }
    }
 
+   // Initialize tick/pip model (broker-safe)
+   if(!InitializeTickModel())
+   {
+      Print("Error: Failed to initialize tick model");
+      return(INIT_FAILED);
+   }
+
    // Setup trade object
    g_trade.SetExpertMagicNumber(MagicNumber);
    g_trade.SetDeviationInPoints(10);
@@ -99,13 +104,76 @@ int OnInit()
    // Initialize random seed
    MathSrand((int)GetTickCount());
 
-   // Reset CE state
-   g_ceInitialized = false;
-   g_longStop = 0;
-   g_shortStop = 0;
-   g_direction = 0;
-
    return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Initialize tick/pip model using SYMBOL_TRADE_TICK_SIZE            |
+//| This is broker-safe and works for Forex, XAUUSD, Indices          |
+//+------------------------------------------------------------------+
+bool InitializeTickModel()
+{
+   g_tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+   g_digits   = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+
+   // Validate tick size
+   if(g_tickSize <= 0)
+   {
+      Print("Warning: SYMBOL_TRADE_TICK_SIZE invalid, using SYMBOL_POINT");
+      g_tickSize = point;
+   }
+
+   if(g_tickSize <= 0)
+   {
+      Print("Error: Cannot determine tick size");
+      return false;
+   }
+
+   //+---------------------------------------------------------------+
+   //| PIP SIZE DEFINITION (broker-safe using tick size)             |
+   //|                                                                |
+   //| Industry standard:                                             |
+   //| - Sub-pip pricing (5/3 digits): pip = 10 * tick               |
+   //| - Standard pricing (4/2 digits): pip = tick or 10 * tick      |
+   //|                                                                |
+   //| For XAUUSD (2 digits):                                         |
+   //| - tick = 0.01 typically                                        |
+   //| - pip = 0.1 (10 ticks) - industry convention                  |
+   //|                                                                |
+   //| This model ensures SL/TP are always valid tick multiples      |
+   //+---------------------------------------------------------------+
+
+   if(g_digits == 5 || g_digits == 3)
+   {
+      // Forex sub-pip pricing: EURUSD (5), USDJPY (3)
+      // tick = 0.00001 or 0.001, pip = 10 * tick
+      g_pipSize = g_tickSize * 10;
+   }
+   else if(g_digits == 2)
+   {
+      // Metals (XAUUSD): tick = 0.01, pip = 0.1
+      g_pipSize = g_tickSize * 10;
+   }
+   else if(g_digits == 4)
+   {
+      // Old-style forex: tick = pip
+      g_pipSize = g_tickSize;
+   }
+   else if(g_digits == 1)
+   {
+      // Some indices: tick = pip typically
+      g_pipSize = g_tickSize;
+   }
+   else
+   {
+      // Default: 10 * tick
+      g_pipSize = g_tickSize * 10;
+   }
+
+   Print("Tick Model: tickSize=", g_tickSize, " pipSize=", g_pipSize, " digits=", g_digits);
+
+   return true;
 }
 
 //+------------------------------------------------------------------+
@@ -214,19 +282,43 @@ bool IsNewBar()
 //|                                                                    |
 //| buySignal = dir == 1 and dir[1] == -1                             |
 //| sellSignal = dir == -1 and dir[1] == 1                            |
+//|                                                                    |
+//| v1.3 FIX: Window is EXACTLY CE_ATR_Period bars, no partial windows|
 //+------------------------------------------------------------------+
 bool CalculateChandelierExit(int &dir1, int &dir2, bool &buySignal, bool &sellSignal)
 {
-   // We need to calculate direction for bar 1 and bar 2 (closed candles)
-   // To do this properly with trailing stops, we need historical calculation
+   //+---------------------------------------------------------------+
+   //| WINDOW CALCULATION REQUIREMENT (PineScript equivalent)        |
+   //|                                                                |
+   //| highest(close, length) in PineScript:                         |
+   //| - Uses EXACTLY `length` bars                                  |
+   //| - Includes current bar (index 0 in Pine, index i in our loop) |
+   //| - Window: [current, current-1, ..., current-(length-1)]       |
+   //|                                                                |
+   //| With ArraySetAsSeries(true):                                  |
+   //| - Index 0 = newest bar (current)                              |
+   //| - Index i = bar i periods ago                                 |
+   //| - For bar i, window is [i, i+1, ..., i+length-1]              |
+   //|                                                                |
+   //| CRITICAL: If i + length - 1 >= barsNeeded, SKIP that bar      |
+   //| This ensures NO partial windows and NO look-ahead             |
+   //+---------------------------------------------------------------+
 
-   int barsNeeded = CE_ATR_Period + 50;  // Extra bars for proper trailing calculation
+   // Calculate minimum bars required
+   // We need: bar 0 (current), bar 1, bar 2 for signal detection
+   // Plus enough history for CE_ATR_Period window at bar 2
+   // Plus trailing calculation warmup
+   int minBarsForSignal = 3;  // bars 0, 1, 2
+   int windowRequirement = CE_ATR_Period;
+   int trailingWarmup = 30;   // Extra bars for trailing to stabilize
+
+   int barsNeeded = minBarsForSignal + windowRequirement + trailingWarmup;
    int totalBars = Bars(_Symbol, PERIOD_CURRENT);
 
    if(totalBars < barsNeeded)
       return false;
 
-   // Get ATR values via CopyBuffer (NOT direct iATR call!)
+   // Get ATR values via CopyBuffer
    double atrBuffer[];
    ArraySetAsSeries(atrBuffer, true);
    if(CopyBuffer(g_atrHandle, 0, 0, barsNeeded, atrBuffer) < barsNeeded)
@@ -245,7 +337,7 @@ bool CalculateChandelierExit(int &dir1, int &dir2, bool &buySignal, bool &sellSi
    if(CopyLow(_Symbol, PERIOD_CURRENT, 0, barsNeeded, lowBuffer) < barsNeeded)
       return false;
 
-   // Arrays to store calculated values (index 0 = current bar, etc.)
+   // Arrays to store calculated values
    double longStopArr[], shortStopArr[];
    int    dirArr[];
    ArrayResize(longStopArr, barsNeeded);
@@ -255,30 +347,41 @@ bool CalculateChandelierExit(int &dir1, int &dir2, bool &buySignal, bool &sellSi
    ArrayInitialize(shortStopArr, 0);
    ArrayInitialize(dirArr, 0);
 
-   // Calculate from oldest bar to newest (barsNeeded-1 down to 0)
-   // This mimics how PineScript processes bars left-to-right
-   for(int i = barsNeeded - 1; i >= 0; i--)
+   // Calculate the first valid bar index (oldest bar with full window)
+   // For bar i, we need indices i to i + CE_ATR_Period - 1
+   // So: i + CE_ATR_Period - 1 < barsNeeded
+   // Therefore: i < barsNeeded - CE_ATR_Period + 1
+   int firstValidBar = barsNeeded - CE_ATR_Period;  // Last bar index with full window
+
+   // Iterate from oldest valid bar to newest (firstValidBar down to 0)
+   for(int i = firstValidBar; i >= 0; i--)
    {
       // Calculate ATR component
       double atr = CE_ATR_Multiplier * atrBuffer[i];
 
-      // Calculate highest and lowest over CE_ATR_Period bars
-      // In PineScript: highest(close, length) includes current bar
-      // With ArraySetAsSeries, bar i is "current" for this calculation
-      double highestVal = 0;
-      double lowestVal = DBL_MAX;
+      //+------------------------------------------------------------+
+      //| FIXED WINDOW: EXACTLY CE_ATR_Period bars                   |
+      //| From index i to i + CE_ATR_Period - 1 (inclusive)          |
+      //| This matches PineScript highest(close, length) exactly     |
+      //+------------------------------------------------------------+
 
-      for(int j = i; j < i + CE_ATR_Period && j < barsNeeded; j++)
+      double highestVal = -DBL_MAX;
+      double lowestVal  = DBL_MAX;
+
+      // Loop through EXACTLY CE_ATR_Period bars
+      int windowEnd = i + CE_ATR_Period;  // Exclusive end
+
+      for(int j = i; j < windowEnd; j++)
       {
          if(CE_UseClosePrice)
          {
-            // Use CLOSE for both highest and lowest when UseClosePrice = true
+            // PineScript: highest(close, length), lowest(close, length)
             if(closeBuffer[j] > highestVal) highestVal = closeBuffer[j];
             if(closeBuffer[j] < lowestVal)  lowestVal = closeBuffer[j];
          }
          else
          {
-            // Use HIGH for highest, LOW for lowest
+            // PineScript: highest(high, length), lowest(low, length)
             if(highBuffer[j] > highestVal) highestVal = highBuffer[j];
             if(lowBuffer[j] < lowestVal)   lowestVal = lowBuffer[j];
          }
@@ -289,7 +392,7 @@ bool CalculateChandelierExit(int &dir1, int &dir2, bool &buySignal, bool &sellSi
       double shortStopRaw = lowestVal + atr;
 
       // Apply trailing logic
-      if(i < barsNeeded - 1)
+      if(i < firstValidBar)
       {
          // Get previous values (i+1 is the previous bar in our iteration)
          double longStopPrev  = longStopArr[i + 1];
@@ -320,7 +423,7 @@ bool CalculateChandelierExit(int &dir1, int &dir2, bool &buySignal, bool &sellSi
       }
       else
       {
-         // First bar (oldest) - initialize
+         // First valid bar (oldest) - initialize
          longStopArr[i]  = longStopRaw;
          shortStopArr[i] = shortStopRaw;
          dirArr[i]       = 1;  // Default direction
@@ -329,14 +432,15 @@ bool CalculateChandelierExit(int &dir1, int &dir2, bool &buySignal, bool &sellSi
 
    // Extract directions for bar 1 and bar 2 (previous closed candles)
    // Bar 0 = current (not closed yet)
-   // Bar 1 = last closed candle (this is where we detect signals)
+   // Bar 1 = last closed candle
    // Bar 2 = candle before that
 
-   dir1 = dirArr[1];  // Direction at bar 1
-   dir2 = dirArr[2];  // Direction at bar 2
+   dir1 = dirArr[1];
+   dir2 = dirArr[2];
 
-   // Signal detection (PineScript: buySignal = dir == 1 and dir[1] == -1)
-   // At bar 1: we check if dir[1]==1 and dir[2]==-1
+   // Signal detection
+   // PineScript: buySignal = dir == 1 and dir[1] == -1
+   // At bar 1: dir[1]=1 means dirArr[1]=1, dir[2]=-1 means dirArr[2]=-1
    buySignal  = (dir1 == 1  && dir2 == -1);
    sellSignal = (dir1 == -1 && dir2 == 1);
 
@@ -426,14 +530,12 @@ bool ClosePosition()
    if(ticket == 0)
       return false;
 
-   // Attempt to close
    if(!g_trade.PositionClose(ticket))
    {
       Print("PositionClose failed: ", g_trade.ResultRetcode(), " - ", g_trade.ResultRetcodeDescription());
       return false;
    }
 
-   // Verify close was successful
    uint retcode = g_trade.ResultRetcode();
    if(retcode != TRADE_RETCODE_DONE && retcode != TRADE_RETCODE_DONE_PARTIAL)
    {
@@ -445,32 +547,14 @@ bool ClosePosition()
 }
 
 //+------------------------------------------------------------------+
-//| Calculate pip value for current symbol                            |
-//| Handles Forex, JPY pairs, Gold, Indices correctly                 |
+//| Normalize price to valid tick size multiple                       |
 //+------------------------------------------------------------------+
-double GetPipValue()
+double NormalizeToTick(double price)
 {
-   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
-   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+   if(g_tickSize <= 0)
+      return NormalizeDouble(price, g_digits);
 
-   // Standard forex pairs (5 digits: EURUSD, GBPUSD, etc.)
-   if(digits == 5 || digits == 3)
-      return point * 10;
-
-   // JPY pairs (3 digits) or 2-digit symbols
-   if(digits == 2)
-      return point * 10;  // For XAUUSD: 0.01 * 10 = 0.1
-
-   // 4-digit forex (old style)
-   if(digits == 4)
-      return point;
-
-   // Indices or other
-   if(digits == 1)
-      return point * 10;
-
-   // Default fallback
-   return point * 10;
+   return NormalizeDouble(MathRound(price / g_tickSize) * g_tickSize, g_digits);
 }
 
 //+------------------------------------------------------------------+
@@ -486,45 +570,62 @@ int RandomInRange(int minVal, int maxVal)
 
 //+------------------------------------------------------------------+
 //| Open trade with random TP/SL                                      |
+//| Uses tick-based pip model for broker safety                       |
 //+------------------------------------------------------------------+
 bool OpenTrade(ENUM_ORDER_TYPE orderType)
 {
-   double pip = GetPipValue();
-   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
-
-   // Generate random TP and SL
+   // Generate random TP and SL in pips
    int tpPips = RandomInRange(TP_Min_Pips, TP_Max_Pips);
    int slPips = RandomInRange(SL_Min_Pips, SL_Max_Pips);
+
+   // Convert pips to price distance using broker-safe pip size
+   double tpDistance = tpPips * g_pipSize;
+   double slDistance = slPips * g_pipSize;
 
    double price, sl, tp;
 
    if(orderType == ORDER_TYPE_BUY)
    {
       price = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-      sl = NormalizeDouble(price - slPips * pip, digits);
-      tp = NormalizeDouble(price + tpPips * pip, digits);
+      sl = NormalizeToTick(price - slDistance);
+      tp = NormalizeToTick(price + tpDistance);
    }
    else
    {
       price = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-      sl = NormalizeDouble(price + slPips * pip, digits);
-      tp = NormalizeDouble(price - tpPips * pip, digits);
+      sl = NormalizeToTick(price + slDistance);
+      tp = NormalizeToTick(price - tpDistance);
    }
 
-   // Validate stops
-   double minStop = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-   if(MathAbs(price - sl) < minStop || MathAbs(price - tp) < minStop)
+   // Validate against minimum stop level
+   long stopLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL);
+   double minStopDistance = stopLevel * SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+
+   if(MathAbs(price - sl) < minStopDistance)
    {
-      Print("Warning: SL/TP too close to price, adjusting...");
+      Print("Warning: SL distance below minimum, adjusting");
+      if(orderType == ORDER_TYPE_BUY)
+         sl = NormalizeToTick(price - minStopDistance - g_tickSize);
+      else
+         sl = NormalizeToTick(price + minStopDistance + g_tickSize);
+   }
+
+   if(MathAbs(price - tp) < minStopDistance)
+   {
+      Print("Warning: TP distance below minimum, adjusting");
+      if(orderType == ORDER_TYPE_BUY)
+         tp = NormalizeToTick(price + minStopDistance + g_tickSize);
+      else
+         tp = NormalizeToTick(price - minStopDistance - g_tickSize);
    }
 
    // Execute trade
    bool result = false;
 
    if(orderType == ORDER_TYPE_BUY)
-      result = g_trade.Buy(LotSize, _Symbol, price, sl, tp, "");  // Empty comment
+      result = g_trade.Buy(LotSize, _Symbol, price, sl, tp, "");
    else
-      result = g_trade.Sell(LotSize, _Symbol, price, sl, tp, ""); // Empty comment
+      result = g_trade.Sell(LotSize, _Symbol, price, sl, tp, "");
 
    if(!result)
    {
@@ -532,7 +633,6 @@ bool OpenTrade(ENUM_ORDER_TYPE orderType)
       return false;
    }
 
-   // Verify execution
    uint retcode = g_trade.ResultRetcode();
    if(retcode != TRADE_RETCODE_DONE && retcode != TRADE_RETCODE_DONE_PARTIAL)
    {
