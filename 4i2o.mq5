@@ -1,16 +1,16 @@
 //+------------------------------------------------------------------+
 //|                                                          4i2o.mq5 |
-//|                                                        Version 1.4 |
+//|                                                        Version 1.5 |
 //|                                     Chandelier Exit + RSI Filter   |
 //|                                                                    |
-//|  v1.4 FIXES:                                                       |
-//|  - Pip model: 1 pip = SYMBOL_TRADE_TICK_SIZE (no multiplication)  |
-//|  - Entry timing: 1 closed bar delay after CE signal (TV match)     |
-//|  - Signal validation: must match current CE state                  |
+//|  v1.5 FIXES:                                                       |
+//|  - Reverted to bar 1/2 signal detection (v1.4 was too delayed)    |
+//|  - Kept currentDir validation to prevent false signals            |
+//|  - Pip model: 1 pip = SYMBOL_TRADE_TICK_SIZE                      |
 //+------------------------------------------------------------------+
 #property copyright "4i2o"
 #property link      ""
-#property version   "1.4"
+#property version   "1.5"
 #property strict
 
 #include <Trade/Trade.mqh>
@@ -101,7 +101,7 @@ int OnInit()
 
    MathSrand((int)GetTickCount());
 
-   Print("=== 4i2o EA v1.4 Initialized ===");
+   Print("=== 4i2o EA v1.5 Initialized ===");
    Print("CE: Period=", CE_ATR_Period, " Mult=", CE_ATR_Multiplier, " UseClose=", CE_UseClosePrice);
    Print("RSI: Period=", RSI_Period, " Threshold=", RSI_Threshold);
    Print("Pip Model: 1 pip = ", g_pipSize, " (tickSize)");
@@ -161,20 +161,20 @@ void OnTick()
       return;
 
    int currentDir = 0;
-   int dir2 = 0, dir3 = 0;
+   int dir1 = 0, dir2 = 0;
    bool buySignal = false, sellSignal = false;
 
-   if(!CalculateChandelierExit(currentDir, dir2, dir3, buySignal, sellSignal))
+   if(!CalculateChandelierExit(currentDir, dir1, dir2, buySignal, sellSignal))
       return;
 
-   // RSI from bar 2 (same bar as CE signal, fully closed)
-   double rsiValue = GetRSI(2);
+   // RSI from bar 1 (same bar as CE signal, fully closed)
+   double rsiValue = GetRSI(1);
    if(rsiValue < 0)
       return;
 
    if(EnableDebugLog)
    {
-      Print("CE State: currentDir=", currentDir, " dir2=", dir2, " dir3=", dir3,
+      Print("CE State: currentDir=", currentDir, " dir1=", dir1, " dir2=", dir2,
             " buySignal=", buySignal, " sellSignal=", sellSignal, " RSI=", rsiValue);
    }
 
@@ -219,7 +219,7 @@ void OnTick()
    if(buySignal && rsiValue > RSI_Threshold && currentDir == 1)
    {
       if(EnableDebugLog)
-         Print(">>> Opening BUY: RSI=", rsiValue, " dir2=", dir2, " dir3=", dir3);
+         Print(">>> Opening BUY: RSI=", rsiValue, " dir1=", dir1, " dir2=", dir2);
 
       if(OpenTrade(ORDER_TYPE_BUY))
          g_lastSignalBar = currentBar;
@@ -228,7 +228,7 @@ void OnTick()
    else if(sellSignal && rsiValue < RSI_Threshold && currentDir == -1)
    {
       if(EnableDebugLog)
-         Print(">>> Opening SELL: RSI=", rsiValue, " dir2=", dir2, " dir3=", dir3);
+         Print(">>> Opening SELL: RSI=", rsiValue, " dir1=", dir1, " dir2=", dir2);
 
       if(OpenTrade(ORDER_TYPE_SELL))
          g_lastSignalBar = currentBar;
@@ -249,19 +249,21 @@ bool IsNewBar()
 }
 
 //+------------------------------------------------------------------+
-//| Calculate Chandelier Exit - v1.4                                  |
+//| Calculate Chandelier Exit - v1.5                                  |
 //|                                                                    |
 //| Returns:                                                           |
-//| - currentDir: current CE direction (1=long, -1=short)             |
-//| - dir2, dir3: directions at bar 2 and bar 3                       |
-//| - buySignal: true if direction flipped to long at bar 2          |
-//| - sellSignal: true if direction flipped to short at bar 2        |
+//| - currentDir: current CE direction at bar 1 (1=long, -1=short)   |
+//| - dir1, dir2: directions at bar 1 and bar 2                       |
+//| - buySignal: true if direction flipped to long at bar 1          |
+//| - sellSignal: true if direction flipped to short at bar 1        |
+//|                                                                    |
+//| v1.5: Reverted to bar 1/2 (v1.4 bar 2/3 was too delayed)         |
 //+------------------------------------------------------------------+
-bool CalculateChandelierExit(int &currentDir, int &dir2, int &dir3, bool &buySignal, bool &sellSignal)
+bool CalculateChandelierExit(int &currentDir, int &dir1, int &dir2, bool &buySignal, bool &sellSignal)
 {
-   int minBarsForSignal = 4;
+   int minBarsForSignal = 3;  // bars 0, 1, 2
    int windowRequirement = CE_ATR_Period;
-   int trailingWarmup = 50;  // Increased for better stability
+   int trailingWarmup = 50;
 
    int barsNeeded = minBarsForSignal + windowRequirement + trailingWarmup;
    int totalBars = Bars(_Symbol, PERIOD_CURRENT);
@@ -362,12 +364,14 @@ bool CalculateChandelierExit(int &currentDir, int &dir2, int &dir3, bool &buySig
    // Return current direction (bar 1 = last fully closed)
    currentDir = dirArr[1];
 
-   // Signal detection uses bar 2 and bar 3 (one extra bar delay for confirmation)
-   dir2 = dirArr[2];
-   dir3 = dirArr[3];
+   // v1.5: Signal detection uses bar 1 and bar 2 (immediate detection)
+   // This matches TradingView timing: signal at bar N, entry at open of bar N+1
+   dir1 = dirArr[1];  // Last closed bar
+   dir2 = dirArr[2];  // Bar before that
 
-   buySignal  = (dir2 == 1  && dir3 == -1);
-   sellSignal = (dir2 == -1 && dir3 == 1);
+   // Signal: direction changed at bar 1
+   buySignal  = (dir1 == 1  && dir2 == -1);
+   sellSignal = (dir1 == -1 && dir2 == 1);
 
    return true;
 }
