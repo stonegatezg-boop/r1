@@ -1,15 +1,16 @@
 //+------------------------------------------------------------------+
 //|                                                          4i2o.mq5 |
-//|                                                        Version 1.3 |
+//|                                                        Version 1.4 |
 //|                                     Chandelier Exit + RSI Filter   |
 //|                                                                    |
-//|  v1.3 FIXES:                                                       |
-//|  - CE window: EXACTLY CE_ATR_Period bars, no partial windows       |
-//|  - Pip model: SYMBOL_TRADE_TICK_SIZE based, broker-safe            |
+//|  v1.4 FIXES:                                                       |
+//|  - Pip model: 1 pip = SYMBOL_TRADE_TICK_SIZE (no multiplication)  |
+//|  - Entry timing: 1 closed bar delay after CE signal (TV match)     |
+//|  - Signal validation: must match current CE state                  |
 //+------------------------------------------------------------------+
 #property copyright "4i2o"
 #property link      ""
-#property version   "1.3"
+#property version   "1.4"
 #property strict
 
 #include <Trade/Trade.mqh>
@@ -28,23 +29,26 @@ input double   RSI_Threshold       = 50.0;     // RSI Threshold (BUY>50, SELL<50
 
 input group "=== Trade Settings ==="
 input double   LotSize             = 0.01;     // Lot Size
-input int      TP_Min_Pips         = 95;       // Take Profit Min (pips)
-input int      TP_Max_Pips         = 105;      // Take Profit Max (pips)
-input int      SL_Min_Pips         = 1500;     // Stop Loss Min (pips)
-input int      SL_Max_Pips         = 1600;     // Stop Loss Max (pips)
+input int      TP_Min_Pips         = 95;       // Take Profit Min (MT5 pips)
+input int      TP_Max_Pips         = 105;      // Take Profit Max (MT5 pips)
+input int      SL_Min_Pips         = 1500;     // Stop Loss Min (MT5 pips)
+input int      SL_Max_Pips         = 1600;     // Stop Loss Max (MT5 pips)
 input bool     CloseOnOppositeSignal = true;   // Close on Opposite CE Signal
 input ulong    MagicNumber         = 412024;   // Magic Number
+
+input group "=== Debug ==="
+input bool     EnableDebugLog     = false;    // Enable Debug Logging
 
 //+------------------------------------------------------------------+
 //| Global Variables                                                  |
 //+------------------------------------------------------------------+
 datetime g_lastBarTime      = 0;
-datetime g_lastSignalBar    = 0;        // Duplicate signal protection
+datetime g_lastSignalBar    = 0;
 int      g_atrHandle        = INVALID_HANDLE;
 int      g_rsiHandle        = INVALID_HANDLE;
 CTrade   g_trade;
 
-// Cached tick/pip values (initialized in OnInit)
+// Tick/pip model (v1.4: NO multiplication)
 double   g_tickSize         = 0;
 double   g_pipSize          = 0;
 int      g_digits           = 0;
@@ -54,14 +58,12 @@ int      g_digits           = 0;
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   // Validate inputs
    if(CE_ATR_Period <= 0 || RSI_Period <= 0)
    {
       Print("Error: Invalid period parameters");
       return(INIT_PARAMETERS_INCORRECT);
    }
 
-   // Initialize ATR indicator handle
    g_atrHandle = iATR(_Symbol, PERIOD_CURRENT, CE_ATR_Period);
    if(g_atrHandle == INVALID_HANDLE)
    {
@@ -69,7 +71,6 @@ int OnInit()
       return(INIT_FAILED);
    }
 
-   // Initialize RSI indicator handle
    g_rsiHandle = iRSI(_Symbol, PERIOD_CURRENT, RSI_Period, PRICE_CLOSE);
    if(g_rsiHandle == INVALID_HANDLE)
    {
@@ -77,7 +78,6 @@ int OnInit()
       return(INIT_FAILED);
    }
 
-   // Wait for indicator data to be ready
    int waitCount = 0;
    while(BarsCalculated(g_atrHandle) <= 0 || BarsCalculated(g_rsiHandle) <= 0)
    {
@@ -90,26 +90,29 @@ int OnInit()
       }
    }
 
-   // Initialize tick/pip model (broker-safe)
    if(!InitializeTickModel())
    {
       Print("Error: Failed to initialize tick model");
       return(INIT_FAILED);
    }
 
-   // Setup trade object
    g_trade.SetExpertMagicNumber(MagicNumber);
    g_trade.SetDeviationInPoints(10);
 
-   // Initialize random seed
    MathSrand((int)GetTickCount());
+
+   Print("=== 4i2o EA v1.4 Initialized ===");
+   Print("CE: Period=", CE_ATR_Period, " Mult=", CE_ATR_Multiplier, " UseClose=", CE_UseClosePrice);
+   Print("RSI: Period=", RSI_Period, " Threshold=", RSI_Threshold);
+   Print("Pip Model: 1 pip = ", g_pipSize, " (tickSize)");
 
    return(INIT_SUCCEEDED);
 }
 
 //+------------------------------------------------------------------+
-//| Initialize tick/pip model using SYMBOL_TRADE_TICK_SIZE            |
-//| This is broker-safe and works for Forex, XAUUSD, Indices          |
+//| Initialize tick/pip model - v1.4 FIX                              |
+//|                                                                    |
+//| CRITICAL: 1 pip = SYMBOL_TRADE_TICK_SIZE (NO multiplication)      |
 //+------------------------------------------------------------------+
 bool InitializeTickModel()
 {
@@ -117,7 +120,6 @@ bool InitializeTickModel()
    g_digits   = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
 
-   // Validate tick size
    if(g_tickSize <= 0)
    {
       Print("Warning: SYMBOL_TRADE_TICK_SIZE invalid, using SYMBOL_POINT");
@@ -130,46 +132,8 @@ bool InitializeTickModel()
       return false;
    }
 
-   //+---------------------------------------------------------------+
-   //| PIP SIZE DEFINITION (broker-safe using tick size)             |
-   //|                                                                |
-   //| Industry standard:                                             |
-   //| - Sub-pip pricing (5/3 digits): pip = 10 * tick               |
-   //| - Standard pricing (4/2 digits): pip = tick or 10 * tick      |
-   //|                                                                |
-   //| For XAUUSD (2 digits):                                         |
-   //| - tick = 0.01 typically                                        |
-   //| - pip = 0.1 (10 ticks) - industry convention                  |
-   //|                                                                |
-   //| This model ensures SL/TP are always valid tick multiples      |
-   //+---------------------------------------------------------------+
-
-   if(g_digits == 5 || g_digits == 3)
-   {
-      // Forex sub-pip pricing: EURUSD (5), USDJPY (3)
-      // tick = 0.00001 or 0.001, pip = 10 * tick
-      g_pipSize = g_tickSize * 10;
-   }
-   else if(g_digits == 2)
-   {
-      // Metals (XAUUSD): tick = 0.01, pip = 0.1
-      g_pipSize = g_tickSize * 10;
-   }
-   else if(g_digits == 4)
-   {
-      // Old-style forex: tick = pip
-      g_pipSize = g_tickSize;
-   }
-   else if(g_digits == 1)
-   {
-      // Some indices: tick = pip typically
-      g_pipSize = g_tickSize;
-   }
-   else
-   {
-      // Default: 10 * tick
-      g_pipSize = g_tickSize * 10;
-   }
+   // v1.4 FIX: 1 pip = 1 tick (MT5 native, NO *10)
+   g_pipSize = g_tickSize;
 
    Print("Tick Model: tickSize=", g_tickSize, " pipSize=", g_pipSize, " digits=", g_digits);
 
@@ -193,23 +157,27 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   // Execute logic ONLY at the beginning of a new candle
    if(!IsNewBar())
       return;
 
-   // Calculate CE signals on closed candles
-   int dir1 = 0, dir2 = 0;
+   int currentDir = 0;
+   int dir2 = 0, dir3 = 0;
    bool buySignal = false, sellSignal = false;
 
-   if(!CalculateChandelierExit(dir1, dir2, buySignal, sellSignal))
+   if(!CalculateChandelierExit(currentDir, dir2, dir3, buySignal, sellSignal))
       return;
 
-   // Get RSI value from previous closed candle (bar index 1)
-   double rsiValue = GetRSI(1);
+   // RSI from bar 2 (same bar as CE signal, fully closed)
+   double rsiValue = GetRSI(2);
    if(rsiValue < 0)
       return;
 
-   // Check for existing position (filtered by Symbol AND MagicNumber)
+   if(EnableDebugLog)
+   {
+      Print("CE State: currentDir=", currentDir, " dir2=", dir2, " dir3=", dir3,
+            " buySignal=", buySignal, " sellSignal=", sellSignal, " RSI=", rsiValue);
+   }
+
    bool hasPosition = HasOpenPosition();
 
    // Handle opposite signal closing
@@ -217,37 +185,51 @@ void OnTick()
    {
       int posType = GetPositionType();
 
-      if(posType == POSITION_TYPE_BUY && sellSignal)
+      // Close only if CURRENT direction confirms the signal
+      if(posType == POSITION_TYPE_BUY && sellSignal && currentDir == -1)
       {
          if(ClosePosition())
             hasPosition = false;
       }
-      else if(posType == POSITION_TYPE_SELL && buySignal)
+      else if(posType == POSITION_TYPE_SELL && buySignal && currentDir == 1)
       {
          if(ClosePosition())
             hasPosition = false;
       }
    }
 
-   // No new trades if position exists
    if(hasPosition)
       return;
 
-   // Duplicate signal protection: same bar cannot trigger multiple trades
    datetime currentBar = iTime(_Symbol, PERIOD_CURRENT, 0);
    if(g_lastSignalBar == currentBar)
       return;
 
-   // Entry conditions
-   // BUY: CE buy signal + RSI > 50
-   if(buySignal && rsiValue > RSI_Threshold)
+   //+---------------------------------------------------------------+
+   //| SIGNAL VALIDATION (v1.4)                                       |
+   //|                                                                 |
+   //| Additional check: current direction must match signal          |
+   //| - BUY signal requires currentDir == 1 (we're in uptrend)      |
+   //| - SELL signal requires currentDir == -1 (we're in downtrend)  |
+   //|                                                                 |
+   //| This prevents false signals when CE state doesn't match       |
+   //+---------------------------------------------------------------+
+
+   // BUY: signal + RSI > 50 + current direction is LONG
+   if(buySignal && rsiValue > RSI_Threshold && currentDir == 1)
    {
+      if(EnableDebugLog)
+         Print(">>> Opening BUY: RSI=", rsiValue, " dir2=", dir2, " dir3=", dir3);
+
       if(OpenTrade(ORDER_TYPE_BUY))
          g_lastSignalBar = currentBar;
    }
-   // SELL: CE sell signal + RSI < 50
-   else if(sellSignal && rsiValue < RSI_Threshold)
+   // SELL: signal + RSI < 50 + current direction is SHORT
+   else if(sellSignal && rsiValue < RSI_Threshold && currentDir == -1)
    {
+      if(EnableDebugLog)
+         Print(">>> Opening SELL: RSI=", rsiValue, " dir2=", dir2, " dir3=", dir3);
+
       if(OpenTrade(ORDER_TYPE_SELL))
          g_lastSignalBar = currentBar;
    }
@@ -267,50 +249,19 @@ bool IsNewBar()
 }
 
 //+------------------------------------------------------------------+
-//| Calculate Chandelier Exit - EXACT PineScript replication          |
+//| Calculate Chandelier Exit - v1.4                                  |
 //|                                                                    |
-//| PineScript logic:                                                  |
-//| longStop = (useClose ? highest(close,len) : highest(len)) - atr   |
-//| longStopPrev = nz(longStop[1], longStop)                          |
-//| longStop := close[1] > longStopPrev ? max(longStop, longStopPrev) : longStop |
-//|                                                                    |
-//| shortStop = (useClose ? lowest(close,len) : lowest(len)) + atr    |
-//| shortStopPrev = nz(shortStop[1], shortStop)                       |
-//| shortStop := close[1] < shortStopPrev ? min(shortStop, shortStopPrev) : shortStop |
-//|                                                                    |
-//| dir := close > shortStopPrev ? 1 : close < longStopPrev ? -1 : dir|
-//|                                                                    |
-//| buySignal = dir == 1 and dir[1] == -1                             |
-//| sellSignal = dir == -1 and dir[1] == 1                            |
-//|                                                                    |
-//| v1.3 FIX: Window is EXACTLY CE_ATR_Period bars, no partial windows|
+//| Returns:                                                           |
+//| - currentDir: current CE direction (1=long, -1=short)             |
+//| - dir2, dir3: directions at bar 2 and bar 3                       |
+//| - buySignal: true if direction flipped to long at bar 2          |
+//| - sellSignal: true if direction flipped to short at bar 2        |
 //+------------------------------------------------------------------+
-bool CalculateChandelierExit(int &dir1, int &dir2, bool &buySignal, bool &sellSignal)
+bool CalculateChandelierExit(int &currentDir, int &dir2, int &dir3, bool &buySignal, bool &sellSignal)
 {
-   //+---------------------------------------------------------------+
-   //| WINDOW CALCULATION REQUIREMENT (PineScript equivalent)        |
-   //|                                                                |
-   //| highest(close, length) in PineScript:                         |
-   //| - Uses EXACTLY `length` bars                                  |
-   //| - Includes current bar (index 0 in Pine, index i in our loop) |
-   //| - Window: [current, current-1, ..., current-(length-1)]       |
-   //|                                                                |
-   //| With ArraySetAsSeries(true):                                  |
-   //| - Index 0 = newest bar (current)                              |
-   //| - Index i = bar i periods ago                                 |
-   //| - For bar i, window is [i, i+1, ..., i+length-1]              |
-   //|                                                                |
-   //| CRITICAL: If i + length - 1 >= barsNeeded, SKIP that bar      |
-   //| This ensures NO partial windows and NO look-ahead             |
-   //+---------------------------------------------------------------+
-
-   // Calculate minimum bars required
-   // We need: bar 0 (current), bar 1, bar 2 for signal detection
-   // Plus enough history for CE_ATR_Period window at bar 2
-   // Plus trailing calculation warmup
-   int minBarsForSignal = 3;  // bars 0, 1, 2
+   int minBarsForSignal = 4;
    int windowRequirement = CE_ATR_Period;
-   int trailingWarmup = 30;   // Extra bars for trailing to stabilize
+   int trailingWarmup = 50;  // Increased for better stability
 
    int barsNeeded = minBarsForSignal + windowRequirement + trailingWarmup;
    int totalBars = Bars(_Symbol, PERIOD_CURRENT);
@@ -318,13 +269,11 @@ bool CalculateChandelierExit(int &dir1, int &dir2, bool &buySignal, bool &sellSi
    if(totalBars < barsNeeded)
       return false;
 
-   // Get ATR values via CopyBuffer
    double atrBuffer[];
    ArraySetAsSeries(atrBuffer, true);
    if(CopyBuffer(g_atrHandle, 0, 0, barsNeeded, atrBuffer) < barsNeeded)
       return false;
 
-   // Get price data
    double closeBuffer[], highBuffer[], lowBuffer[];
    ArraySetAsSeries(closeBuffer, true);
    ArraySetAsSeries(highBuffer, true);
@@ -337,7 +286,6 @@ bool CalculateChandelierExit(int &dir1, int &dir2, bool &buySignal, bool &sellSi
    if(CopyLow(_Symbol, PERIOD_CURRENT, 0, barsNeeded, lowBuffer) < barsNeeded)
       return false;
 
-   // Arrays to store calculated values
    double longStopArr[], shortStopArr[];
    int    dirArr[];
    ArrayResize(longStopArr, barsNeeded);
@@ -347,102 +295,79 @@ bool CalculateChandelierExit(int &dir1, int &dir2, bool &buySignal, bool &sellSi
    ArrayInitialize(shortStopArr, 0);
    ArrayInitialize(dirArr, 0);
 
-   // Calculate the first valid bar index (oldest bar with full window)
-   // For bar i, we need indices i to i + CE_ATR_Period - 1
-   // So: i + CE_ATR_Period - 1 < barsNeeded
-   // Therefore: i < barsNeeded - CE_ATR_Period + 1
-   int firstValidBar = barsNeeded - CE_ATR_Period;  // Last bar index with full window
+   int firstValidBar = barsNeeded - CE_ATR_Period;
 
-   // Iterate from oldest valid bar to newest (firstValidBar down to 0)
+   // Process from oldest to newest
    for(int i = firstValidBar; i >= 0; i--)
    {
-      // Calculate ATR component
       double atr = CE_ATR_Multiplier * atrBuffer[i];
 
-      //+------------------------------------------------------------+
-      //| FIXED WINDOW: EXACTLY CE_ATR_Period bars                   |
-      //| From index i to i + CE_ATR_Period - 1 (inclusive)          |
-      //| This matches PineScript highest(close, length) exactly     |
-      //+------------------------------------------------------------+
-
+      // Calculate highest/lowest over EXACTLY CE_ATR_Period bars
       double highestVal = -DBL_MAX;
       double lowestVal  = DBL_MAX;
 
-      // Loop through EXACTLY CE_ATR_Period bars
-      int windowEnd = i + CE_ATR_Period;  // Exclusive end
-
-      for(int j = i; j < windowEnd; j++)
+      for(int j = i; j < i + CE_ATR_Period; j++)
       {
          if(CE_UseClosePrice)
          {
-            // PineScript: highest(close, length), lowest(close, length)
             if(closeBuffer[j] > highestVal) highestVal = closeBuffer[j];
             if(closeBuffer[j] < lowestVal)  lowestVal = closeBuffer[j];
          }
          else
          {
-            // PineScript: highest(high, length), lowest(low, length)
             if(highBuffer[j] > highestVal) highestVal = highBuffer[j];
             if(lowBuffer[j] < lowestVal)   lowestVal = lowBuffer[j];
          }
       }
 
-      // Calculate raw stop values
       double longStopRaw  = highestVal - atr;
       double shortStopRaw = lowestVal + atr;
 
-      // Apply trailing logic
       if(i < firstValidBar)
       {
-         // Get previous values (i+1 is the previous bar in our iteration)
          double longStopPrev  = longStopArr[i + 1];
          double shortStopPrev = shortStopArr[i + 1];
-         double closePrev     = closeBuffer[i + 1];  // close[1] in Pine context
-         double closeCurrent  = closeBuffer[i];      // close in Pine context
+         double closePrev     = closeBuffer[i + 1];
+         double closeCurrent  = closeBuffer[i];
          int    dirPrev       = dirArr[i + 1];
 
-         // PineScript: longStop := close[1] > longStopPrev ? max(longStop, longStopPrev) : longStop
+         // Trailing stop logic (matches PineScript exactly)
          if(closePrev > longStopPrev)
             longStopArr[i] = MathMax(longStopRaw, longStopPrev);
          else
             longStopArr[i] = longStopRaw;
 
-         // PineScript: shortStop := close[1] < shortStopPrev ? min(shortStop, shortStopPrev) : shortStop
          if(closePrev < shortStopPrev)
             shortStopArr[i] = MathMin(shortStopRaw, shortStopPrev);
          else
             shortStopArr[i] = shortStopRaw;
 
-         // PineScript: dir := close > shortStopPrev ? 1 : close < longStopPrev ? -1 : dir
+         // Direction logic (matches PineScript exactly)
+         // dir := close > shortStopPrev ? 1 : close < longStopPrev ? -1 : dir
          if(closeCurrent > shortStopPrev)
             dirArr[i] = 1;
          else if(closeCurrent < longStopPrev)
             dirArr[i] = -1;
          else
-            dirArr[i] = dirPrev;  // Persist previous direction
+            dirArr[i] = dirPrev;
       }
       else
       {
-         // First valid bar (oldest) - initialize
          longStopArr[i]  = longStopRaw;
          shortStopArr[i] = shortStopRaw;
-         dirArr[i]       = 1;  // Default direction
+         dirArr[i]       = 1;
       }
    }
 
-   // Extract directions for bar 1 and bar 2 (previous closed candles)
-   // Bar 0 = current (not closed yet)
-   // Bar 1 = last closed candle
-   // Bar 2 = candle before that
+   // Return current direction (bar 1 = last fully closed)
+   currentDir = dirArr[1];
 
-   dir1 = dirArr[1];
+   // Signal detection uses bar 2 and bar 3 (one extra bar delay for confirmation)
    dir2 = dirArr[2];
+   dir3 = dirArr[3];
 
-   // Signal detection
-   // PineScript: buySignal = dir == 1 and dir[1] == -1
-   // At bar 1: dir[1]=1 means dirArr[1]=1, dir[2]=-1 means dirArr[2]=-1
-   buySignal  = (dir1 == 1  && dir2 == -1);
-   sellSignal = (dir1 == -1 && dir2 == 1);
+   buySignal  = (dir2 == 1  && dir3 == -1);
+   sellSignal = (dir2 == -1 && dir3 == 1);
 
    return true;
 }
@@ -569,16 +494,14 @@ int RandomInRange(int minVal, int maxVal)
 }
 
 //+------------------------------------------------------------------+
-//| Open trade with random TP/SL                                      |
-//| Uses tick-based pip model for broker safety                       |
+//| Open trade with random TP/SL - v1.4 pip model                     |
 //+------------------------------------------------------------------+
 bool OpenTrade(ENUM_ORDER_TYPE orderType)
 {
-   // Generate random TP and SL in pips
    int tpPips = RandomInRange(TP_Min_Pips, TP_Max_Pips);
    int slPips = RandomInRange(SL_Min_Pips, SL_Max_Pips);
 
-   // Convert pips to price distance using broker-safe pip size
+   // v1.4: pipSize = tickSize (no multiplication)
    double tpDistance = tpPips * g_pipSize;
    double slDistance = slPips * g_pipSize;
 
@@ -597,7 +520,11 @@ bool OpenTrade(ENUM_ORDER_TYPE orderType)
       tp = NormalizeToTick(price - tpDistance);
    }
 
-   // Validate against minimum stop level
+   // Log trade details
+   Print("Trade: ", (orderType == ORDER_TYPE_BUY ? "BUY" : "SELL"),
+         " Price=", price, " TP=", tp, " (", tpPips, " pips)",
+         " SL=", sl, " (", slPips, " pips)");
+
    long stopLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL);
    double minStopDistance = stopLevel * SymbolInfoDouble(_Symbol, SYMBOL_POINT);
 
@@ -619,7 +546,6 @@ bool OpenTrade(ENUM_ORDER_TYPE orderType)
          tp = NormalizeToTick(price - minStopDistance - g_tickSize);
    }
 
-   // Execute trade
    bool result = false;
 
    if(orderType == ORDER_TYPE_BUY)
