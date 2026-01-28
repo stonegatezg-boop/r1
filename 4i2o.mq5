@@ -1,11 +1,11 @@
 //+------------------------------------------------------------------+
 //|                                                          4i2o.mq5 |
-//|                                                         v2.1      |
-//|                     EA for Chandelier Exit indicator signals      |
+//|                                                         v3.0      |
+//|          EA for CE signals filtered by VIKAS SuperTrend          |
 //+------------------------------------------------------------------+
 #property copyright ""
 #property link      ""
-#property version   "2.10"
+#property version   "3.00"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -25,6 +25,35 @@ double currentStopLoss = 0;
 int currentPositionType = 0;  // 1 = buy, -1 = sell, 0 = none
 
 //+------------------------------------------------------------------+
+//| Check if within trading hours (Sunday 00:01 - Friday 10:00)      |
+//+------------------------------------------------------------------+
+bool IsWithinTradingHours()
+{
+   MqlDateTime dt;
+   TimeCurrent(dt);
+
+   // Sunday = 0, Monday = 1, ..., Friday = 5, Saturday = 6
+
+   // Saturday - no trading
+   if(dt.day_of_week == 6)
+      return false;
+
+   // Sunday - after 00:01
+   if(dt.day_of_week == 0)
+      return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1));
+
+   // Monday to Thursday - all day
+   if(dt.day_of_week >= 1 && dt.day_of_week <= 4)
+      return true;
+
+   // Friday - before 10:00
+   if(dt.day_of_week == 5)
+      return (dt.hour < 10);
+
+   return false;
+}
+
+//+------------------------------------------------------------------+
 //| Get pip value for the symbol                                     |
 //+------------------------------------------------------------------+
 double GetPipValue()
@@ -32,15 +61,12 @@ double GetPipValue()
    string symbol = _Symbol;
    int digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
 
-   // Forex pairs (5 or 3 digits)
    if(digits == 5 || digits == 3)
       return _Point * 10;
 
-   // Forex pairs (4 or 2 digits)
    if(digits == 4 || digits == 2)
       return _Point;
 
-   // Gold, Silver, Metals (2 digits typically)
    if(StringFind(symbol, "XAU") >= 0 || StringFind(symbol, "GOLD") >= 0)
       return 0.1;
 
@@ -50,14 +76,12 @@ double GetPipValue()
    if(StringFind(symbol, "XPD") >= 0 || StringFind(symbol, "XPT") >= 0)
       return 0.1;
 
-   // Crypto
    if(StringFind(symbol, "BTC") >= 0)
       return 1.0;
 
    if(StringFind(symbol, "ETH") >= 0)
       return 0.1;
 
-   // Default
    if(digits == 1)
       return _Point;
 
@@ -171,6 +195,72 @@ int CheckCESignal(datetime candleTime)
 }
 
 //+------------------------------------------------------------------+
+//| Check VIKAS trend (1 = green/up, -1 = red/down)                  |
+//+------------------------------------------------------------------+
+int CheckVIKASTrend(datetime candleTime)
+{
+   // Check for VIKAS up trend line (green) at this candle time
+   // VIKAS indicator plots UpTrendBuffer when trend == 1, DownTrendBuffer when trend == -1
+
+   // We need to find objects or check buffer values
+   // Since VIKAS draws lines, we check which line has a value at this time
+
+   string upTrendName = "VIKAS_BuyArrow_" + IntegerToString(candleTime);
+   string dnTrendName = "VIKAS_SellArrow_" + IntegerToString(candleTime);
+
+   // If there's a recent buy arrow from VIKAS, trend is up
+   if(ObjectFind(0, upTrendName) >= 0)
+      return 1;
+
+   // If there's a recent sell arrow from VIKAS, trend is down
+   if(ObjectFind(0, dnTrendName) >= 0)
+      return -1;
+
+   // Check the line values directly by finding the plot objects
+   // We need to read the indicator buffers instead
+   // Let's check which line is visible (has non-empty value) at current bar
+
+   int barIndex = iBarShift(_Symbol, PERIOD_M5, candleTime);
+   if(barIndex < 0) barIndex = 0;
+
+   // Find the VIKAS indicator on the chart and read its buffers
+   // Buffer 0 = Up Trend (green), Buffer 1 = Down Trend (red)
+
+   // Search for indicator by name
+   int total = ChartIndicatorsTotal(0, 0);
+   for(int i = 0; i < total; i++)
+   {
+      string name = ChartIndicatorName(0, 0, i);
+      if(StringFind(name, "VIKAS") >= 0)
+      {
+         int handle = ChartIndicatorGet(0, 0, name);
+         if(handle != INVALID_HANDLE)
+         {
+            double upValue[1], dnValue[1];
+
+            if(CopyBuffer(handle, 0, barIndex, 1, upValue) > 0 &&
+               CopyBuffer(handle, 1, barIndex, 1, dnValue) > 0)
+            {
+               // If up trend has value and down doesn't, trend is up (green)
+               if(upValue[0] != EMPTY_VALUE && upValue[0] != 0 &&
+                  (dnValue[0] == EMPTY_VALUE || dnValue[0] == 0))
+                  return 1;
+
+               // If down trend has value and up doesn't, trend is down (red)
+               if(dnValue[0] != EMPTY_VALUE && dnValue[0] != 0 &&
+                  (upValue[0] == EMPTY_VALUE || upValue[0] == 0))
+                  return -1;
+            }
+         }
+         break;
+      }
+   }
+
+   // Default: no filter (allow trade)
+   return 0;
+}
+
+//+------------------------------------------------------------------+
 //| Check if new bar has formed                                      |
 //+------------------------------------------------------------------+
 bool IsNewBar()
@@ -239,14 +329,12 @@ int OnInit()
    trade.SetDeviationInPoints(50);
    trade.SetTypeFilling(ORDER_FILLING_IOC);
 
-   // Initialize position tracking
    currentPositionType = GetPositionType();
    if(currentPositionType != 0)
    {
       currentTargetProfit = RandomRange(96, 107);
    }
 
-   // Initialize last bar time
    lastBarTime = iTime(_Symbol, PERIOD_M5, 0);
 
    return(INIT_SUCCEEDED);
@@ -264,7 +352,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   // Check for profit target exit (can check every tick)
+   // Check for profit target exit (can check every tick, anytime)
    if(HasOpenPosition())
    {
       double profitPips = GetPositionProfitPips();
@@ -280,15 +368,35 @@ void OnTick()
    {
       if(TimeCurrent() >= pendingExecuteTime)
       {
-         // Verify signal STILL exists (confirmed, not repainted)
-         int verifySignal = CheckCESignal(pendingSignalTime);
-
-         if(verifySignal == pendingSignalType && !HasOpenPosition())
+         // Check trading hours before opening
+         if(IsWithinTradingHours())
          {
-            if(pendingSignalType == 1)
-               OpenBuy();
-            else if(pendingSignalType == -1)
-               OpenSell();
+            // Verify CE signal still exists
+            int verifySignal = CheckCESignal(pendingSignalTime);
+
+            // Verify VIKAS trend alignment
+            int vikasTrend = CheckVIKASTrend(pendingSignalTime);
+
+            if(verifySignal == pendingSignalType && !HasOpenPosition())
+            {
+               // Apply VIKAS filter
+               bool canTrade = false;
+
+               if(pendingSignalType == 1 && vikasTrend == 1)  // CE BUY + VIKAS GREEN
+                  canTrade = true;
+               else if(pendingSignalType == -1 && vikasTrend == -1)  // CE SELL + VIKAS RED
+                  canTrade = true;
+               else if(vikasTrend == 0)  // VIKAS not found, allow trade
+                  canTrade = true;
+
+               if(canTrade)
+               {
+                  if(pendingSignalType == 1)
+                     OpenBuy();
+                  else if(pendingSignalType == -1)
+                     OpenSell();
+               }
+            }
          }
 
          // Reset pending
@@ -299,45 +407,48 @@ void OnTick()
       return;
    }
 
-   // Only check for signals on NEW BAR (first tick after bar close)
+   // Only check for signals on NEW BAR
    if(!IsNewBar())
       return;
 
-   // Now we are on the first tick of a new candle
-   // Check for signals on the PREVIOUS CLOSED candle (bar index 1)
+   // Get previous closed candle time
    datetime prevCandleTime = iTime(_Symbol, PERIOD_M5, 1);
 
-   // Skip if we already processed this candle
+   // Skip if already processed
    if(prevCandleTime <= lastSignalTime)
       return;
 
    int signal = CheckCESignal(prevCandleTime);
 
-   // No signal found
    if(signal == 0)
       return;
 
-   // Signal found - update last signal time
    lastSignalTime = prevCandleTime;
 
-   // If we have an open position, check for opposite signal
+   // If we have an open position, check for opposite signal (can close anytime)
    if(HasOpenPosition())
    {
       if(signal != currentPositionType)
       {
-         // Opposite signal - close position first
+         // Opposite signal - close position
          CloseAllPositions();
 
-         // Set up pending signal for new direction
-         pendingSignalType = signal;
-         pendingSignalTime = prevCandleTime;
-         pendingExecuteTime = TimeCurrent() + RandomRange(1, 3);
+         // Only set up new trade if within trading hours
+         if(IsWithinTradingHours())
+         {
+            pendingSignalType = signal;
+            pendingSignalTime = prevCandleTime;
+            pendingExecuteTime = TimeCurrent() + RandomRange(1, 3);
+         }
       }
-      // Same direction signal - ignore
       return;
    }
 
-   // No position - set up pending entry with human delay
+   // No position - check trading hours before setting up entry
+   if(!IsWithinTradingHours())
+      return;
+
+   // Set up pending entry with human delay
    pendingSignalType = signal;
    pendingSignalTime = prevCandleTime;
    pendingExecuteTime = TimeCurrent() + RandomRange(1, 3);
