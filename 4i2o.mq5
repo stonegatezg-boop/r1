@@ -1,11 +1,11 @@
 //+------------------------------------------------------------------+
 //|                                                          4i2o.mq5 |
-//|                                                         v2.0      |
+//|                                                         v2.1      |
 //|                     EA for Chandelier Exit indicator signals      |
 //+------------------------------------------------------------------+
 #property copyright ""
 #property link      ""
-#property version   "2.00"
+#property version   "2.10"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -16,6 +16,7 @@ input double InpLotSize = 0.01;  // Lot Size
 //--- Global variables
 CTrade trade;
 datetime lastSignalTime = 0;
+datetime lastBarTime = 0;
 datetime pendingSignalTime = 0;
 int pendingSignalType = 0;  // 1 = buy, -1 = sell
 datetime pendingExecuteTime = 0;
@@ -69,14 +70,6 @@ double GetPipValue()
 int RandomRange(int min, int max)
 {
    return min + (MathRand() % (max - min + 1));
-}
-
-//+------------------------------------------------------------------+
-//| Generate random double in range [min, max]                       |
-//+------------------------------------------------------------------+
-double RandomRangeDouble(double min, double max)
-{
-   return min + (max - min) * MathRand() / 32767.0;
 }
 
 //+------------------------------------------------------------------+
@@ -178,6 +171,20 @@ int CheckCESignal(datetime candleTime)
 }
 
 //+------------------------------------------------------------------+
+//| Check if new bar has formed                                      |
+//+------------------------------------------------------------------+
+bool IsNewBar()
+{
+   datetime currentBarTime = iTime(_Symbol, PERIOD_M5, 0);
+   if(currentBarTime != lastBarTime)
+   {
+      lastBarTime = currentBarTime;
+      return true;
+   }
+   return false;
+}
+
+//+------------------------------------------------------------------+
 //| Open buy position                                                |
 //+------------------------------------------------------------------+
 bool OpenBuy()
@@ -239,6 +246,9 @@ int OnInit()
       currentTargetProfit = RandomRange(96, 107);
    }
 
+   // Initialize last bar time
+   lastBarTime = iTime(_Symbol, PERIOD_M5, 0);
+
    return(INIT_SUCCEEDED);
 }
 
@@ -254,15 +264,23 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   // Get previous closed candle time
-   datetime prevCandleTime = iTime(_Symbol, PERIOD_M5, 1);
+   // Check for profit target exit (can check every tick)
+   if(HasOpenPosition())
+   {
+      double profitPips = GetPositionProfitPips();
+      if(currentTargetProfit > 0 && profitPips >= currentTargetProfit)
+      {
+         CloseAllPositions();
+         return;
+      }
+   }
 
-   // Check if we have a pending signal to execute
+   // Check if we have a pending signal to execute (after delay)
    if(pendingSignalType != 0 && pendingExecuteTime > 0)
    {
       if(TimeCurrent() >= pendingExecuteTime)
       {
-         // Verify signal still exists
+         // Verify signal STILL exists (confirmed, not repainted)
          int verifySignal = CheckCESignal(pendingSignalTime);
 
          if(verifySignal == pendingSignalType && !HasOpenPosition())
@@ -281,45 +299,47 @@ void OnTick()
       return;
    }
 
-   // Check for profit target exit
+   // Only check for signals on NEW BAR (first tick after bar close)
+   if(!IsNewBar())
+      return;
+
+   // Now we are on the first tick of a new candle
+   // Check for signals on the PREVIOUS CLOSED candle (bar index 1)
+   datetime prevCandleTime = iTime(_Symbol, PERIOD_M5, 1);
+
+   // Skip if we already processed this candle
+   if(prevCandleTime <= lastSignalTime)
+      return;
+
+   int signal = CheckCESignal(prevCandleTime);
+
+   // No signal found
+   if(signal == 0)
+      return;
+
+   // Signal found - update last signal time
+   lastSignalTime = prevCandleTime;
+
+   // If we have an open position, check for opposite signal
    if(HasOpenPosition())
    {
-      double profitPips = GetPositionProfitPips();
-
-      if(currentTargetProfit > 0 && profitPips >= currentTargetProfit)
+      if(signal != currentPositionType)
       {
+         // Opposite signal - close position first
          CloseAllPositions();
-         return;
-      }
 
-      // Check for opposite signal
-      int signal = CheckCESignal(prevCandleTime);
-
-      if(signal != 0 && signal != currentPositionType && prevCandleTime > lastSignalTime)
-      {
-         CloseAllPositions();
-         lastSignalTime = prevCandleTime;
-
-         // Set up pending signal for opposite direction
-         pendingSignalType = signal;
-         pendingSignalTime = prevCandleTime;
-         pendingExecuteTime = TimeCurrent() + RandomRange(1, 3);
-         return;
-      }
-   }
-
-   // Check for new signal on previous closed candle
-   if(prevCandleTime > lastSignalTime && !HasOpenPosition() && pendingSignalType == 0)
-   {
-      int signal = CheckCESignal(prevCandleTime);
-
-      if(signal != 0)
-      {
-         lastSignalTime = prevCandleTime;
+         // Set up pending signal for new direction
          pendingSignalType = signal;
          pendingSignalTime = prevCandleTime;
          pendingExecuteTime = TimeCurrent() + RandomRange(1, 3);
       }
+      // Same direction signal - ignore
+      return;
    }
+
+   // No position - set up pending entry with human delay
+   pendingSignalType = signal;
+   pendingSignalTime = prevCandleTime;
+   pendingExecuteTime = TimeCurrent() + RandomRange(1, 3);
 }
 //+------------------------------------------------------------------+
