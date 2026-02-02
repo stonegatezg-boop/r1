@@ -1,41 +1,31 @@
-# Vikas+Stoch MT5 Trading System
+# Vikas+Stoch EA - MT5 Expert Advisor
 
 **Version:** 1.0
 **Created:** 2026-02-02
 
 ## Overview
 
-This trading system consists of two components:
-1. **Vikas+Stoch Indicator** - SuperTrend-based indicator that generates BUY/SELL signals
-2. **Vikas+Stoch EA** - Expert Advisor that reads indicator signals and executes trades
+Expert Advisor that reads BUY/SELL signals from the existing **VIKAS SuperTrend** indicator and executes trades automatically.
+
+**Important:** This EA does NOT calculate signals itself. It only reads arrows from your existing VIKAS indicator.
 
 ## Files
 
 | File | Description |
 |------|-------------|
-| `Vikas+Stoch.mq5` | Indicator - calculates SuperTrend and draws signal arrows |
 | `Vikas+Stoch_EA.mq5` | Expert Advisor - reads arrows and executes trades |
 
 ## Installation
 
-### 1. Install Indicator
-1. Copy `Vikas+Stoch.mq5` to: `MT5_DATA_FOLDER\MQL5\Indicators\`
-2. Compile in MetaEditor (F7)
-3. Attach to chart
+### Prerequisites
+- Your existing **VIKAS SuperTrend** indicator must be installed and attached to the chart
+- Indicator must create arrows with names: `VIKAS_BuyArrow_<time>` and `VIKAS_SellArrow_<time>`
 
-### 2. Install EA
+### Install EA
 1. Copy `Vikas+Stoch_EA.mq5` to: `MT5_DATA_FOLDER\MQL5\Experts\`
 2. Compile in MetaEditor (F7)
-3. Attach to the SAME chart as the indicator
-
-## Indicator Parameters
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| ATR Period | 28 | ATR calculation period |
-| ATR Multiplier | 5.0 | SuperTrend multiplier |
-| Show Signals | true | Display buy/sell arrows |
-| Change ATR | true | Use EMA-based ATR calculation |
+3. Attach EA to the SAME chart where VIKAS indicator is running
+4. Enable "Allow Algo Trading" in MT5
 
 ## EA Parameters
 
