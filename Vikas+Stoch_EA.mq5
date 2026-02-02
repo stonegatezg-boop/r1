@@ -171,8 +171,9 @@ double GetPositionProfitPrice()
 //+------------------------------------------------------------------+
 int DetectSignal(datetime prevBarTime)
 {
-   string buyArrowName = "VikasStoch_BUY_" + IntegerToString((long)prevBarTime);
-   string sellArrowName = "VikasStoch_SELL_" + IntegerToString((long)prevBarTime);
+   //--- Arrow names from VIKAS indicator: VIKAS_BuyArrow_<time> / VIKAS_SellArrow_<time>
+   string buyArrowName = "VIKAS_BuyArrow_" + IntegerToString((long)prevBarTime);
+   string sellArrowName = "VIKAS_SellArrow_" + IntegerToString((long)prevBarTime);
 
    if(ObjectFind(0, buyArrowName) >= 0)
       return 1;  // BUY signal
