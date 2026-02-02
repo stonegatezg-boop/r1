@@ -23,11 +23,24 @@
 #property indicator_style2  STYLE_SOLID
 #property indicator_width2  2
 
+//--- Source types
+enum ENUM_SOURCE_TYPE
+{
+   SOURCE_CLOSE,    // Close
+   SOURCE_OPEN,     // Open
+   SOURCE_HIGH,     // High
+   SOURCE_LOW,      // Low
+   SOURCE_HL2,      // HL2 (High+Low)/2
+   SOURCE_HLC3,     // HLC3 (High+Low+Close)/3
+   SOURCE_OHLC4     // OHLC4 (Open+High+Low+Close)/4
+};
+
 //--- Input Parameters
-input int      ATR_Period    = 28;          // ATR Period
-input double   ATR_Multiplier = 5.0;        // ATR Multiplier
-input bool     ShowSignals   = true;        // Show Buy/Sell Signals
-input bool     UseChangeATR  = true;        // Change ATR Calculation Method
+input int              ATR_Period     = 18;           // ATR Period
+input ENUM_SOURCE_TYPE SourceType     = SOURCE_LOW;   // Source
+input double           ATR_Multiplier = 2.8;          // ATR Multiplier
+input bool             UseChangeATR   = false;        // Change ATR Calculation Method?
+input bool             ShowSignals    = true;         // Show Buy/Sell Signals?
 
 //--- Indicator Buffers
 double UpTrendBuffer[];
@@ -55,7 +68,7 @@ int OnInit()
    PlotIndexSetDouble(1, PLOT_EMPTY_VALUE, EMPTY_VALUE);
 
    //--- Indicator name
-   IndicatorSetString(INDICATOR_SHORTNAME, "Vikas+Stoch SuperTrend(" +
+   IndicatorSetString(INDICATOR_SHORTNAME, "Vikas+Stoch(" +
                       IntegerToString(ATR_Period) + "," +
                       DoubleToString(ATR_Multiplier, 1) + ")");
 
@@ -69,6 +82,25 @@ void OnDeinit(const int reason)
 {
    //--- Delete all Vikas arrows on deinit
    ObjectsDeleteAll(0, "VikasStoch_", 0, -1);
+}
+
+//+------------------------------------------------------------------+
+//| Get source price based on selected type                           |
+//+------------------------------------------------------------------+
+double GetSourcePrice(const double &open[], const double &high[],
+                      const double &low[], const double &close[], int index)
+{
+   switch(SourceType)
+   {
+      case SOURCE_CLOSE: return close[index];
+      case SOURCE_OPEN:  return open[index];
+      case SOURCE_HIGH:  return high[index];
+      case SOURCE_LOW:   return low[index];
+      case SOURCE_HL2:   return (high[index] + low[index]) / 2.0;
+      case SOURCE_HLC3:  return (high[index] + low[index] + close[index]) / 3.0;
+      case SOURCE_OHLC4: return (open[index] + high[index] + low[index] + close[index]) / 4.0;
+      default:           return low[index];
+   }
 }
 
 //+------------------------------------------------------------------+
@@ -94,7 +126,7 @@ double CalculateSMA_TR(const double &high[], const double &low[], const double &
 }
 
 //+------------------------------------------------------------------+
-//| Calculate ATR (EMA method - standard)                             |
+//| Calculate ATR (EMA/RMA method - standard)                         |
 //+------------------------------------------------------------------+
 double CalculateATR(const double &high[], const double &low[], const double &close[], int index, int period, double prevATR)
 {
@@ -169,7 +201,7 @@ int OnCalculate(const int rates_total,
    if(rates_total < ATR_Period + 1)
       return(0);
 
-   //--- Set as series (newest = index 0)
+   //--- Set as series (oldest = index 0)
    ArraySetAsSeries(time, false);
    ArraySetAsSeries(open, false);
    ArraySetAsSeries(high, false);
@@ -207,8 +239,8 @@ int OnCalculate(const int rates_total,
       else
          ATRBuffer[i] = CalculateSMA_TR(high, low, close, i, ATR_Period);
 
-      //--- Source = HL2 (High + Low) / 2
-      double src = (high[i] + low[i]) / 2.0;
+      //--- Get source price
+      double src = GetSourcePrice(open, high, low, close, i);
 
       //--- Calculate Up and Down bands
       double up = src - ATR_Multiplier * ATRBuffer[i];
