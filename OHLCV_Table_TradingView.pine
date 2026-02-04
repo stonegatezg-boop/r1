@@ -7,7 +7,7 @@ indicator("OHLCV History Table", overlay=true)
 showTable    = input.bool(true, "Show Table")
 tableRows    = input.int(100, "Number of Rows", minval=10, maxval=500)
 tablePosition = input.string("Top Right", "Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"])
-pipMultiplier = input.float(10, "Pip Multiplier", tooltip="10 for 5-digit forex, 1 for 4-digit, 0.1 for gold")
+pipMultiplier = input.float(0, "Pip Multiplier (0=auto)", tooltip="0=auto, 10 for 5-digit forex, 1 for gold")
 
 // Colors
 headerBg     = input.color(color.rgb(33, 115, 70), "Header Background")
@@ -16,6 +16,25 @@ row1Bg       = input.color(color.rgb(220, 230, 241), "Row Color 1 (Light)")
 row2Bg       = input.color(color.rgb(189, 215, 238), "Row Color 2 (Dark)")
 daySeparator = input.color(color.rgb(0, 0, 0), "Day Separator Color")
 textColor    = input.color(color.rgb(0, 0, 0), "Text Color")
+
+// ============================================
+// AUTO PIP MULTIPLIER
+// ============================================
+getAutoPipMultiplier() =>
+    if pipMultiplier != 0
+        pipMultiplier
+    else if str.contains(str.upper(syminfo.ticker), "XAU") or str.contains(str.upper(syminfo.ticker), "GOLD")
+        1.0
+    else if str.contains(str.upper(syminfo.ticker), "XAG") or str.contains(str.upper(syminfo.ticker), "SILVER")
+        1.0
+    else if str.contains(str.upper(syminfo.ticker), "BTC") or str.contains(str.upper(syminfo.ticker), "ETH")
+        1.0
+    else if syminfo.mintick == 0.00001 or syminfo.mintick == 0.001
+        10.0
+    else
+        1.0
+
+actualPipMult = getAutoPipMultiplier()
 
 // ============================================
 // TABLE SETUP
@@ -97,8 +116,8 @@ if barstate.islast and showTable
             float chgVal = close[i] - close[i+1]
             float chgPct = close[i+1] != 0 ? (chgVal / close[i+1]) * 100 : 0
 
-            // Calculate Pips (absolute value, no sign)
-            float pipsVal = math.abs((close[i] - open[i]) / syminfo.mintick * pipMultiplier)
+            // Calculate Pips (absolute value, no sign) - with auto multiplier
+            float pipsVal = math.abs((close[i] - open[i]) / syminfo.mintick * actualPipMult)
 
             // Determine if candle is bullish or bearish
             bool isBullish = close[i] > open[i]
@@ -116,8 +135,8 @@ if barstate.islast and showTable
             if newDay or i == 1
                 dateDayDisplay := currentDate + "\n" + getDayName(time[i])
 
-            // Pips formatting (no sign, just absolute value)
-            string pipsStr = str.tostring(pipsVal, "#.#")
+            // Pips formatting (no sign, just absolute value, no decimals)
+            string pipsStr = str.tostring(math.round(pipsVal), "#")
 
             // Fill cells
             table.cell(dataTable, 0, i, dateDayDisplay, bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_left)
