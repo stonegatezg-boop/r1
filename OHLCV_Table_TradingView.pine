@@ -28,7 +28,7 @@ var table dataTable = table.new(tablePos, 9, tableRows + 1, border_width=1, bord
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-getDateStr(t) => str.format("{0,date,yyyy.MM.dd}", t)
+getDateStr(t) => str.format("{0,date,dd.MM.yyyy}", t)
 
 formatVol(v) =>
     if v >= 1000000
@@ -43,13 +43,13 @@ formatVol(v) =>
 // ============================================
 if barstate.islast and showTable
 
-    // === HEADER ROW ===
+    // === HEADER ROW === (Date, Time, Open, Close, High, Low, Change, Change%, Volume)
     table.cell(dataTable, 0, 0, "Date",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
     table.cell(dataTable, 1, 0, "Time",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
     table.cell(dataTable, 2, 0, "Open",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
-    table.cell(dataTable, 3, 0, "High",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
-    table.cell(dataTable, 4, 0, "Low",      bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
-    table.cell(dataTable, 5, 0, "Close",    bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
+    table.cell(dataTable, 3, 0, "Close",    bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
+    table.cell(dataTable, 4, 0, "High",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
+    table.cell(dataTable, 5, 0, "Low",      bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
     table.cell(dataTable, 6, 0, "Change",   bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
     table.cell(dataTable, 7, 0, "Change%",  bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
     table.cell(dataTable, 8, 0, "Volume",   bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
@@ -93,13 +93,13 @@ if barstate.islast and showTable
             // Date cell - only show if new day or first row
             string dateDisplay = (newDay or i == 1) ? currentDate : ""
 
-            // Fill cells
+            // Fill cells (Date, Time, Open, Close, High, Low, Change, Change%, Volume)
             table.cell(dataTable, 0, i, dateDisplay, bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_left)
             table.cell(dataTable, 1, i, str.format("{0,time,HH:mm}", time[i]), bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_center)
             table.cell(dataTable, 2, i, str.tostring(open[i], format.mintick), bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_right)
-            table.cell(dataTable, 3, i, str.tostring(high[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : color.rgb(0, 128, 0), text_size=size.tiny, text_halign=text.align_right)
-            table.cell(dataTable, 4, i, str.tostring(low[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : color.rgb(192, 0, 0), text_size=size.tiny, text_halign=text.align_right)
-            table.cell(dataTable, 5, i, str.tostring(close[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : closeClr, text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 3, i, str.tostring(close[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : closeClr, text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 4, i, str.tostring(high[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : color.rgb(0, 128, 0), text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 5, i, str.tostring(low[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : color.rgb(192, 0, 0), text_size=size.tiny, text_halign=text.align_right)
 
             string chgSign = chgVal >= 0 ? "+" : ""
             table.cell(dataTable, 6, i, chgSign + str.tostring(chgVal, format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : chgClr, text_size=size.tiny, text_halign=text.align_right)
