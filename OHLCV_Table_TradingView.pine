@@ -125,8 +125,8 @@ if barstate.islast and showTable
             table.cell(dataTable, 2, i, str.tostring(open[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : closeClr, text_size=size.tiny, text_halign=text.align_right)
             table.cell(dataTable, 3, i, str.tostring(close[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : closeClr, text_size=size.tiny, text_halign=text.align_right)
             table.cell(dataTable, 4, i, pipsStr, bgcolor=rowBg, text_color=newDay ? color.white : pipsClr, text_size=size.tiny, text_halign=text.align_right)
-            table.cell(dataTable, 5, i, str.tostring(high[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : color.rgb(0, 128, 0), text_size=size.tiny, text_halign=text.align_right)
-            table.cell(dataTable, 6, i, str.tostring(low[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : color.rgb(192, 0, 0), text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 5, i, str.tostring(high[i], format.mintick), bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 6, i, str.tostring(low[i], format.mintick), bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_right)
 
             string chgSign = chgVal >= 0 ? "+" : ""
             table.cell(dataTable, 7, i, chgSign + str.tostring(chgVal, format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : chgClr, text_size=size.tiny, text_halign=text.align_right)
