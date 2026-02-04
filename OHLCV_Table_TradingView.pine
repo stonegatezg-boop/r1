@@ -7,6 +7,7 @@ indicator("OHLCV History Table", overlay=true)
 showTable    = input.bool(true, "Show Table")
 tableRows    = input.int(100, "Number of Rows", minval=10, maxval=500)
 tablePosition = input.string("Top Right", "Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"])
+pipMultiplier = input.float(10, "Pip Multiplier", tooltip="10 for 5-digit forex, 1 for 4-digit, 0.1 for gold")
 
 // Colors
 headerBg     = input.color(color.rgb(33, 115, 70), "Header Background")
@@ -23,12 +24,24 @@ var tablePos = tablePosition == "Top Right" ? position.top_right :
                tablePosition == "Top Left" ? position.top_left :
                tablePosition == "Bottom Right" ? position.bottom_right : position.bottom_left
 
-var table dataTable = table.new(tablePos, 9, tableRows + 1, border_width=1, border_color=color.gray)
+var table dataTable = table.new(tablePos, 10, tableRows + 1, border_width=1, border_color=color.gray)
 
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
 getDateStr(t) => str.format("{0,date,dd.MM.yyyy}", t)
+
+getDayName(t) =>
+    int d = dayofweek(t)
+    switch d
+        1 => "Sunday"
+        2 => "Monday"
+        3 => "Tuesday"
+        4 => "Wednesday"
+        5 => "Thursday"
+        6 => "Friday"
+        7 => "Saturday"
+        => ""
 
 formatVol(v) =>
     if v >= 1000000
@@ -43,16 +56,17 @@ formatVol(v) =>
 // ============================================
 if barstate.islast and showTable
 
-    // === HEADER ROW === (Date, Time, Open, Close, High, Low, Change, Change%, Volume)
+    // === HEADER ROW === (Date, Time/Day, Open, Close, Pips, High, Low, Change, Change%, Volume)
     table.cell(dataTable, 0, 0, "Date",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
-    table.cell(dataTable, 1, 0, "Time",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
+    table.cell(dataTable, 1, 0, "Time\nDay", bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
     table.cell(dataTable, 2, 0, "Open",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
     table.cell(dataTable, 3, 0, "Close",    bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
-    table.cell(dataTable, 4, 0, "High",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
-    table.cell(dataTable, 5, 0, "Low",      bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
-    table.cell(dataTable, 6, 0, "Change",   bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
-    table.cell(dataTable, 7, 0, "Change%",  bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
-    table.cell(dataTable, 8, 0, "Volume",   bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
+    table.cell(dataTable, 4, 0, "Pips",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
+    table.cell(dataTable, 5, 0, "High",     bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
+    table.cell(dataTable, 6, 0, "Low",      bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
+    table.cell(dataTable, 7, 0, "Change",   bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
+    table.cell(dataTable, 8, 0, "Change%",  bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
+    table.cell(dataTable, 9, 0, "Volume",   bgcolor=headerBg, text_color=headerText, text_size=size.small, text_halign=text.align_center)
 
     // === DATA ROWS ===
     string prevDate = ""
@@ -83,9 +97,13 @@ if barstate.islast and showTable
             float chgVal = close[i] - close[i+1]
             float chgPct = close[i+1] != 0 ? (chgVal / close[i+1]) * 100 : 0
 
+            // Calculate Pips (Close - Open)
+            float pipsVal = (close[i] - open[i]) / syminfo.mintick * pipMultiplier
+
             // Value colors
             color closeClr = close[i] > open[i] ? color.rgb(0, 128, 0) : color.rgb(192, 0, 0)
             color chgClr = chgVal >= 0 ? color.rgb(0, 128, 0) : color.rgb(192, 0, 0)
+            color pipsClr = pipsVal >= 0 ? color.rgb(0, 128, 0) : color.rgb(192, 0, 0)
 
             // Text color for separator row
             color txtClr = newDay ? color.white : textColor
@@ -93,17 +111,27 @@ if barstate.islast and showTable
             // Date cell - only show if new day or first row
             string dateDisplay = (newDay or i == 1) ? currentDate : ""
 
-            // Fill cells (Date, Time, Open, Close, High, Low, Change, Change%, Volume)
+            // Time and Day combined
+            string timeStr = str.format("{0,time,HH:mm}", time[i])
+            string dayStr = getDayName(time[i])
+            string timeDayDisplay = timeStr + "\n" + dayStr
+
+            // Pips formatting
+            string pipsSign = pipsVal >= 0 ? "+" : ""
+            string pipsStr = pipsSign + str.tostring(pipsVal, "#.#")
+
+            // Fill cells (Date, Time/Day, Open, Close, Pips, High, Low, Change, Change%, Volume)
             table.cell(dataTable, 0, i, dateDisplay, bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_left)
-            table.cell(dataTable, 1, i, str.format("{0,time,HH:mm}", time[i]), bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_center)
+            table.cell(dataTable, 1, i, timeDayDisplay, bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_center)
             table.cell(dataTable, 2, i, str.tostring(open[i], format.mintick), bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_right)
             table.cell(dataTable, 3, i, str.tostring(close[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : closeClr, text_size=size.tiny, text_halign=text.align_right)
-            table.cell(dataTable, 4, i, str.tostring(high[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : color.rgb(0, 128, 0), text_size=size.tiny, text_halign=text.align_right)
-            table.cell(dataTable, 5, i, str.tostring(low[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : color.rgb(192, 0, 0), text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 4, i, pipsStr, bgcolor=rowBg, text_color=newDay ? color.white : pipsClr, text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 5, i, str.tostring(high[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : color.rgb(0, 128, 0), text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 6, i, str.tostring(low[i], format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : color.rgb(192, 0, 0), text_size=size.tiny, text_halign=text.align_right)
 
             string chgSign = chgVal >= 0 ? "+" : ""
-            table.cell(dataTable, 6, i, chgSign + str.tostring(chgVal, format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : chgClr, text_size=size.tiny, text_halign=text.align_right)
-            table.cell(dataTable, 7, i, chgSign + str.tostring(chgPct, "#.##") + "%", bgcolor=rowBg, text_color=newDay ? color.white : chgClr, text_size=size.tiny, text_halign=text.align_right)
-            table.cell(dataTable, 8, i, formatVol(volume[i]), bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 7, i, chgSign + str.tostring(chgVal, format.mintick), bgcolor=rowBg, text_color=newDay ? color.white : chgClr, text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 8, i, chgSign + str.tostring(chgPct, "#.##") + "%", bgcolor=rowBg, text_color=newDay ? color.white : chgClr, text_size=size.tiny, text_halign=text.align_right)
+            table.cell(dataTable, 9, i, formatVol(volume[i]), bgcolor=rowBg, text_color=txtClr, text_size=size.tiny, text_halign=text.align_right)
 
             prevDate := currentDate
