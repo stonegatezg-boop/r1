@@ -1,9 +1,9 @@
 //+------------------------------------------------------------------+
 //|                                         XAUUSD_M5_MACD_EA.mq5    |
-//|                   Optimized MACD Strategy for XAUUSD M5          |
-//|                   Parameters: Fast=8, Slow=17, Signal=9          |
+//|                        *** CLAMA ***                             |
+//|                   MACD + Hull MA Strategy for XAUUSD M5          |
 //+------------------------------------------------------------------+
-#property copyright "Quantitative Analysis"
+#property copyright "CLAMA - MACD + Hull MA"
 #property version   "1.00"
 #property strict
 
@@ -74,9 +74,8 @@ int OnInit()
     barsInCurrentTrade = 0;
     currentTicket = 0;
 
-    Print("MACD EA inicijaliziran: MACD(", FastEMA, ",", SlowEMA, ",", SignalSMA, ")");
-    if(UseTrendFilter) Print("Hull MA filter aktivan: period=", HullPeriod);
-    if(UseSessionFilter) Print("Session filter aktivan");
+    Print("=== CLAMA EA inicijaliziran ===");
+    Print("MACD(", FastEMA, ",", SlowEMA, ",", SignalSMA, ") + Hull(", HullPeriod, ")");
 
     return INIT_SUCCEEDED;
 }
@@ -348,9 +347,9 @@ void OpenBuy()
     sl = NormalizeDouble(sl, digits);
     tp = NormalizeDouble(tp, digits);
 
-    if(trade.Buy(lots, _Symbol, price, sl, tp, "MACD BUY"))
+    if(trade.Buy(lots, _Symbol, price, sl, tp, "CLAMA BUY"))
     {
-        Print("BUY: ", lots, " @ ", price, " SL=", sl, " TP=", tp);
+        Print("CLAMA BUY: ", lots, " @ ", price, " SL=", sl, " TP=", tp);
         barsInCurrentTrade = 0;
     }
 }
@@ -374,9 +373,9 @@ void OpenSell()
     sl = NormalizeDouble(sl, digits);
     tp = NormalizeDouble(tp, digits);
 
-    if(trade.Sell(lots, _Symbol, price, sl, tp, "MACD SELL"))
+    if(trade.Sell(lots, _Symbol, price, sl, tp, "CLAMA SELL"))
     {
-        Print("SELL: ", lots, " @ ", price, " SL=", sl, " TP=", tp);
+        Print("CLAMA SELL: ", lots, " @ ", price, " SL=", sl, " TP=", tp);
         barsInCurrentTrade = 0;
     }
 }
@@ -410,12 +409,12 @@ void OnTick()
     //--- Execute
     if(buySignal && !HasOpenPosition())
     {
-        Print("MACD BUY signal");
+        Print("CLAMA BUY SIGNAL");
         OpenBuy();
     }
     else if(sellSignal && !HasOpenPosition())
     {
-        Print("MACD SELL signal");
+        Print("CLAMA SELL SIGNAL");
         OpenSell();
     }
 }

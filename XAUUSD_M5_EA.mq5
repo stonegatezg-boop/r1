@@ -1,9 +1,9 @@
 //+------------------------------------------------------------------+
 //|                                              XAUUSD_M5_EA.mq5    |
-//|                        Quantitative Analysis Based EA            |
+//|                        *** CALF ***                              |
 //|                        AlphaTrend + UT Bot + Session Filter      |
 //+------------------------------------------------------------------+
-#property copyright "Quantitative Analysis"
+#property copyright "CALF - AlphaTrend + UT Bot"
 #property version   "1.00"
 #property strict
 
@@ -87,7 +87,7 @@ int OnInit()
     barsInCurrentTrade = 0;
     currentTicket = 0;
 
-    Print("EA XAUUSD M5 inicijaliziran uspješno");
+    Print("=== CALF EA inicijaliziran ===");
     Print("AlphaTrend(", AlphaPeriod, ",", AlphaCoeff, ") + UT Bot(", UTKey, ",", UTAtrPeriod, ")");
 
     return INIT_SUCCEEDED;
@@ -354,9 +354,9 @@ void OpenBuy()
     sl = NormalizeDouble(sl, digits);
     tp = NormalizeDouble(tp, digits);
 
-    if(trade.Buy(lots, _Symbol, price, sl, tp, "AlphaTrend+UTBot BUY"))
+    if(trade.Buy(lots, _Symbol, price, sl, tp, "CALF BUY"))
     {
-        Print("BUY otvoren: ", lots, " @ ", price, " SL=", sl, " TP=", tp);
+        Print("CALF BUY: ", lots, " @ ", price, " SL=", sl, " TP=", tp);
         barsInCurrentTrade = 0;
     }
     else
@@ -386,9 +386,9 @@ void OpenSell()
     sl = NormalizeDouble(sl, digits);
     tp = NormalizeDouble(tp, digits);
 
-    if(trade.Sell(lots, _Symbol, price, sl, tp, "AlphaTrend+UTBot SELL"))
+    if(trade.Sell(lots, _Symbol, price, sl, tp, "CALF SELL"))
     {
-        Print("SELL otvoren: ", lots, " @ ", price, " SL=", sl, " TP=", tp);
+        Print("CALF SELL: ", lots, " @ ", price, " SL=", sl, " TP=", tp);
         barsInCurrentTrade = 0;
     }
     else
@@ -442,12 +442,12 @@ void OnTick()
     //--- Execute trades
     if(buySignal && !HasOpenPosition())
     {
-        Print("BUY SIGNAL: AlphaTrend crossover UP + UT Bot bullish");
+        Print("CALF BUY SIGNAL");
         OpenBuy();
     }
     else if(sellSignal && !HasOpenPosition())
     {
-        Print("SELL SIGNAL: AlphaTrend crossover DOWN + UT Bot bearish");
+        Print("CALF SELL SIGNAL");
         OpenSell();
     }
 }
