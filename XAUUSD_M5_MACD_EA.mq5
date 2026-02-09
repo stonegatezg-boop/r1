@@ -136,48 +136,48 @@ int GetHullDirection()
 
     //--- WMA half period
     int halfPeriod = HullPeriod / 2;
-    double wmaHalf = 0, wmaFull = 0;
-    double sumWeightsHalf = 0, sumWeightsFull = 0;
+    double wmaHalf = 0.0, wmaFull = 0.0;
+    double sumWeightsHalf = 0.0, sumWeightsFull = 0.0;
 
     for(int i = 0; i < halfPeriod; i++)
     {
-        double w = halfPeriod - i;
+        double w = (double)(halfPeriod - i);
         wmaHalf += close[i+1] * w;
         sumWeightsHalf += w;
     }
-    wmaHalf /= sumWeightsHalf;
+    if(sumWeightsHalf > 0) wmaHalf /= sumWeightsHalf;
 
     for(int i = 0; i < HullPeriod; i++)
     {
-        double w = HullPeriod - i;
+        double w = (double)(HullPeriod - i);
         wmaFull += close[i+1] * w;
         sumWeightsFull += w;
     }
-    wmaFull /= sumWeightsFull;
+    if(sumWeightsFull > 0) wmaFull /= sumWeightsFull;
 
-    double raw = 2 * wmaHalf - wmaFull;
+    double raw = 2.0 * wmaHalf - wmaFull;
 
     //--- Previous bar calculation
-    double wmaHalfPrev = 0, wmaFullPrev = 0;
-    sumWeightsHalf = 0; sumWeightsFull = 0;
+    double wmaHalfPrev = 0.0, wmaFullPrev = 0.0;
+    sumWeightsHalf = 0.0; sumWeightsFull = 0.0;
 
     for(int i = 0; i < halfPeriod; i++)
     {
-        double w = halfPeriod - i;
+        double w = (double)(halfPeriod - i);
         wmaHalfPrev += close[i+2] * w;
         sumWeightsHalf += w;
     }
-    wmaHalfPrev /= sumWeightsHalf;
+    if(sumWeightsHalf > 0) wmaHalfPrev /= sumWeightsHalf;
 
     for(int i = 0; i < HullPeriod; i++)
     {
-        double w = HullPeriod - i;
+        double w = (double)(HullPeriod - i);
         wmaFullPrev += close[i+2] * w;
         sumWeightsFull += w;
     }
-    wmaFullPrev /= sumWeightsFull;
+    if(sumWeightsFull > 0) wmaFullPrev /= sumWeightsFull;
 
-    double rawPrev = 2 * wmaHalfPrev - wmaFullPrev;
+    double rawPrev = 2.0 * wmaHalfPrev - wmaFullPrev;
 
     //--- Direction
     if(raw > rawPrev) return 1;   // Bullish
@@ -192,17 +192,18 @@ bool IsVolumeAboveAverage()
 {
     if(!UseVolumeFilter) return true;
 
-    long volume[];
-    ArraySetAsSeries(volume, true);
-    CopyTickVolume(_Symbol, PERIOD_CURRENT, 0, VolumePeriod + 1, volume);
+    long volumeArr[];
+    ArraySetAsSeries(volumeArr, true);
+    if(CopyTickVolume(_Symbol, PERIOD_CURRENT, 0, VolumePeriod + 1, volumeArr) <= 0) return true;
 
-    double sum = 0;
+    double sum = 0.0;
     for(int i = 1; i <= VolumePeriod; i++)
-        sum += (double)volume[i];
+        sum += (double)volumeArr[i];
 
-    double avgVolume = sum / VolumePeriod;
+    double avgVolume = sum / (double)VolumePeriod;
+    double currentVolume = (double)volumeArr[1];
 
-    return (double)volume[1] > avgVolume;
+    return (currentVolume > avgVolume);
 }
 
 //+------------------------------------------------------------------+
