@@ -198,11 +198,11 @@ bool IsVolumeAboveAverage()
 
     double sum = 0;
     for(int i = 1; i <= VolumePeriod; i++)
-        sum += volume[i];
+        sum += (double)volume[i];
 
     double avgVolume = sum / VolumePeriod;
 
-    return volume[1] > avgVolume;
+    return (double)volume[1] > avgVolume;
 }
 
 //+------------------------------------------------------------------+
