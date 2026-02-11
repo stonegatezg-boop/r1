@@ -428,16 +428,16 @@ void OnTick()
     CalculateAlphaTrend(1);
     CalculateUTBot(1);
 
-    //--- Check for AlphaTrend crossover on CONFIRMED bar [1]
-    bool alphaBuy = (alphaTrend[1] == 1 && alphaTrend[2] == -1);
-    bool alphaSell = (alphaTrend[1] == -1 && alphaTrend[2] == 1);
+    //--- Check AlphaTrend direction (filter)
+    int alphaTrendDir = alphaTrend[1];  // 1 = bullish, -1 = bearish
 
-    //--- Check UT Bot position on CONFIRMED bar [1]
-    int utPos = utPosition[1];
+    //--- Check UT Bot CROSSOVER on CONFIRMED bar [1]
+    bool utCrossUp = (utPosition[1] == 1 && utPosition[2] == -1);
+    bool utCrossDown = (utPosition[1] == -1 && utPosition[2] == 1);
 
-    //--- Generate signals (confluence)
-    bool buySignal = alphaBuy && (utPos == 1);
-    bool sellSignal = alphaSell && (utPos == -1);
+    //--- Generate signals: UT Bot crossover + AlphaTrend filter
+    bool buySignal = utCrossUp && (alphaTrendDir == 1);
+    bool sellSignal = utCrossDown && (alphaTrendDir == -1);
 
     //--- Execute trades
     if(buySignal && !HasOpenPosition())
