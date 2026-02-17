@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MT5 Feature Summary for LLM",
+  "description": "Pre-interpreted market features - LLM receives MEANINGS, not raw numbers",
+  "type": "object",
+  "required": ["symbol", "timeframe", "timestamp", "features", "htf_context"],
+  "properties": {
+    "symbol": {
+      "type": "string",
+      "example": "XAUUSD"
+    },
+    "timeframe": {
+      "type": "string",
+      "enum": ["M5"],
+      "description": "Execution timeframe"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "example": "2026-02-16T14:35:00Z"
+    },
+    "features": {
+      "type": "object",
+      "description": "Pre-interpreted M5 indicator states",
+      "required": ["rsi_zone", "ema_slope", "ema_position", "macd_state", "atr_regime", "bb_position"],
+      "properties": {
+        "rsi_zone": {
+          "type": "string",
+          "enum": ["oversold", "neutral", "overbought"],
+          "description": "RSI < 30 = oversold, RSI > 70 = overbought, else neutral"
+        },
+        "ema_slope": {
+          "type": "string",
+          "enum": ["bullish", "flat", "bearish"],
+          "description": "EMA 50 direction over last 5 bars"
+        },
+        "ema_position": {
+          "type": "string",
+          "enum": ["above_both", "between", "below_both"],
+          "description": "Price position relative to EMA 50 and EMA 200"
+        },
+        "macd_state": {
+          "type": "string",
+          "enum": ["cross_up", "cross_down", "bullish", "bearish", "neutral"],
+          "description": "MACD line vs Signal line state"
+        },
+        "macd_histogram": {
+          "type": "string",
+          "enum": ["growing_positive", "shrinking_positive", "growing_negative", "shrinking_negative"],
+          "description": "Histogram momentum direction"
+        },
+        "atr_regime": {
+          "type": "string",
+          "enum": ["low", "normal", "high", "extreme"],
+          "description": "Current ATR vs 20-period average ATR"
+        },
+        "bb_position": {
+          "type": "string",
+          "enum": ["above_upper", "upper_zone", "middle", "lower_zone", "below_lower"],
+          "description": "Price position within Bollinger Bands"
+        },
+        "bb_squeeze": {
+          "type": "boolean",
+          "description": "Bollinger Band width < 50% of 20-period average"
+        }
+      }
+    },
+    "htf_context": {
+      "type": "object",
+      "description": "Higher timeframe trend context (H1 and H4)",
+      "required": ["h1_trend", "h4_trend"],
+      "properties": {
+        "h1_trend": {
+          "type": "string",
+          "enum": ["strong_up", "up", "neutral", "down", "strong_down"],
+          "description": "H1 trend based on EMA 50/200 position and slope"
+        },
+        "h4_trend": {
+          "type": "string",
+          "enum": ["strong_up", "up", "neutral", "down", "strong_down"],
+          "description": "H4 trend based on EMA 50/200 position and slope"
+        },
+        "htf_alignment": {
+          "type": "string",
+          "enum": ["aligned_bullish", "aligned_bearish", "conflicting", "neutral"],
+          "description": "Whether H1 and H4 agree on direction"
+        }
+      }
+    },
+    "price_context": {
+      "type": "object",
+      "properties": {
+        "current_price": {
+          "type": "number",
+          "description": "Current bid price"
+        },
+        "atr_value": {
+          "type": "number",
+          "description": "Current ATR(14) value for SL/TP calculation"
+        },
+        "spread_pips": {
+          "type": "number",
+          "description": "Current spread in pips"
+        }
+      }
+    }
+  }
+}
