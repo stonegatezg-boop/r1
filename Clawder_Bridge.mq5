@@ -236,18 +236,49 @@ bool GetBBSqueeze()
 }
 
 //+------------------------------------------------------------------+
-string GetEMACross()
+string GetEMACrossEvent()
 {
+    // EVENT: da li se cross UPRAVO DOGODIO na zadnjoj svijeći
     double fast1 = GetIndicatorValue(emaFastHandle, 0, 1);
     double slow1 = GetIndicatorValue(emaSlowHandle, 0, 1);
     double fast2 = GetIndicatorValue(emaFastHandle, 0, 2);
     double slow2 = GetIndicatorValue(emaSlowHandle, 0, 2);
 
-    if(fast1 > slow1 && fast2 < slow2) return "golden_cross";
-    if(fast1 < slow1 && fast2 > slow2) return "death_cross";
-    if(fast1 > slow1) return "bullish";
-    if(fast1 < slow1) return "bearish";
+    if(fast1 > slow1 && fast2 < slow2) return "golden";
+    if(fast1 < slow1 && fast2 > slow2) return "death";
+    return "none";
+}
+
+//+------------------------------------------------------------------+
+string GetEMAAlignment()
+{
+    // STATE: trenutni odnos fast vs slow EMA
+    double fast = GetIndicatorValue(emaFastHandle, 0, 1);
+    double slow = GetIndicatorValue(emaSlowHandle, 0, 1);
+
+    if(fast > slow) return "bullish";
+    if(fast < slow) return "bearish";
     return "neutral";
+}
+
+//+------------------------------------------------------------------+
+double GetCandleATRRatio()
+{
+    // Omjer zadnje svijeće i ATR-a
+    double high = iHigh(_Symbol, PERIOD_M5, 1);
+    double low = iLow(_Symbol, PERIOD_M5, 1);
+    double candleRange = high - low;
+    double atr = GetIndicatorValue(atrHandle, 0, 1);
+
+    if(atr <= 0) return 0;
+    return candleRange / atr;
+}
+
+//+------------------------------------------------------------------+
+bool IsImpulseCandle()
+{
+    // Impulse candle = range > 2x ATR
+    return GetCandleATRRatio() > 2.0;
 }
 
 //+------------------------------------------------------------------+
@@ -266,10 +297,10 @@ void WriteDataFile()
     FileWrite(handle, "timestamp", "symbol", "price", "atr",
               "rsi_value", "rsi_zone",
               "ema_fast", "ema_slow", "ema_trend", "ema_long",
-              "ema_slope", "ema_position", "ema_cross",
+              "ema_slope", "ema_position", "ema_cross_event", "ema_alignment",
               "macd_main", "macd_signal", "macd_state", "macd_histogram",
               "bb_upper", "bb_middle", "bb_lower", "bb_position", "bb_squeeze",
-              "atr_regime");
+              "atr_regime", "candle_atr_ratio", "impulse_candle");
 
     // Data
     double rsi = GetIndicatorValue(rsiHandle, 0, 1);
@@ -298,7 +329,8 @@ void WriteDataFile()
               DoubleToString(emaLong, _Digits),
               GetEMASlope(emaTrendHandle, 5),
               GetPriceVsEMA(),
-              GetEMACross(),
+              GetEMACrossEvent(),
+              GetEMAAlignment(),
               DoubleToString(macdMain, _Digits + 2),
               DoubleToString(macdSignal, _Digits + 2),
               GetMACDState(),
@@ -308,7 +340,9 @@ void WriteDataFile()
               DoubleToString(bbLower, _Digits),
               GetBBPosition(),
               GetBBSqueeze() ? "true" : "false",
-              GetATRRegime());
+              GetATRRegime(),
+              DoubleToString(GetCandleATRRatio(), 2),
+              IsImpulseCandle() ? "true" : "false");
 
     FileClose(handle);
     Print("Clawder: Data exported to ", filename);

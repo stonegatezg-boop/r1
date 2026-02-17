@@ -10,9 +10,9 @@ import os
 from datetime import datetime
 
 # ============================================================
-# POSTAVKE - PROMIJENI OVO
+# POSTAVKE
 # ============================================================
-API_KEY = "OVDJE_STAVI_SVOJ_KLJUC"  # sk-ant-...
+API_KEY = os.getenv("ANTHROPIC_API_KEY")  # Postavi u environment varijabli
 
 COMMON_FILES = r"C:\Users\Administrator\AppData\Roaming\MetaQuotes\Terminal\Common\Files"
 
@@ -33,6 +33,12 @@ PRAVILA:
 - Ako nisi siguran, stavi HOLD s niskim confidenceom
 - Budi konzervativan - bolje HOLD nego loš trade
 
+VAŽNI FILTERI:
+- impulse_candle=true → NIKAD ne ulazi u trade nakon impulse candle (range > 2x ATR)
+- ema_cross_event=golden/death → svjež cross, važan signal
+- ema_alignment=bullish/bearish → trenutni trend odnos EMA-a
+- Ako je momentum_exhaustion (shrinking histogram + neutral RSI) → smanji confidence
+
 FORMAT ODGOVORA (točno ovako, odvojeno zarezima):
 action,confidence,sl,tp,reasoning
 
@@ -46,7 +52,10 @@ PRIMJER:
 BUY,0.82,2920.50,2945.00,RSI oversold uz bullish MACD cross i cijena blizu BB lower banda
 
 PRIMJER HOLD:
-HOLD,0.3,0,0,Miješani signali - RSI neutralan a MACD bearish"""
+HOLD,0.3,0,0,Miješani signali - RSI neutralan a MACD bearish
+
+PRIMJER IMPULSE CANDLE:
+HOLD,0.1,0,0,Impulse candle detected - preopasno za entry"""
 
 
 def read_data():
@@ -150,8 +159,10 @@ def main():
     print(f"Check interval: {CHECK_INTERVAL}s")
     print()
 
-    if API_KEY == "OVDJE_STAVI_SVOJ_KLJUC":
-        print("[!] GREŠKA: Stavi svoj Anthropic API ključ u API_KEY varijablu!")
+    if not API_KEY:
+        print("[!] GREŠKA: Postavi ANTHROPIC_API_KEY environment varijablu!")
+        print("    Windows: set ANTHROPIC_API_KEY=sk-ant-...")
+        print("    Linux:   export ANTHROPIC_API_KEY=sk-ant-...")
         return
 
     last_timestamp = None
