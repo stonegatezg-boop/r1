@@ -3,7 +3,7 @@
 //|                        *** CLAMA v1.2 ***                        |
 //|                   MACD + Hull MA Strategy for XAUUSD M5          |
 //|                   + Trailing Stop + Stealth TP                   |
-//|                   Date: 2026-02-17 14:45                         |
+//|                   Date: 2026-02-17 15:50 (Zagreb, CET)           |
 //+------------------------------------------------------------------+
 #property copyright "CLAMA v1.2 - Trailing Stop + Stealth TP (2026-02-17)"
 #property version   "1.20"
@@ -98,7 +98,7 @@ int OnInit()
     // Seed random generator
     MathSrand((int)TimeCurrent());
 
-    Print("=== CLAMA v1.2 inicijaliziran (2026-02-17 14:45) ===");
+    Print("=== CLAMA v1.2 inicijaliziran (2026-02-17 15:50 Zagreb) ===");
     Print("MACD(", FastEMA, ",", SlowEMA, ",", SignalSMA, ") + Hull(", HullPeriod, ")");
     Print("SL=", SLMultiplier, "xATR, Stealth TP=", TPMultiplier, "xATR (ne prikazuje se)");
     Print("Trailing: BE@", TrailActivatePips, "pips (+", TrailBEPipsMin, "-", TrailBEPipsMax, " random)");
