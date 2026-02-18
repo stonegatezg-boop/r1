@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 echo.
 echo ============================================================
 echo   CLAWDER v2.0 - INSTALLER
