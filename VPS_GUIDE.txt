@@ -1,0 +1,146 @@
+============================================================
+  CLAWDER v2.0 - VPS DEPLOYMENT GUIDE
+============================================================
+
+PREDUSLOVI:
+-----------
+[x] Python 3.8+ instaliran
+[x] MT5 instaliran i ulogiran na broker racun
+[x] Anthropic API kljuc (sk-ant-...)
+
+
+BRZA INSTALACIJA (3 koraka):
+============================
+
+1. Kopiraj cijeli Clawder folder na VPS
+   Primjer: C:\Clawder\
+
+2. Pokreni kao Administrator:
+   - Desni klik na VPS_INSTALL.bat
+   - "Run as administrator"
+   - Odaberi opciju 1 (Kompletna instalacija)
+   - Unesi API kljuc kad te pita
+   - Odaberi "1" za Windows Service (preporuceno)
+
+3. U MT5:
+   - F4 -> otvori MetaEditor
+   - Otvori Clawder_Bridge.mq5
+   - F7 -> Compile
+   - Drag & drop Clawder_Bridge na XAUUSD M5 chart
+   - Ukljuci AutoTrading (zeleni gumb gore)
+
+
+DETALJNA OBJASNJENJA:
+=====================
+
+OPCIJA 1: Windows Service (PREPORUCENO za VPS)
+----------------------------------------------
+Prednosti:
+  - Radi u pozadini bez CMD prozora
+  - Automatski se pokrece pri restartu VPS-a
+  - Automatski restart ako se srusi
+  - Profesionalno rjesenje
+
+Kontrola:
+  nssm start ClawderBrain      # Pokreni
+  nssm stop ClawderBrain       # Zaustavi
+  nssm status ClawderBrain     # Status
+  nssm remove ClawderBrain confirm  # Ukloni
+
+
+OPCIJA 2: Task Scheduler
+------------------------
+Prednosti:
+  - Pokrece se automatski pri loginu
+  - Ne treba admin prava nakon instalacije
+  - Jednostavnije za debugging
+
+Kontrola:
+  schtasks /run /tn ClawderBrainStartup    # Pokreni
+  taskkill /im python.exe /f               # Zaustavi
+  schtasks /delete /tn ClawderBrainStartup /f  # Ukloni
+
+
+OPCIJA 3: Batch File (rucno)
+----------------------------
+  - Dvostruki klik na run_clawder.bat
+  - CMD prozor mora ostati otvoren
+  - Automatski restart svakih 10 sekundi ako padne
+
+
+STRUKTURA FAJLOVA:
+==================
+
+Clawder/
+  |-- Clawder_Bridge.mq5      # MT5 Expert Advisor
+  |-- clawder_brain.py        # Python AI mozak
+  |-- vps_setup.py            # VPS instalacija
+  |-- VPS_INSTALL.bat         # Pokreni ovo!
+  |
+  |-- .env                    # API kljuc (automatski kreiran)
+  |-- run_clawder.bat         # Rucno pokretanje
+  |-- clawder_service.bat     # Service wrapper
+  |
+  |-- nssm.exe                # Service manager (automatski preuzet)
+  |
+  `-- logs/
+        |-- clawder_20260218.log     # Dnevni logovi
+        |-- service_stdout.log       # Service output
+        `-- service_stderr.log       # Service errors
+
+
+CSV KOMUNIKACIJA (MT5 <-> Python):
+==================================
+
+Lokacija: C:\Users\Administrator\AppData\Roaming\MetaQuotes\Terminal\Common\Files\
+
+clawder_data.csv      # MT5 pise, Python cita
+  - Svi indikatori i feature-i
+  - Osvjezava se svakih 5 minuta (M5 bar)
+
+clawder_decision.csv  # Python pise, MT5 cita
+  - AI odluka: BUY/SELL/HOLD/CLOSE
+  - Confidence, SL, TP, Reasoning
+
+
+TROUBLESHOOTING:
+================
+
+1. Service se ne pokrece?
+   - Provjeri logs/service_stderr.log
+   - Provjeri je li API kljuc ispravan u .env
+
+2. MT5 ne izvrsava odluke?
+   - Provjeri je li AutoTrading ukljucen
+   - Provjeri logs/clawder_*.log
+   - Provjeri MinConfidence (default 0.7)
+
+3. Nema CSV fajlova?
+   - Provjeri je li EA ispravno kompajliran
+   - Provjeri MT5 Experts tab za greske
+   - Restartaj MT5
+
+4. API greske?
+   - Provjeri je li kljuc validan na console.anthropic.com
+   - Provjeri internet konekciju
+   - Clawder ce HOLD ako API ne radi (sigurno)
+
+
+SIGURNOSNE PROVJERE (KILL SWITCH):
+==================================
+
+Clawder automatski PAUZIRA trading ako:
+  - Dnevni gubitak > 3%
+  - Spread > 30% ATR-a
+  - Vise od 5 trade-ova dnevno
+  - API timeout (default: HOLD)
+
+
+KONTAKT:
+========
+Za pomoc ili pitanja, provjeri kod ili logove.
+
+
+============================================================
+  SRETNO S TRADINGOM!
+============================================================
