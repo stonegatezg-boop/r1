@@ -1,0 +1,50 @@
+# Environment & Secrets
+.env
+.env.*
+*.env
+
+# API Keys
+*api_key*
+*secret*
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+.venv/
+
+# Windows
+*.exe
+nssm.exe
+Thumbs.db
+Desktop.ini
+
+# CSV data files (generated at runtime)
+clawder_data.csv
+clawder_decision.csv
+
+# Batch files generated during install
+run_clawder.bat
+clawder_service.bat
+clawder_startup.vbs
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup files
+*.bak
+*.backup
+
+# MT5 compiled files
+*.ex5
