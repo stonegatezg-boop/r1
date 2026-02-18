@@ -26,11 +26,11 @@ input double   BB_Deviation     = 2.0;
 
 input group "=== TRADE MANAGEMENT ==="
 input double   RiskPercent      = 1.0;
-input double   MinConfidence    = 0.7;         // Min confidence za trade (0.0-1.0)
+input double   MinConfidence    = 0.0;         // Min confidence za trade (0.0-1.0) - DISABLED
 input int      Slippage         = 30;
-input double   MaxSpreadATR     = 0.3;         // Max spread kao % ATR-a
-input int      MaxTradesPerDay  = 5;           // Max tradeova dnevno
-input double   DailyDrawdownPct = 3.0;         // Daily drawdown limit (% balansa)
+input double   MaxSpreadATR     = 1.0;         // Max spread kao % ATR-a - RELAXED
+input int      MaxTradesPerDay  = 999;         // Max tradeova dnevno - UNLIMITED
+input double   DailyDrawdownPct = 100.0;       // Daily drawdown limit (% balansa) - DISABLED
 
 input group "=== FILE PATHS ==="
 input string   DataFileName     = "clawder_data.csv";
