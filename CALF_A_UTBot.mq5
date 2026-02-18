@@ -81,9 +81,11 @@ void CalculateUTBot()
     ArraySetAsSeries(high, true);
     ArraySetAsSeries(low, true);
 
-    CopyClose(_Symbol, PERIOD_CURRENT, 0, UTAtrPeriod + 10, close);
+    int copied = CopyClose(_Symbol, PERIOD_CURRENT, 0, UTAtrPeriod + 10, close);
     CopyHigh(_Symbol, PERIOD_CURRENT, 0, UTAtrPeriod + 10, high);
     CopyLow(_Symbol, PERIOD_CURRENT, 0, UTAtrPeriod + 10, low);
+
+    if(copied < UTAtrPeriod + 5) return;
 
     double sumTR = 0;
     for(int i = 1; i <= UTAtrPeriod; i++)
@@ -92,29 +94,63 @@ void CalculateUTBot()
         sumTR += tr;
     }
     double atr = sumTR / UTAtrPeriod;
+    if(atr <= 0) return;
     double nLoss = UTKey * atr;
 
-    for(int s = 2; s >= 0; s--)
+    // Calculate trailing stop for bars 4,3,2,1,0 (need history for position)
+    double ts[5];
+    int pos[5];
+    ArrayInitialize(ts, 0);
+    ArrayInitialize(pos, 0);
+
+    // Initialize first bar's trailing stop
+    ts[4] = close[4];
+    pos[4] = (close[4] > close[5]) ? 1 : -1;
+
+    // Calculate trailing stop and position for each bar
+    for(int i = 3; i >= 0; i--)
     {
-        double src = close[s];
-        double srcPrev = close[s+1];
-        double prevTS = (s < 2) ? trailingStop[s+1] : close[s];
+        double src = close[i];
+        double srcPrev = close[i+1];
+        double prevTS = ts[i+1];
+        int prevPos = pos[i+1];
 
-        if(src > prevTS && srcPrev > prevTS)
-            trailingStop[s] = MathMax(prevTS, src - nLoss);
-        else if(src < prevTS && srcPrev < prevTS)
-            trailingStop[s] = MathMin(prevTS, src + nLoss);
-        else if(src > prevTS)
-            trailingStop[s] = src - nLoss;
+        // Update trailing stop based on price action
+        if(prevPos == 1)
+        {
+            // In uptrend - trailing stop follows price up
+            ts[i] = MathMax(prevTS, src - nLoss);
+            if(src < ts[i])
+            {
+                ts[i] = src + nLoss;
+                pos[i] = -1;  // Flip to downtrend
+            }
+            else
+            {
+                pos[i] = 1;   // Stay in uptrend
+            }
+        }
         else
-            trailingStop[s] = src + nLoss;
+        {
+            // In downtrend - trailing stop follows price down
+            ts[i] = MathMin(prevTS, src + nLoss);
+            if(src > ts[i])
+            {
+                ts[i] = src - nLoss;
+                pos[i] = 1;   // Flip to uptrend
+            }
+            else
+            {
+                pos[i] = -1;  // Stay in downtrend
+            }
+        }
+    }
 
-        if(srcPrev < prevTS && src > prevTS)
-            utPosition[s] = 1;
-        else if(srcPrev > prevTS && src < prevTS)
-            utPosition[s] = -1;
-        else
-            utPosition[s] = (s < 2) ? utPosition[s+1] : 0;
+    // Copy to global arrays (index 0,1,2)
+    for(int i = 0; i < 3; i++)
+    {
+        trailingStop[i] = ts[i];
+        utPosition[i] = pos[i];
     }
 }
 
@@ -186,7 +222,11 @@ void OnTick()
     bool buySignal = (utPosition[1] == 1 && utPosition[2] == -1);
     bool sellSignal = (utPosition[1] == -1 && utPosition[2] == 1);
 
-    if(buySignal) { Print("CALF_A BUY SIGNAL"); OpenBuy(); }
-    else if(sellSignal) { Print("CALF_A SELL SIGNAL"); OpenSell(); }
+    // Debug: print UT Bot state every new bar
+    Print("CALF_A: utPos[0]=", utPosition[0], " utPos[1]=", utPosition[1], " utPos[2]=", utPosition[2],
+          " TS=", DoubleToString(trailingStop[1], (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS)));
+
+    if(buySignal) { Print("CALF_A BUY SIGNAL (flip from down to up)"); OpenBuy(); }
+    else if(sellSignal) { Print("CALF_A SELL SIGNAL (flip from up to down)"); OpenSell(); }
 }
 //+------------------------------------------------------------------+
