@@ -69,9 +69,9 @@ bool IsTradingWindow()
 {
    MqlDateTime dt;
    TimeToStruct(TimeCurrent(), dt);
-   // Nedjelja - forex trziste zatvoreno
+   // Nedjelja - pocetak trgovanja nakon ponoci
    if(dt.day_of_week == 0)
-      return false;
+      return (dt.hour > 0 || dt.min >= 1);
    // Ponedjeljak - Cetvrtak: cijeli dan
    if(dt.day_of_week >= 1 && dt.day_of_week <= 4)
       return true;
