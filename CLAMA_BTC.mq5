@@ -73,6 +73,12 @@ input int      MinBarsBetweenTrades = 4;    // Min bars between new trades
 
 input group "=== SESSION FILTER (Optional for crypto) ==="
 input bool     UseSessionFilter = false;    // Use session filter (OFF for 24/7)
+input bool     UseWeekendPause  = true;     // Pause trading on weekends
+input int      WeekendStartDay  = 5;        // Weekend start (5=Friday)
+input int      WeekendStartHour = 11;       // Weekend start hour (broker time)
+input int      WeekendEndDay    = 0;        // Weekend end (0=Sunday)
+input int      WeekendEndHour   = 0;        // Weekend end hour (broker time)
+input int      WeekendEndMin    = 1;        // Weekend end minute
 input int      AsiaStart        = 0;        // Asia session start (UTC)
 input int      AsiaEnd          = 8;        // Asia session end
 input int      LondonStart      = 8;        // London session start
@@ -147,12 +153,32 @@ int RandomRange(int minVal, int maxVal)
 }
 
 //+------------------------------------------------------------------+
-// Crypto trades 24/7 - this is optional but can help avoid low liquidity periods
+// Crypto trades 24/7 - but weekend pause is optional
+// Default: Friday 11:00 to Sunday 00:01 (broker time)
 //+------------------------------------------------------------------+
 bool IsTradingWindow()
 {
-    // Crypto markets trade 24/7 - always return true for BTC
-    // You can add exchange maintenance windows here if needed
+    if(!UseWeekendPause) return true;  // No pause = 24/7 trading
+
+    MqlDateTime dt;
+    TimeToStruct(TimeCurrent(), dt);
+
+    int currentMinutes = dt.hour * 60 + dt.min;
+    int startMinutes = WeekendStartHour * 60;
+    int endMinutes = WeekendEndHour * 60 + WeekendEndMin;
+
+    // Weekend start check (Friday 11:00 by default)
+    if(dt.day_of_week == WeekendStartDay && currentMinutes >= startMinutes)
+        return false;
+
+    // Full Saturday - no trading
+    if(dt.day_of_week == 6)
+        return false;
+
+    // Sunday until 00:01 (or configured end time)
+    if(dt.day_of_week == WeekendEndDay && currentMinutes < endMinutes)
+        return false;
+
     return true;
 }
 
