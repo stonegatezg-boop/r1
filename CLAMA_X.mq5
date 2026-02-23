@@ -1,45 +1,39 @@
 //+------------------------------------------------------------------+
-//|                                                     CLAMA_X.mq5  |
-//|                        *** CLAMA X v2.0 ***                      |
+//|                                                      CLAMA_X.mq5 |
+//|                        *** CLAMA X v2.0 *** |
 //|                   MACD + Hull MA Strategy for XAUUSD M5          |
-//|                   + Trailing Stop + Stealth Mode v2.0            |
+//|                   + Stealth Execution & Trailing Upgrade         |
 //|                   + MULTIPLE TRADES (no limit)                   |
-//|                   Date: 2026-02-20 (Zagreb, CET)                 |
+//|                   Date: 2026-02-23                               |
 //+------------------------------------------------------------------+
-#property copyright "CLAMA X v2.0 - Multi-Trade Stealth (2026-02-20)"
+#property copyright "CLAMA X v2.0 - Stealth Edition (2026-02-23)"
 #property version   "2.00"
 #property strict
-
 #include <Trade\Trade.mqh>
-
+//--- Struktura za praćenje svakog tradea
 struct TradeData
 {
     ulong    ticket;
     double   entryPrice;
-    double   intendedSL;
+    double   intendedSL;      // Dodano: Za odgođeno postavljanje SL-a
+    datetime openTime;        // Dodano: Za odgođeno postavljanje SL-a
+    int      slDelaySeconds;  // Random delay 7-13s
     double   stealthTP;
-    datetime openTime;
-    int      slDelaySeconds;
-    int      trailLevel;
+    int      trailLevel;      // 0=none, 1=BE, 2=L2
     int      randomBEPips;
     int      randomLevel2Pips;
     int      barsInTrade;
 };
-
-struct PendingTradeInfo { bool active; ENUM_ORDER_TYPE type; double lot; double intendedSL; double intendedTP; datetime signalTime; int delaySeconds; };
-
 //--- Input parameters
 input group "=== MACD POSTAVKE ==="
 input int      FastEMA          = 8;
 input int      SlowEMA          = 17;
 input int      SignalSMA        = 9;
 input bool     UseHistogramFilter = true;
-
 input group "=== TREND FILTER (Hull MA) ==="
 input bool     UseTrendFilter   = true;
 input int      HullPeriod       = 20;
 input bool     StrictHullFilter = true;
-
 input group "=== TRADE MANAGEMENT ==="
 input double   SLMultiplier     = 2.0;
 input double   TPMultiplier     = 3.0;
@@ -48,130 +42,96 @@ input double   MinATR           = 1.0;
 input int      MaxBarsInTrade   = 48;
 input double   RiskPercent      = 1.0;
 input int      MaxOpenTrades    = 10;
-
-input group "=== STEALTH POSTAVKE ==="
-input bool     UseStealthMode   = true;
-input int      OpenDelayMin     = 0;
-input int      OpenDelayMax     = 4;
-input int      SLDelayMin       = 7;
-input int      SLDelayMax       = 13;
-input double   LargeCandleATR   = 3.0;
-
+input group "=== STEALTH & EXECUTION ==="
+input int      SLDelayMin       = 7;        // Delay min (sekunde)
+input int      SLDelayMax       = 13;       // Delay max (sekunde)
+input double   LargeCandleATR   = 3.0;      // Ne ulazi ako je svijeća > 3x ATR
 input group "=== TRAILING STOP ==="
-input int      TrailActivatePips   = 500;
-input int      TrailBEPipsMin      = 33;
-input int      TrailBEPipsMax      = 38;
-input int      TrailLevel2Pips     = 1000;
-input int      TrailLevel2SLMin    = 181;
-input int      TrailLevel2SLMax    = 213;
-
+input int      TrailActivatePips   = 500;   // Aktivacija trailing-a (pips profit)
+input int      TrailBEPipsMin      = 38;    // BE + min pips (Ažurirano)
+input int      TrailBEPipsMax      = 43;    // BE + max pips (Ažurirano)
+input int      TrailLevel2Pips     = 1000;  // Level 2 aktivacija (pips profit)
+input int      TrailLevel2SLMin    = 181;   // Level 2 SL min pips profit
+input int      TrailLevel2SLMax    = 213;   // Level 2 SL max pips profit
 input group "=== COOLDOWN ==="
 input int      MinBarsBetweenTrades = 6;
-
-input group "=== SESSION FILTER ==="
-input bool     UseSessionFilter = true;
-input int      LondonStart      = 8;
-input int      LondonEnd        = 11;
-input int      NYStart          = 14;
-input int      NYEnd            = 20;
-
-input group "=== OPCE POSTAVKE ==="
+input group "=== OPĆE POSTAVKE ==="
 input ulong    MagicNumber      = 334567;
 input int      Slippage         = 30;
-
 //--- Global variables
 CTrade         trade;
 int            macdHandle;
 int            atrHandle;
 datetime       lastBarTime;
 int            barsSinceLastTrade;
-
+//--- Array za praćenje svih otvorenih tradeova
 TradeData      trades[];
 int            tradesCount = 0;
-PendingTradeInfo g_pendingTrade;
-
 //+------------------------------------------------------------------+
 int OnInit()
 {
     trade.SetExpertMagicNumber(MagicNumber);
     trade.SetDeviationInPoints(Slippage);
     trade.SetTypeFilling(ORDER_FILLING_IOC);
-
     macdHandle = iMACD(_Symbol, PERIOD_CURRENT, FastEMA, SlowEMA, SignalSMA, PRICE_CLOSE);
     atrHandle = iATR(_Symbol, PERIOD_CURRENT, ATRPeriod);
-
     if(macdHandle == INVALID_HANDLE || atrHandle == INVALID_HANDLE)
     {
-        Print("Greska pri kreiranju indikatora!");
+        Print("Greška pri kreiranju indikatora!");
         return INIT_FAILED;
     }
-
     lastBarTime = 0;
     barsSinceLastTrade = MinBarsBetweenTrades + 1;
     ArrayResize(trades, 0);
     tradesCount = 0;
     MathSrand((uint)TimeCurrent() + (uint)GetTickCount());
-    g_pendingTrade.active = false;
-
-    Print("=== CLAMA X v2.0 STEALTH MODE inicijaliziran ===");
-    Print("MACD(", FastEMA, ",", SlowEMA, ",", SignalSMA, ") + Hull(", HullPeriod, ")");
-    Print("*** MULTI-TRADE MODE: Max ", MaxOpenTrades == 0 ? "UNLIMITED" : IntegerToString(MaxOpenTrades), " trades ***");
-
+    Print("=== CLAMA X v2.0 STEALTH EDITION inicijaliziran ===");
     return INIT_SUCCEEDED;
 }
-
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
     if(macdHandle != INVALID_HANDLE) IndicatorRelease(macdHandle);
     if(atrHandle != INVALID_HANDLE) IndicatorRelease(atrHandle);
 }
-
 //+------------------------------------------------------------------+
-int RandomRange(int minVal, int maxVal) { if(minVal >= maxVal) return minVal; return minVal + (MathRand() % (maxVal - minVal + 1)); }
-
-bool IsTradingWindow()
+int RandomRange(int minVal, int maxVal)
 {
-    MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
-    if(dt.day_of_week == 0) return (dt.hour > 1 || (dt.hour == 1 && dt.min >= 1));
-    if(dt.day_of_week >= 1 && dt.day_of_week <= 4) return true;
-    if(dt.day_of_week == 5) return (dt.hour < 12 || (dt.hour == 12 && dt.min <= 30));
-    return false;
+    if(minVal >= maxVal) return minVal;
+    return minVal + (MathRand() % (maxVal - minVal + 1));
 }
-
-bool IsBlackoutPeriod()
-{
-    if(!UseStealthMode) return false;
-    MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
-    int minutes = dt.hour * 60 + dt.min;
-    return (minutes >= 15*60+30 && minutes < 16*60+30);
-}
-
-bool IsLargeCandle()
-{
-    if(!UseStealthMode) return false;
-    double atr[]; ArraySetAsSeries(atr, true);
-    if(CopyBuffer(atrHandle, 0, 1, 1, atr) <= 0) return false;
-    return ((iHigh(_Symbol, PERIOD_CURRENT, 1) - iLow(_Symbol, PERIOD_CURRENT, 1)) > LargeCandleATR * atr[0]);
-}
-
+//+------------------------------------------------------------------+
 bool IsNewBar()
 {
     datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
-    if(currentBarTime != lastBarTime) { lastBarTime = currentBarTime; barsSinceLastTrade++; return true; }
+    if(currentBarTime != lastBarTime)
+    {
+        lastBarTime = currentBarTime;
+        barsSinceLastTrade++;
+        return true;
+    }
     return false;
 }
-
-bool IsGoodSession()
+//+------------------------------------------------------------------+
+// NOVO RADNO VRIJEME (Novi Prompt)
+bool IsTradingWindow()
 {
-    if(!UseSessionFilter) return true;
     MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
-    int hour = dt.hour;
-    if(hour >= LondonStart && hour < LondonEnd) return true;
-    if(hour >= NYStart && hour < NYEnd) return true;
+    if(dt.day_of_week == 0) return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1)); // Nedjelja od 00:01
+    if(dt.day_of_week >= 1 && dt.day_of_week <= 4) return true; // Pon-Čet cijeli dan
+    if(dt.day_of_week == 5) return (dt.hour < 11 || (dt.hour == 11 && dt.min <= 30)); // Petak do 11:30
     return false;
 }
-
+//+------------------------------------------------------------------+
+// NOVI FILTER ZA EKSTREMNE SVIJEĆE
+bool IsLargeCandle()
+{
+    double atr = GetATR();
+    if(atr <= 0) return false;
+    double high = iHigh(_Symbol, PERIOD_CURRENT, 1);
+    double low  = iLow(_Symbol, PERIOD_CURRENT, 1);
+    return ((high - low) > LargeCandleATR * atr);
+}
 //+------------------------------------------------------------------+
 bool IsHistogramGrowing(bool forBuy)
 {
@@ -186,7 +146,6 @@ bool IsHistogramGrowing(bool forBuy)
     if(forBuy) return (hist1 > hist2 && hist2 > hist3);
     else return (hist1 < hist2 && hist2 < hist3);
 }
-
 //+------------------------------------------------------------------+
 int GetHullDirection()
 {
@@ -213,40 +172,22 @@ int GetHullDirection()
     if(diff < -threshold) return -1;
     return 0;
 }
-
 //+------------------------------------------------------------------+
-double GetATR()
-{
-    double atrBuffer[]; ArraySetAsSeries(atrBuffer, true);
-    if(CopyBuffer(atrHandle, 0, 1, 1, atrBuffer) <= 0) return 0;
-    return atrBuffer[0];
-}
-
+double GetATR() { double atrBuffer[]; ArraySetAsSeries(atrBuffer, true); if(CopyBuffer(atrHandle, 0, 1, 1, atrBuffer) <= 0) return 0; return atrBuffer[0]; }
+//+------------------------------------------------------------------+
 void GetMACDSignals(bool &buySignal, bool &sellSignal)
 {
     buySignal = false; sellSignal = false;
     if(barsSinceLastTrade < MinBarsBetweenTrades) return;
-    double atr = GetATR();
-    if(atr < MinATR) return;
-    double macdMain[], macdSignal[];
-    ArraySetAsSeries(macdMain, true); ArraySetAsSeries(macdSignal, true);
-    if(CopyBuffer(macdHandle, 0, 0, 3, macdMain) <= 0) return;
-    if(CopyBuffer(macdHandle, 1, 0, 3, macdSignal) <= 0) return;
+    double atr = GetATR(); if(atr < MinATR) return;
+    double macdMain[], macdSignal[]; ArraySetAsSeries(macdMain, true); ArraySetAsSeries(macdSignal, true);
+    if(CopyBuffer(macdHandle, 0, 0, 3, macdMain) <= 0) return; if(CopyBuffer(macdHandle, 1, 0, 3, macdSignal) <= 0) return;
     bool macdCrossUp = (macdMain[1] > macdSignal[1]) && (macdMain[2] < macdSignal[2]);
     bool macdCrossDown = (macdMain[1] < macdSignal[1]) && (macdMain[2] > macdSignal[2]);
     int hullDir = GetHullDirection();
-    if(macdCrossUp)
-    {
-        if(!UseTrendFilter || (StrictHullFilter ? hullDir == 1 : hullDir >= 0))
-            if(IsHistogramGrowing(true)) buySignal = true;
-    }
-    if(macdCrossDown)
-    {
-        if(!UseTrendFilter || (StrictHullFilter ? hullDir == -1 : hullDir <= 0))
-            if(IsHistogramGrowing(false)) sellSignal = true;
-    }
+    if(macdCrossUp && (!UseTrendFilter || (StrictHullFilter ? hullDir == 1 : hullDir >= 0))) if(IsHistogramGrowing(true)) buySignal = true;
+    if(macdCrossDown && (!UseTrendFilter || (StrictHullFilter ? hullDir == -1 : hullDir <= 0))) if(IsHistogramGrowing(false)) sellSignal = true;
 }
-
 //+------------------------------------------------------------------+
 double CalculateLotSize(double slDistance)
 {
@@ -262,10 +203,8 @@ double CalculateLotSize(double slDistance)
     double slPoints = slDistance / point;
     double lotSize = riskAmount / (slPoints * tickValue / tickSize);
     lotSize = MathFloor(lotSize / lotStep) * lotStep;
-    lotSize = MathMax(minLot, MathMin(maxLot, lotSize));
-    return NormalizeDouble(lotSize, 2);
+    return NormalizeDouble(MathMax(minLot, MathMin(maxLot, lotSize)), 2);
 }
-
 //+------------------------------------------------------------------+
 int CountOpenPositions()
 {
@@ -273,13 +212,10 @@ int CountOpenPositions()
     for(int i = PositionsTotal() - 1; i >= 0; i--)
     {
         ulong ticket = PositionGetTicket(i);
-        if(PositionSelectByTicket(ticket))
-            if(PositionGetInteger(POSITION_MAGIC) == MagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)
-                count++;
+        if(PositionSelectByTicket(ticket) && PositionGetInteger(POSITION_MAGIC) == MagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol) count++;
     }
     return count;
 }
-
 //+------------------------------------------------------------------+
 void SyncTradesArray()
 {
@@ -288,235 +224,127 @@ void SyncTradesArray()
         if(!PositionSelectByTicket(trades[i].ticket))
         {
             for(int j = i; j < tradesCount - 1; j++) trades[j] = trades[j + 1];
-            tradesCount--;
-            ArrayResize(trades, tradesCount);
+            tradesCount--; ArrayResize(trades, tradesCount);
         }
     }
 }
-
-int FindTradeIndex(ulong ticket)
-{
-    for(int i = 0; i < tradesCount; i++) if(trades[i].ticket == ticket) return i;
-    return -1;
-}
-
-void AddTrade(ulong ticket, double entry, double sl, double tp, int bePips, int l2Pips, int slDelay)
+//+------------------------------------------------------------------+
+void AddTrade(ulong ticket, double entry, double intendedSL, double tp, int delay, int bePips, int l2Pips)
 {
     ArrayResize(trades, tradesCount + 1);
     trades[tradesCount].ticket = ticket;
     trades[tradesCount].entryPrice = entry;
-    trades[tradesCount].intendedSL = sl;
-    trades[tradesCount].stealthTP = tp;
+    trades[tradesCount].intendedSL = intendedSL;
     trades[tradesCount].openTime = TimeCurrent();
-    trades[tradesCount].slDelaySeconds = slDelay;
+    trades[tradesCount].slDelaySeconds = delay;
+    trades[tradesCount].stealthTP = tp;
     trades[tradesCount].trailLevel = 0;
     trades[tradesCount].randomBEPips = bePips;
     trades[tradesCount].randomLevel2Pips = l2Pips;
     trades[tradesCount].barsInTrade = 0;
     tradesCount++;
 }
-
-void ClosePosition(ulong ticket, string reason)
-{
-    if(trade.PositionClose(ticket)) Print("CLAMA X CLOSE [", ticket, "]: ", reason);
-}
-
 //+------------------------------------------------------------------+
-double GetProfitPips(ulong ticket, double entryPrice)
-{
-    if(!PositionSelectByTicket(ticket)) return 0;
-    ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
-    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-    double currentPrice = (posType == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-    if(posType == POSITION_TYPE_BUY) return (currentPrice - entryPrice) / point;
-    else return (entryPrice - currentPrice) / point;
-}
-
+void ClosePosition(ulong ticket, string reason) { if(trade.PositionClose(ticket)) Print("CLAMA X CLOSE [", ticket, "]: ", reason); }
 //+------------------------------------------------------------------+
 void ManageAllPositions()
 {
     SyncTradesArray();
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
-
     for(int i = tradesCount - 1; i >= 0; i--)
     {
         ulong ticket = trades[i].ticket;
         if(!PositionSelectByTicket(ticket)) continue;
-
         ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
         double currentSL = PositionGetDouble(POSITION_SL);
         double currentPrice = (posType == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-        double profitPips = GetProfitPips(ticket, trades[i].entryPrice);
-
-        // Delayed SL
-        if(UseStealthMode && currentSL == 0 && trades[i].intendedSL != 0 && TimeCurrent() >= trades[i].openTime + trades[i].slDelaySeconds)
+        //--- 1. Odgođeni Stop Loss ---
+        if(currentSL == 0 && trades[i].intendedSL != 0)
         {
-            if(trade.PositionModify(ticket, NormalizeDouble(trades[i].intendedSL, digits), 0))
-                Print("CLAMA X STEALTH: SL set #", ticket);
+            if(TimeCurrent() >= trades[i].openTime + trades[i].slDelaySeconds)
+            {
+                double sl = NormalizeDouble(trades[i].intendedSL, digits);
+                if(trade.PositionModify(ticket, sl, 0)) Print("CLAMA X STEALTH: SL postavljen na ", sl, " za #", ticket);
+            }
         }
-
-        // Check Stealth TP
+        //--- 2. Stealth TP ---
         if(trades[i].stealthTP > 0)
         {
-            bool tpHit = (posType == POSITION_TYPE_BUY && currentPrice >= trades[i].stealthTP) ||
-                         (posType == POSITION_TYPE_SELL && currentPrice <= trades[i].stealthTP);
-            if(tpHit) { ClosePosition(ticket, "Stealth TP HIT @ " + DoubleToString(currentPrice, digits)); continue; }
+            bool tpHit = (posType == POSITION_TYPE_BUY && currentPrice >= trades[i].stealthTP) || (posType == POSITION_TYPE_SELL && currentPrice <= trades[i].stealthTP);
+            if(tpHit) { ClosePosition(ticket, "Stealth TP HIT"); continue; }
         }
-
-        // Level 2 Trailing
-        if(trades[i].trailLevel < 2 && profitPips >= TrailLevel2Pips && currentSL > 0)
+        //--- 3. Trailing Stops ---
+        if(currentSL > 0) // Pokreni trailing tek kad je inicijalni SL postavljen
         {
-            double newSL = (posType == POSITION_TYPE_BUY) ? trades[i].entryPrice + trades[i].randomLevel2Pips * point : trades[i].entryPrice - trades[i].randomLevel2Pips * point;
-            newSL = NormalizeDouble(newSL, digits);
-            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) || (posType == POSITION_TYPE_SELL && newSL < currentSL);
-            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
+            double profitPips = (posType == POSITION_TYPE_BUY) ? (currentPrice - trades[i].entryPrice) / point : (trades[i].entryPrice - currentPrice) / point;
+            // Level 2
+            if(trades[i].trailLevel < 2 && profitPips >= TrailLevel2Pips)
             {
-                trades[i].trailLevel = 2;
-                Print("CLAMA X [", ticket, "] TRAIL L2: SL -> +", trades[i].randomLevel2Pips, " pips");
+                double newSL = (posType == POSITION_TYPE_BUY) ? trades[i].entryPrice + trades[i].randomLevel2Pips * point : trades[i].entryPrice - trades[i].randomLevel2Pips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if((posType == POSITION_TYPE_BUY && newSL > currentSL) || (posType == POSITION_TYPE_SELL && newSL < currentSL))
+                    if(trade.PositionModify(ticket, newSL, 0)) trades[i].trailLevel = 2;
+                continue;
             }
-            continue;
-        }
-
-        // Level 1 BE
-        if(trades[i].trailLevel < 1 && profitPips >= TrailActivatePips && currentSL > 0)
-        {
-            double newSL = (posType == POSITION_TYPE_BUY) ? trades[i].entryPrice + trades[i].randomBEPips * point : trades[i].entryPrice - trades[i].randomBEPips * point;
-            newSL = NormalizeDouble(newSL, digits);
-            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) || (posType == POSITION_TYPE_SELL && newSL < currentSL);
-            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
+            // Level 1 BE
+            if(trades[i].trailLevel < 1 && profitPips >= TrailActivatePips)
             {
-                trades[i].trailLevel = 1;
-                Print("CLAMA X [", ticket, "] TRAIL BE: SL -> BE+", trades[i].randomBEPips, " pips");
+                double newSL = (posType == POSITION_TYPE_BUY) ? trades[i].entryPrice + trades[i].randomBEPips * point : trades[i].entryPrice - trades[i].randomBEPips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if((posType == POSITION_TYPE_BUY && newSL > currentSL) || (posType == POSITION_TYPE_SELL && newSL < currentSL))
+                    if(trade.PositionModify(ticket, newSL, 0)) trades[i].trailLevel = 1;
             }
         }
     }
 }
-
 //+------------------------------------------------------------------+
 void CheckTimeExits()
 {
     for(int i = tradesCount - 1; i >= 0; i--)
     {
         trades[i].barsInTrade++;
-        if(trades[i].barsInTrade >= MaxBarsInTrade)
-            ClosePosition(trades[i].ticket, "Time exit - " + IntegerToString(trades[i].barsInTrade) + " bars");
+        if(trades[i].barsInTrade >= MaxBarsInTrade) ClosePosition(trades[i].ticket, "Time exit");
     }
 }
-
 //+------------------------------------------------------------------+
-void QueueTrade(ENUM_ORDER_TYPE type)
+void OpenTrade(ENUM_ORDER_TYPE type)
 {
-    double atr = GetATR();
-    if(atr <= 0) return;
-    double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
-    double sl = (type == ORDER_TYPE_BUY) ? price - SLMultiplier * atr : price + SLMultiplier * atr;
-    double tp = (type == ORDER_TYPE_BUY) ? price + TPMultiplier * atr : price - TPMultiplier * atr;
-    double lots = CalculateLotSize(SLMultiplier * atr);
-    if(lots <= 0) return;
-
-    if(UseStealthMode)
-    {
-        g_pendingTrade.active = true;
-        g_pendingTrade.type = type;
-        g_pendingTrade.lot = lots;
-        g_pendingTrade.intendedSL = sl;
-        g_pendingTrade.intendedTP = tp;
-        g_pendingTrade.signalTime = TimeCurrent();
-        g_pendingTrade.delaySeconds = RandomRange(OpenDelayMin, OpenDelayMax);
-        Print("CLAMA X: Trade queued, delay ", g_pendingTrade.delaySeconds, "s");
-    }
-    else
-    {
-        ExecuteTrade(type, lots, sl, tp);
-    }
-}
-
-//+------------------------------------------------------------------+
-void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
-{
+    double atr = GetATR(); if(atr <= 0) return;
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
-    sl = NormalizeDouble(sl, digits);
-    tp = NormalizeDouble(tp, digits);
-    bool ok;
+
+    double sl = (type == ORDER_TYPE_BUY) ? price - SLMultiplier * atr : price + SLMultiplier * atr;
+    double lots = CalculateLotSize(SLMultiplier * atr); if(lots <= 0) return;
     int bePips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
     int l2Pips = RandomRange(TrailLevel2SLMin, TrailLevel2SLMax);
     int slDelay = RandomRange(SLDelayMin, SLDelayMax);
-
-    if(UseStealthMode)
-        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, 0, 0, "CLAMA X") : trade.Sell(lot, _Symbol, price, 0, 0, "CLAMA X");
-    else
-        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, sl, tp, "CLAMA X BUY") : trade.Sell(lot, _Symbol, price, sl, tp, "CLAMA X SELL");
-
+    // ULaz BEZ SL i BEZ TP (Stealth)
+    bool ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lots, _Symbol, price, 0, 0, "CLAMA X") : trade.Sell(lots, _Symbol, price, 0, 0, "CLAMA X");
     if(ok)
     {
         ulong ticket = trade.ResultOrder();
-        if(UseStealthMode)
-        {
-            AddTrade(ticket, price, sl, tp, bePips, l2Pips, slDelay);
-            Print("CLAMA X STEALTH: Opened #", ticket, ", SL delay ", slDelay, "s");
-        }
-        else
-        {
-            AddTrade(ticket, price, sl, 0, bePips, l2Pips, 0);
-        }
-        Print("CLAMA X ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"), " [", ticket, "]: ", lot, " @ ", price);
-        Print("Random Trail: BE+", bePips, ", L2+", l2Pips);
+        double stealthTP = (type == ORDER_TYPE_BUY) ? NormalizeDouble(price + TPMultiplier * atr, digits) : NormalizeDouble(price - TPMultiplier * atr, digits);
+
+        AddTrade(ticket, price, sl, stealthTP, slDelay, bePips, l2Pips);
         barsSinceLastTrade = 0;
+        Print("CLAMA X STEALTH OTVORENO [", ticket, "] -> SL Delay: ", slDelay, "s");
     }
 }
-
-//+------------------------------------------------------------------+
-void ProcessPendingTrade()
-{
-    if(!g_pendingTrade.active) return;
-    if(TimeCurrent() >= g_pendingTrade.signalTime + g_pendingTrade.delaySeconds)
-    {
-        ExecuteTrade(g_pendingTrade.type, g_pendingTrade.lot, g_pendingTrade.intendedSL, g_pendingTrade.intendedTP);
-        g_pendingTrade.active = false;
-    }
-}
-
 //+------------------------------------------------------------------+
 void OnTick()
 {
-    ProcessPendingTrade();
     ManageAllPositions();
-
     if(!IsNewBar()) return;
-
     CheckTimeExits();
     SyncTradesArray();
 
     if(!IsTradingWindow()) return;
-    if(IsBlackoutPeriod()) return;
     if(IsLargeCandle()) return;
-    if(!IsGoodSession()) return;
     if(MaxOpenTrades > 0 && CountOpenPositions() >= MaxOpenTrades) return;
-    if(g_pendingTrade.active) return;
-
     bool buySignal, sellSignal;
     GetMACDSignals(buySignal, sellSignal);
-
-    if(buySignal)
-    {
-        Print("CLAMA X BUY SIGNAL (Hull=", GetHullDirection(), ", Open=", CountOpenPositions(), ")");
-        QueueTrade(ORDER_TYPE_BUY);
-    }
-    else if(sellSignal)
-    {
-        Print("CLAMA X SELL SIGNAL (Hull=", GetHullDirection(), ", Open=", CountOpenPositions(), ")");
-        QueueTrade(ORDER_TYPE_SELL);
-    }
-}
-
-//+------------------------------------------------------------------+
-double OnTester()
-{
-    double profitFactor = TesterStatistics(STAT_PROFIT_FACTOR);
-    double trades_count = TesterStatistics(STAT_TRADES);
-    if(trades_count < 50) return 0;
-    return profitFactor * MathSqrt(trades_count);
+    if(buySignal) OpenTrade(ORDER_TYPE_BUY);
+    else if(sellSignal) OpenTrade(ORDER_TYPE_SELL);
 }
 //+------------------------------------------------------------------+
