@@ -1,11 +1,11 @@
 //+------------------------------------------------------------------+
 //|                                              CALF_A_UTBot.mq5    |
 //|                        *** CALF A - UT Bot Only ***              |
-//|                   + Stealth Mode v2.0                            |
-//|                   Version 2.0 - 2026-02-20                       |
+//|                   + Stealth Mode v2.1                            |
+//|                   Version 2.1 - 2026-02-23                       |
 //+------------------------------------------------------------------+
-#property copyright "CALF A - UT Bot + Stealth (2026-02-20)"
-#property version   "2.00"
+#property copyright "CALF A - UT Bot + Stealth (2026-02-23)"
+#property version   "2.10"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -30,8 +30,8 @@ input double   LargeCandleATR   = 3.0;
 
 input group "=== TRAILING POSTAVKE ==="
 input int      TrailActivatePips = 500;
-input int      TrailBEPipsMin   = 33;
-input int      TrailBEPipsMax   = 38;
+input int      TrailBEPipsMin   = 38;
+input int      TrailBEPipsMax   = 43;
 
 input group "=== OPĆE ==="
 input ulong    MagicNumber      = 100001;
@@ -66,7 +66,7 @@ int OnInit()
     g_pendingTrade.active = false;
     ArrayResize(g_positions, 0);
     g_posCount = 0;
-    Print("=== CALF A v2.0 STEALTH MODE ===");
+    Print("=== CALF A v2.1 STEALTH MODE ===");
     return INIT_SUCCEEDED;
 }
 
@@ -77,18 +77,19 @@ int RandomRange(int minVal, int maxVal) { if(minVal >= maxVal) return minVal; re
 bool IsTradingWindow()
 {
     MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
-    if(dt.day_of_week == 0) return (dt.hour > 1 || (dt.hour == 1 && dt.min >= 1));
+    // Sunday from 00:01
+    if(dt.day_of_week == 0) return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1));
+    // Mon-Thu all day
     if(dt.day_of_week >= 1 && dt.day_of_week <= 4) return true;
-    if(dt.day_of_week == 5) return (dt.hour < 12 || (dt.hour == 12 && dt.min <= 30));
+    // Friday until 11:30
+    if(dt.day_of_week == 5) return (dt.hour < 11 || (dt.hour == 11 && dt.min <= 30));
     return false;
 }
 
 bool IsBlackoutPeriod()
 {
-    if(!UseStealthMode) return false;
-    MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
-    int minutes = dt.hour * 60 + dt.min;
-    return (minutes >= 15*60+30 && minutes < 16*60+30);
+    // v2.1: No blackout periods
+    return false;
 }
 
 bool IsLargeCandle()
