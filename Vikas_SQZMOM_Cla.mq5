@@ -1,34 +1,43 @@
 //+------------------------------------------------------------------+
 //|                                           Vikas_SQZMOM_Cla.mq5  |
-//|                   *** Vikas SQZMOM Cla v1.0 ***                  |
+//|                   *** Vikas SQZMOM Cla v1.1 ***                  |
 //|         SuperTrend + Squeeze Momentum + GAN Targets + TSL       |
+//|                   + STEALTH EXECUTION (TP/SL)                   |
 //|                   + NEWS FILTER & SPREAD FILTER                 |
+//|                   + HUMAN-LIKE TRAILING                         |
 //|                   Based on TradingView Strategy                 |
 //|                   Date: 2026-02-24                              |
 //+------------------------------------------------------------------+
-#property copyright "Vikas SQZMOM Cla v1.0 (2026-02-24)"
-#property version   "1.00"
+#property copyright "Vikas SQZMOM Cla v1.1 (2026-02-24)"
+#property version   "1.10"
 #property strict
 #include <Trade\Trade.mqh>
 
-//--- Struktura za praćenje tradea s više targeta
+//--- Struktura za praćenje tradea s više targeta + stealth
 struct TradeData
 {
     ulong    ticket;
     double   entryPrice;
-    double   stopLoss;
+    double   intendedSL;          // Pravi SL (delayed)
+    double   stealthTP;           // Interni TP (nikad ne šalje brokeru)
     double   target1;
     double   target2;
     double   target3;
-    double   tsl1Level;      // TSL nakon TARGET1
-    double   tsl2Level;      // TSL nakon TARGET2
+    double   tsl1Level;           // TSL nakon TARGET1
+    double   tsl2Level;           // TSL nakon TARGET2
     datetime openTime;
-    int      direction;      // 1=LONG, -1=SHORT
+    int      slDelaySeconds;      // Random 7-13s
+    int      direction;           // 1=LONG, -1=SHORT
+    bool     slPlaced;            // Je li SL već postavljen
     bool     target1Hit;
     bool     target2Hit;
     bool     target3Hit;
-    int      remainingQty;   // 3->2->1->0
+    int      remainingQty;        // 3->2->1->0
     int      barsInTrade;
+
+    // Trailing varijable (per-trade)
+    int      trailLevel;          // 0=none, 1=BE activated
+    int      randomBEPips;        // Random 38-43 (generira se jednom)
 };
 
 //--- Input parameters
@@ -59,7 +68,19 @@ input double   RiskPercent      = 1.0;      // Risk % od Balance-a
 input int      MaxOpenTrades    = 3;        // Max otvorenih pozicija
 input int      MaxBarsInTrade   = 100;      // Max barova u tradeu
 
-input group "=== TRAILING STOP LOSS ==="
+input group "=== STEALTH EXECUTION ==="
+input int      SLDelayMin       = 7;        // Min delay za SL (sekunde)
+input int      SLDelayMax       = 13;       // Max delay za SL (sekunde)
+
+input group "=== LARGE CANDLE FILTER ==="
+input double   LargeCandleATR   = 3.0;      // Filter svijeća > X * ATR
+
+input group "=== TRAILING STOP (HUMAN-LIKE) ==="
+input int      TrailActivatePips   = 500;   // Aktivacija trailing-a (pips profit)
+input int      TrailBEPipsMin      = 38;    // BE + min pips
+input int      TrailBEPipsMax      = 43;    // BE + max pips
+
+input group "=== TSL SUSTAV (TARGET BASED) ==="
 input bool     UseTSL           = true;     // Koristi TSL sustav
 // TSL1 = (Entry + TARGET1) / 2 nakon TARGET1
 // TSL2 = (TSL1 + TARGET2) / 2 nakon TARGET2
@@ -73,10 +94,6 @@ input int      NewsMinutesAfter    = 30;    // Minuta nakon vijesti
 input group "=== SPREAD FILTER ==="
 input bool     UseSpreadFilter     = true;  // Koristi Spread Filter
 input int      MaxSpreadPoints     = 50;    // Max spread u points
-
-input group "=== TRADING WINDOW ==="
-input bool     UseTradingWindow    = true;  // Koristi trading window
-// Sunday 00:01 - Friday 11:30
 
 input group "=== OPĆE POSTAVKE ==="
 input ulong    MagicNumber      = 445566;   // Magic Number
@@ -98,6 +115,7 @@ int            superTrendDir[];  // 1=UP, -1=DOWN
 // Statistika
 int            newsBlockedCount = 0;
 int            spreadBlockedCount = 0;
+int            largeCandleBlockedCount = 0;
 int            totalBuys = 0;
 int            totalSells = 0;
 
@@ -134,13 +152,17 @@ int OnInit()
     MathSrand((uint)TimeCurrent() + (uint)GetTickCount());
 
     Print("╔═══════════════════════════════════════════════════════════════╗");
-    Print("║        VIKAS SQZMOM CLA v1.0 - SuperTrend Strategy            ║");
+    Print("║        VIKAS SQZMOM CLA v1.1 - STEALTH EDITION                ║");
     Print("╠═══════════════════════════════════════════════════════════════╣");
     Print("║ SuperTrend: ATR(", ATR_Period, ") x ", ATR_Multiplier);
     Print("║ Squeeze Momentum: BB(", BB_Length, ") + KC(", KC_Length, ")");
     Print("║ Targets: ", Target1_Multiplier, "x / ", Target2_Multiplier, "x / ", Target3_Multiplier, "x range");
+    Print("║ STEALTH: SL delay ", SLDelayMin, "-", SLDelayMax, "s | TP hidden");
+    Print("║ TRAILING: ", TrailActivatePips, " pips -> BE+", TrailBEPipsMin, "-", TrailBEPipsMax);
+    Print("║ Large Candle Filter: > ", LargeCandleATR, "x ATR");
     Print("║ NEWS FILTER: ", UseNewsFilter ? "ON" : "OFF");
     Print("║ SPREAD FILTER: ", UseSpreadFilter ? "ON" : "OFF", " (Max ", MaxSpreadPoints, ")");
+    Print("║ Trading: Sunday 00:01 - Friday 11:30 (Server Time)");
     Print("╚═══════════════════════════════════════════════════════════════╝");
 
     return INIT_SUCCEEDED;
@@ -160,7 +182,17 @@ void OnDeinit(const int reason)
     Print("Total SELL signala: ", totalSells);
     Print("Blokirano zbog NEWS: ", newsBlockedCount);
     Print("Blokirano zbog SPREAD: ", spreadBlockedCount);
+    Print("Blokirano zbog LARGE CANDLE: ", largeCandleBlockedCount);
     Print("═══════════════════════════════════════════════════");
+}
+
+//+------------------------------------------------------------------+
+//| Random Range Helper                                               |
+//+------------------------------------------------------------------+
+int RandomRange(int minVal, int maxVal)
+{
+    if(minVal >= maxVal) return minVal;
+    return minVal + (MathRand() % (maxVal - minVal + 1));
 }
 
 //+------------------------------------------------------------------+
@@ -232,6 +264,28 @@ bool IsSpreadTooHigh()
 }
 
 //+------------------------------------------------------------------+
+//| LARGE CANDLE FILTER                                               |
+//+------------------------------------------------------------------+
+bool IsLargeCandle()
+{
+    double atr = GetATR(1);
+    if(atr <= 0) return false;
+
+    double high = iHigh(_Symbol, PERIOD_CURRENT, 1);
+    double low  = iLow(_Symbol, PERIOD_CURRENT, 1);
+    double candleRange = high - low;
+
+    if(candleRange > LargeCandleATR * atr)
+    {
+        PrintFormat("⚠ LARGE CANDLE BLOCK: Range %.2f > %.2f (%.1fx ATR)",
+                   candleRange, LargeCandleATR * atr, candleRange / atr);
+        return true;
+    }
+
+    return false;
+}
+
+//+------------------------------------------------------------------+
 //| Helper functions                                                  |
 //+------------------------------------------------------------------+
 bool IsNewBar()
@@ -246,17 +300,34 @@ bool IsNewBar()
     return false;
 }
 
+//+------------------------------------------------------------------+
+//| TRADING WINDOW - Sunday 00:01 to Friday 11:30 (Server Time)      |
+//| NO intraday restrictions - trades all hours within these days    |
+//+------------------------------------------------------------------+
 bool IsTradingWindow()
 {
-    if(!UseTradingWindow) return true;
-
     MqlDateTime dt;
-    TimeToStruct(TimeCurrent(), dt);
+    TimeToStruct(TimeCurrent(), dt);  // Server time
 
-    if(dt.day_of_week == 0) return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1));
-    if(dt.day_of_week >= 1 && dt.day_of_week <= 4) return true;
-    if(dt.day_of_week == 5) return (dt.hour < 11 || (dt.hour == 11 && dt.min <= 30));
+    // Sunday (day 0): from 00:01 onwards
+    if(dt.day_of_week == 0)
+    {
+        return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1));
+    }
 
+    // Monday to Thursday (days 1-4): all day allowed
+    if(dt.day_of_week >= 1 && dt.day_of_week <= 4)
+    {
+        return true;
+    }
+
+    // Friday (day 5): until 11:30
+    if(dt.day_of_week == 5)
+    {
+        return (dt.hour < 11 || (dt.hour == 11 && dt.min <= 30));
+    }
+
+    // Saturday: no trading
     return false;
 }
 
@@ -287,7 +358,6 @@ void CalculateSuperTrend(int &direction, double &upLine, double &dnLine)
 
     // Source = HL2 (High + Low) / 2
     double src = (high[1] + low[1]) / 2.0;
-    double srcPrev = (high[2] + low[2]) / 2.0;
 
     // Calculate bands
     double up = src - ATR_Multiplier * atr;
@@ -334,8 +404,6 @@ void CalculateSuperTrend(int &direction, double &upLine, double &dnLine)
 //+------------------------------------------------------------------+
 //| SQUEEZE MOMENTUM CALCULATION                                      |
 //+------------------------------------------------------------------+
-// Returns: >0 bullish, <0 bearish
-// Also returns momentum direction: 1=growing, -1=falling
 double CalculateSqueezeMomentum(int &momentumDir)
 {
     double close[], high[], low[];
@@ -363,7 +431,6 @@ double CalculateSqueezeMomentum(int &momentumDir)
         sumSqDiff += diff * diff;
     }
     double stdev = MathSqrt(sumSqDiff / BB_Length);
-    double devBB = BB_MultFactor * stdev;
 
     // Calculate Keltner Channel
     double sumKC = 0;
@@ -391,9 +458,6 @@ double CalculateSqueezeMomentum(int &momentumDir)
     }
     double rangeMA = sumRange / KC_Length;
 
-    // Squeeze Momentum Value (Linear Regression)
-    // val = linreg(source - avg(avg(highest, lowest), sma), length, 0)
-
     // Find highest high and lowest low
     double highestHigh = high[1];
     double lowestLow = low[1];
@@ -406,15 +470,13 @@ double CalculateSqueezeMomentum(int &momentumDir)
     double avgHL = (highestHigh + lowestLow) / 2.0;
     double avgAll = (avgHL + maKC) / 2.0;
 
-    // Calculate momentum values for linear regression
-    double vals[];
-    ArrayResize(vals, KC_Length);
-    for(int i = 0; i < KC_Length; i++)
+    // Calculate momentum values
+    double vals[2];
+    for(int idx = 0; idx < 2; idx++)
     {
-        // Recalculate for each bar
-        double hh = high[i+1];
-        double ll = low[i+1];
-        for(int j = i+1; j <= i + KC_Length && j < barsNeeded; j++)
+        double hh = high[idx+1];
+        double ll = low[idx+1];
+        for(int j = idx+1; j <= idx + KC_Length && j < barsNeeded; j++)
         {
             if(high[j] > hh) hh = high[j];
             if(low[j] < ll) ll = low[j];
@@ -422,17 +484,20 @@ double CalculateSqueezeMomentum(int &momentumDir)
         double avgHLi = (hh + ll) / 2.0;
 
         double sumClose = 0;
-        for(int j = i+1; j <= i + KC_Length && j < barsNeeded; j++)
+        int count = 0;
+        for(int j = idx+1; j <= idx + KC_Length && j < barsNeeded; j++)
+        {
             sumClose += close[j];
-        double smaI = sumClose / KC_Length;
+            count++;
+        }
+        double smaI = (count > 0) ? sumClose / count : close[idx+1];
 
         double avgAllI = (avgHLi + smaI) / 2.0;
-        vals[i] = close[i+1] - avgAllI;
+        vals[idx] = close[idx+1] - avgAllI;
     }
 
-    // Linear regression (simplified - just use average slope)
-    double val = vals[0];  // Current momentum value
-    double valPrev = vals[1];  // Previous momentum value
+    double val = vals[0];
+    double valPrev = vals[1];
 
     // Determine momentum direction
     if(val > valPrev)
@@ -465,11 +530,7 @@ bool IsBearishCandle(int shift = 1)
 //+------------------------------------------------------------------+
 void CalculateGannTargets(double price, int direction, double &t1, double &t2, double &t3)
 {
-    if(!UseGannLevels)
-    {
-        // Koristi standardne multipliere
-        return;
-    }
+    if(!UseGannLevels) return;
 
     double sqrtPrice = MathFloor(MathSqrt(price));
 
@@ -549,7 +610,7 @@ void GetSignals(bool &buySignal, bool &sellSignal)
             // Za BUY: SQZM mora biti bullish (>0) i rasti
             if(sqzmVal <= 0 || momentumDir != 1)
             {
-                Print("BUY blokiran: SQZM=", sqzmVal, " Dir=", momentumDir);
+                Print("BUY blokiran: SQZM=", DoubleToString(sqzmVal, 2), " Dir=", momentumDir);
                 return;
             }
         }
@@ -558,7 +619,7 @@ void GetSignals(bool &buySignal, bool &sellSignal)
             // Za SELL: SQZM mora biti bearish (<0) i padati
             if(sqzmVal >= 0 || momentumDir != -1)
             {
-                Print("SELL blokiran: SQZM=", sqzmVal, " Dir=", momentumDir);
+                Print("SELL blokiran: SQZM=", DoubleToString(sqzmVal, 2), " Dir=", momentumDir);
                 return;
             }
         }
@@ -651,24 +712,29 @@ void SyncTradesArray()
 //+------------------------------------------------------------------+
 //| Add Trade to tracking                                             |
 //+------------------------------------------------------------------+
-void AddTrade(ulong ticket, double entry, double sl, double t1, double t2, double t3, int dir)
+void AddTrade(ulong ticket, double entry, double sl, double tp, double t1, double t2, double t3, int dir, int slDelay, int bePips)
 {
     ArrayResize(trades, tradesCount + 1);
     trades[tradesCount].ticket = ticket;
     trades[tradesCount].entryPrice = entry;
-    trades[tradesCount].stopLoss = sl;
+    trades[tradesCount].intendedSL = sl;
+    trades[tradesCount].stealthTP = tp;
     trades[tradesCount].target1 = t1;
     trades[tradesCount].target2 = t2;
     trades[tradesCount].target3 = t3;
     trades[tradesCount].tsl1Level = 0;
     trades[tradesCount].tsl2Level = 0;
     trades[tradesCount].openTime = TimeCurrent();
+    trades[tradesCount].slDelaySeconds = slDelay;
     trades[tradesCount].direction = dir;
+    trades[tradesCount].slPlaced = false;
     trades[tradesCount].target1Hit = false;
     trades[tradesCount].target2Hit = false;
     trades[tradesCount].target3Hit = false;
     trades[tradesCount].remainingQty = 3;
     trades[tradesCount].barsInTrade = 0;
+    trades[tradesCount].trailLevel = 0;
+    trades[tradesCount].randomBEPips = bePips;
     tradesCount++;
 }
 
@@ -709,7 +775,29 @@ void PartialClose(ulong ticket, double portion, string reason)
 }
 
 //+------------------------------------------------------------------+
-//| Manage All Positions - TSL Logic                                  |
+//| Get Profit in Pips                                                |
+//+------------------------------------------------------------------+
+double GetProfitPips(ulong ticket, double entryPrice, int dir)
+{
+    if(!PositionSelectByTicket(ticket)) return 0;
+
+    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+    double currentPrice;
+
+    if(dir == 1)  // LONG
+    {
+        currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+        return (currentPrice - entryPrice) / point;
+    }
+    else  // SHORT
+    {
+        currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+        return (entryPrice - currentPrice) / point;
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Manage All Positions - STEALTH + TSL Logic                        |
 //+------------------------------------------------------------------+
 void ManageAllPositions()
 {
@@ -723,7 +811,9 @@ void ManageAllPositions()
         ulong ticket = trades[i].ticket;
         if(!PositionSelectByTicket(ticket)) continue;
 
+        double currentSL = PositionGetDouble(POSITION_SL);
         double currentPrice;
+
         if(trades[i].direction == 1)
             currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
         else
@@ -732,7 +822,74 @@ void ManageAllPositions()
         double high = iHigh(_Symbol, PERIOD_CURRENT, 0);
         double low = iLow(_Symbol, PERIOD_CURRENT, 0);
 
-        // Check TARGET1
+        //=== 1. DELAYED SL PLACEMENT (Stealth) ===
+        if(!trades[i].slPlaced && trades[i].intendedSL != 0)
+        {
+            if(TimeCurrent() >= trades[i].openTime + trades[i].slDelaySeconds)
+            {
+                double sl = NormalizeDouble(trades[i].intendedSL, digits);
+                if(trade.PositionModify(ticket, sl, 0))
+                {
+                    trades[i].slPlaced = true;
+                    Print("VIKAS STEALTH [", ticket, "]: SL postavljen na ", sl, " (delay ", trades[i].slDelaySeconds, "s)");
+                }
+            }
+        }
+
+        //=== 2. CHECK STEALTH TP (Target3 or main TP) ===
+        if(trades[i].stealthTP > 0)
+        {
+            bool tpHit = false;
+            if(trades[i].direction == 1 && currentPrice >= trades[i].stealthTP)
+                tpHit = true;
+            else if(trades[i].direction == -1 && currentPrice <= trades[i].stealthTP)
+                tpHit = true;
+
+            if(tpHit)
+            {
+                ClosePosition(ticket, "STEALTH TP HIT @ " + DoubleToString(currentPrice, digits));
+                continue;
+            }
+        }
+
+        //=== 3. HUMAN-LIKE TRAILING (500 pips -> BE + random 38-43) ===
+        if(trades[i].slPlaced && trades[i].trailLevel == 0)
+        {
+            double profitPips = GetProfitPips(ticket, trades[i].entryPrice, trades[i].direction);
+
+            if(profitPips >= TrailActivatePips)
+            {
+                double newSL;
+                if(trades[i].direction == 1)  // LONG
+                {
+                    newSL = trades[i].entryPrice + trades[i].randomBEPips * point;
+                    newSL = NormalizeDouble(newSL, digits);
+                    if(newSL > currentSL)
+                    {
+                        if(trade.PositionModify(ticket, newSL, 0))
+                        {
+                            trades[i].trailLevel = 1;
+                            Print("VIKAS TRAIL [", ticket, "]: BE+", trades[i].randomBEPips, " pips (SL=", newSL, ")");
+                        }
+                    }
+                }
+                else  // SHORT
+                {
+                    newSL = trades[i].entryPrice - trades[i].randomBEPips * point;
+                    newSL = NormalizeDouble(newSL, digits);
+                    if(newSL < currentSL || currentSL == 0)
+                    {
+                        if(trade.PositionModify(ticket, newSL, 0))
+                        {
+                            trades[i].trailLevel = 1;
+                            Print("VIKAS TRAIL [", ticket, "]: BE+", trades[i].randomBEPips, " pips (SL=", newSL, ")");
+                        }
+                    }
+                }
+            }
+        }
+
+        //=== 4. CHECK TARGET1 ===
         if(!trades[i].target1Hit)
         {
             bool t1Hit = false;
@@ -747,14 +904,12 @@ void ManageAllPositions()
                 trades[i].tsl1Level = (trades[i].entryPrice + trades[i].target1) / 2.0;
                 trades[i].remainingQty = 2;
 
-                // Partial close 1/3
                 PartialClose(ticket, 0.33, "TARGET1 HIT @ " + DoubleToString(trades[i].target1, digits));
-
-                Print("✓ TARGET1 HIT! TSL1 set to ", trades[i].tsl1Level);
+                Print("✓ TARGET1 HIT! TSL1 = ", DoubleToString(trades[i].tsl1Level, digits));
             }
         }
 
-        // Check TARGET2 (only if TARGET1 hit)
+        //=== 5. CHECK TARGET2 ===
         if(trades[i].target1Hit && !trades[i].target2Hit)
         {
             bool t2Hit = false;
@@ -769,14 +924,12 @@ void ManageAllPositions()
                 trades[i].tsl2Level = (trades[i].tsl1Level + trades[i].target2) / 2.0;
                 trades[i].remainingQty = 1;
 
-                // Partial close another 1/3
                 PartialClose(ticket, 0.5, "TARGET2 HIT @ " + DoubleToString(trades[i].target2, digits));
-
-                Print("✓ TARGET2 HIT! TSL2 set to ", trades[i].tsl2Level);
+                Print("✓ TARGET2 HIT! TSL2 = ", DoubleToString(trades[i].tsl2Level, digits));
             }
         }
 
-        // Check TARGET3 (only if TARGET2 hit)
+        //=== 6. CHECK TARGET3 ===
         if(trades[i].target2Hit && !trades[i].target3Hit)
         {
             bool t3Hit = false;
@@ -789,13 +942,12 @@ void ManageAllPositions()
             {
                 trades[i].target3Hit = true;
                 trades[i].remainingQty = 0;
-
-                ClosePosition(ticket, "TARGET3 HIT - FULL PROFIT @ " + DoubleToString(trades[i].target3, digits));
+                ClosePosition(ticket, "TARGET3 - FULL PROFIT @ " + DoubleToString(trades[i].target3, digits));
                 continue;
             }
         }
 
-        // Check TSL hits (if UseTSL)
+        //=== 7. CHECK TSL HITS (if UseTSL) ===
         if(UseTSL)
         {
             // TSL2 check (after TARGET2)
@@ -830,18 +982,18 @@ void ManageAllPositions()
             }
         }
 
-        // Check SL (before any targets)
-        if(!trades[i].target1Hit)
+        //=== 8. CHECK SL (internal, before broker SL is placed) ===
+        if(!trades[i].target1Hit && !trades[i].slPlaced)
         {
             bool slHit = false;
-            if(trades[i].direction == 1 && low <= trades[i].stopLoss)
+            if(trades[i].direction == 1 && low <= trades[i].intendedSL)
                 slHit = true;
-            else if(trades[i].direction == -1 && high >= trades[i].stopLoss)
+            else if(trades[i].direction == -1 && high >= trades[i].intendedSL)
                 slHit = true;
 
             if(slHit)
             {
-                ClosePosition(ticket, "STOP LOSS HIT @ " + DoubleToString(trades[i].stopLoss, digits));
+                ClosePosition(ticket, "STEALTH SL HIT @ " + DoubleToString(trades[i].intendedSL, digits));
                 continue;
             }
         }
@@ -887,6 +1039,9 @@ void OpenBuy()
     // Apply Gann adjustments
     CalculateGannTargets(price, 1, t1, t2, t3);
 
+    // Stealth TP = Target3
+    double stealthTP = t3;
+
     double lots = CalculateLotSize(range_val);
     if(lots <= 0) return;
 
@@ -895,23 +1050,26 @@ void OpenBuy()
     t1 = NormalizeDouble(t1, digits);
     t2 = NormalizeDouble(t2, digits);
     t3 = NormalizeDouble(t3, digits);
+    stealthTP = NormalizeDouble(stealthTP, digits);
 
-    // Open bez TP (upravljamo ručno)
-    if(trade.Buy(lots, _Symbol, price, sl, 0, "VIKAS BUY"))
+    // Generate random values for this trade
+    int slDelay = RandomRange(SLDelayMin, SLDelayMax);
+    int bePips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
+
+    // Open BEZ SL i TP (stealth mode)
+    if(trade.Buy(lots, _Symbol, price, 0, 0, "VIKAS BUY"))
     {
         ulong ticket = trade.ResultOrder();
-        AddTrade(ticket, price, sl, t1, t2, t3, 1);
+        AddTrade(ticket, price, sl, stealthTP, t1, t2, t3, 1, slDelay, bePips);
 
-        Print("╔════════════════════════════════════════════╗");
-        Print("║ ✓ VIKAS BUY SIGNAL EXECUTED                ║");
-        Print("╠════════════════════════════════════════════╣");
-        Print("║ Entry: ", price);
-        Print("║ SL:    ", sl);
-        Print("║ T1:    ", t1, " (", Target1_Multiplier, "x)");
-        Print("║ T2:    ", t2, " (", Target2_Multiplier, "x)");
-        Print("║ T3:    ", t3, " (", Target3_Multiplier, "x)");
-        Print("║ Lots:  ", lots);
-        Print("╚════════════════════════════════════════════╝");
+        Print("╔════════════════════════════════════════════════╗");
+        Print("║ ✓ VIKAS STEALTH BUY                            ║");
+        Print("╠════════════════════════════════════════════════╣");
+        Print("║ Entry: ", price, " | Lots: ", lots);
+        Print("║ SL: ", sl, " (delay ", slDelay, "s)");
+        Print("║ T1: ", t1, " | T2: ", t2, " | T3: ", t3);
+        Print("║ Trail: BE+", bePips, " pips @ ", TrailActivatePips, " pips profit");
+        Print("╚════════════════════════════════════════════════╝");
 
         totalBuys++;
         barsSinceLastTrade = 0;
@@ -942,6 +1100,9 @@ void OpenSell()
     // Apply Gann adjustments
     CalculateGannTargets(price, -1, t1, t2, t3);
 
+    // Stealth TP = Target3
+    double stealthTP = t3;
+
     double lots = CalculateLotSize(range_val);
     if(lots <= 0) return;
 
@@ -950,23 +1111,26 @@ void OpenSell()
     t1 = NormalizeDouble(t1, digits);
     t2 = NormalizeDouble(t2, digits);
     t3 = NormalizeDouble(t3, digits);
+    stealthTP = NormalizeDouble(stealthTP, digits);
 
-    // Open bez TP (upravljamo ručno)
-    if(trade.Sell(lots, _Symbol, price, sl, 0, "VIKAS SELL"))
+    // Generate random values for this trade
+    int slDelay = RandomRange(SLDelayMin, SLDelayMax);
+    int bePips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
+
+    // Open BEZ SL i TP (stealth mode)
+    if(trade.Sell(lots, _Symbol, price, 0, 0, "VIKAS SELL"))
     {
         ulong ticket = trade.ResultOrder();
-        AddTrade(ticket, price, sl, t1, t2, t3, -1);
+        AddTrade(ticket, price, sl, stealthTP, t1, t2, t3, -1, slDelay, bePips);
 
-        Print("╔════════════════════════════════════════════╗");
-        Print("║ ✓ VIKAS SELL SIGNAL EXECUTED               ║");
-        Print("╠════════════════════════════════════════════╣");
-        Print("║ Entry: ", price);
-        Print("║ SL:    ", sl);
-        Print("║ T1:    ", t1, " (", Target1_Multiplier, "x)");
-        Print("║ T2:    ", t2, " (", Target2_Multiplier, "x)");
-        Print("║ T3:    ", t3, " (", Target3_Multiplier, "x)");
-        Print("║ Lots:  ", lots);
-        Print("╚════════════════════════════════════════════╝");
+        Print("╔════════════════════════════════════════════════╗");
+        Print("║ ✓ VIKAS STEALTH SELL                           ║");
+        Print("╠════════════════════════════════════════════════╣");
+        Print("║ Entry: ", price, " | Lots: ", lots);
+        Print("║ SL: ", sl, " (delay ", slDelay, "s)");
+        Print("║ T1: ", t1, " | T2: ", t2, " | T3: ", t3);
+        Print("║ Trail: BE+", bePips, " pips @ ", TrailActivatePips, " pips profit");
+        Print("╚════════════════════════════════════════════════╝");
 
         totalSells++;
         barsSinceLastTrade = 0;
@@ -978,7 +1142,7 @@ void OpenSell()
 //+------------------------------------------------------------------+
 void OnTick()
 {
-    // Uvijek upravljaj pozicijama
+    // UVIJEK upravljaj pozicijama (čak i izvan trading window-a)
     ManageAllPositions();
 
     if(!IsNewBar()) return;
@@ -987,11 +1151,18 @@ void OnTick()
     CheckTimeExits();
     SyncTradesArray();
 
-    // Trading window check
+    // Trading window check (samo za NOVE tradeove)
     if(!IsTradingWindow()) return;
 
     // Max positions check
     if(MaxOpenTrades > 0 && CountOpenPositions() >= MaxOpenTrades) return;
+
+    // LARGE CANDLE FILTER
+    if(IsLargeCandle())
+    {
+        largeCandleBlockedCount++;
+        return;
+    }
 
     // NEWS FILTER
     if(HasActiveNews())
