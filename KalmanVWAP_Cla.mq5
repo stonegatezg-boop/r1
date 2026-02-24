@@ -360,8 +360,9 @@ double GetRollingVWAP(int shift = 1)
                        iLow(_Symbol, PERIOD_CURRENT, i) +
                        iClose(_Symbol, PERIOD_CURRENT, i)) / 3.0;
 
-        long vol = iVolume(_Symbol, PERIOD_CURRENT, i);
-        if(vol <= 0) vol = 1;  // Avoid division by zero
+        long volLong = iVolume(_Symbol, PERIOD_CURRENT, i);
+        if(volLong <= 0) volLong = 1;  // Avoid division by zero
+        double vol = (double)volLong;  // Explicit cast to avoid warning
 
         sumPV += hlc3 * vol;
         sumV += vol;
