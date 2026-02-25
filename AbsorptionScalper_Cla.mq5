@@ -306,8 +306,8 @@ bool IsTradingWindow()
 //+------------------------------------------------------------------+
 bool IsSpreadOK()
 {
-    double spread = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
-    return (spread <= MaxSpread);
+    long spread = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
+    return ((double)spread <= MaxSpread);
 }
 
 //+------------------------------------------------------------------+
