@@ -33,6 +33,7 @@
 | Vikas_SQZMOM_15_Cla | 445567 | M15 | XAUUSD |
 | RSI_MomDiv_Cla | 889900 | M5 | XAUUSD |
 | Mix1_ADX_Cla | 261450 | M5 | XAUUSD |
+| SupplyDemand_GMACD_Cla | 556677 | M5 | XAUUSD |
 
 ## Standardni Inputi
 ```cpp
