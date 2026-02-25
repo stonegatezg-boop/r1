@@ -98,7 +98,6 @@ double   rangeFilter = 0;
 double   hiBand = 0;
 double   loBand = 0;
 int      filterDirection = 0;  // 1 = up, -1 = down
-int      prevCondIni = 0;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                     |
