@@ -1,13 +1,14 @@
 //+------------------------------------------------------------------+
 //|                                                  ULTRACLA_V1.mq5 |
-//|   *** ULTIMATE CLA - Best of All EAs Combined ***                |
+//|   *** ULTIMATE CLA V2 - Simplified & Effective ***               |
 //|                                                                  |
 //|   SIGNALS:                                                       |
-//|   - SuperTrend direction change (primary)                        |
+//|   - SuperTrend DIRECTION (not change) as primary                 |
 //|   - Squeeze Momentum confirmation                                |
-//|   - EMA Trend Filter (H1)                                        |
-//|   - RSI Oscillator Filter                                        |
-//|   - Volume Filter                                                |
+//|   - Candle confirmation (bull/bear)                              |
+//|                                                                  |
+//|   OPTIONAL FILTERS:                                              |
+//|   - H1 EMA Trend Filter (default OFF)                            |
 //|                                                                  |
 //|   POSITION MANAGEMENT:                                           |
 //|   - 3 Target Levels with Partial Closes                          |
@@ -15,18 +16,10 @@
 //|   - 2-Level Human-Like Trailing                                  |
 //|   - Stealth TP/SL Execution                                      |
 //|                                                                  |
-//|   RISK MANAGEMENT:                                               |
-//|   - ATR-based SL (dynamic)                                       |
-//|   - News Filter                                                  |
-//|   - Spread Filter                                                |
-//|   - Volatility Filter (universal points)                         |
-//|   - Large Candle Filter                                          |
-//|   - Daily Drawdown Limit                                         |
-//|                                                                  |
-//|   Version 1.0 - 2026-02-24                                       |
+//|   Version 2.0 - 2026-02-25                                       |
 //+------------------------------------------------------------------+
-#property copyright "ULTRACLA v1.0 (2026-02-24)"
-#property version   "1.00"
+#property copyright "ULTRACLA v2.0 (2026-02-25)"
+#property version   "2.00"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -71,22 +64,15 @@ input double   SQZM_BB_Mult       = 2.0;       // BB StdDev Multiplier
 input int      SQZM_KC_Length     = 20;        // Keltner Channel Period
 input double   SQZM_KC_Mult       = 1.5;       // KC Multiplier
 
-input group "=== EMA TREND FILTER ==="
-input bool     UseEMAFilter       = true;      // Use EMA Trend Filter
+input group "=== EMA TREND FILTER (Optional) ==="
+input bool     UseEMAFilter       = false;     // Use H1 EMA Trend Filter
 input int      EMA_Fast           = 20;        // Fast EMA Period
 input int      EMA_Slow           = 50;        // Slow EMA Period
 input ENUM_TIMEFRAMES EMA_TF      = PERIOD_H1; // EMA Timeframe
 
-input group "=== RSI FILTER ==="
-input bool     UseRSIFilter       = true;      // Use RSI Filter
-input int      RSI_Period         = 14;        // RSI Period
-input int      RSI_BuyLevel       = 50;        // RSI above this for BUY
-input int      RSI_SellLevel      = 50;        // RSI below this for SELL
-
-input group "=== VOLUME FILTER ==="
-input bool     UseVolumeFilter    = true;      // Use Volume Filter
-input int      VolumePeriod       = 20;        // Volume MA Period
-input double   VolumeMultiplier   = 1.2;       // Volume must be > MA * this
+input group "=== SIGNAL SETTINGS ==="
+input bool     RequireCandleConf  = true;      // Require Bull/Bear Candle
+input int      MinBarsSinceLast   = 5;         // Min bars between signals
 
 input group "=== TARGETS ==="
 input double   Target1_Mult       = 1.5;       // Target 1 (x ATR)
@@ -103,11 +89,6 @@ input group "=== RISK MANAGEMENT ==="
 input double   RiskPercent        = 1.0;       // Risk % per trade
 input int      MaxOpenTrades      = 2;         // Max open trades
 input double   MaxDailyDD         = 3.0;       // Max daily DD %
-input int      CooldownBars       = 3;         // Bars between trades
-
-input group "=== VOLATILITY FILTER (POINTS) ==="
-input double   MinATR_Points      = 50;        // Min ATR in points
-input double   MaxATR_Points      = 2000;      // Max ATR in points
 
 input group "=== STEALTH EXECUTION ==="
 input bool     UseStealthMode     = true;      // Use Stealth Mode
@@ -142,9 +123,9 @@ input int      Slippage           = 30;        // Slippage (points)
 //| GLOBAL VARIABLES                                                  |
 //+------------------------------------------------------------------+
 CTrade         trade;
-int            atrHandle, rsiHandle, emaFastHandle, emaSlowHandle;
+int            atrHandle, emaFastHandle, emaSlowHandle;
 datetime       lastBarTime;
-datetime       lastTradeTime;
+datetime       lastSignalTime;
 TradeData      trades[];
 int            tradesCount = 0;
 
@@ -155,9 +136,8 @@ int            stDir[];
 // Statistics
 int            statBuys = 0, statSells = 0;
 int            statNewsBlocked = 0, statSpreadBlocked = 0;
-int            statVolBlocked = 0, statLargeCandleBlocked = 0;
+int            statLargeCandleBlocked = 0;
 int            statTrendBlocked = 0, statSQZMBlocked = 0;
-int            statRSIBlocked = 0, statVolumeBlocked = 0;
 
 //+------------------------------------------------------------------+
 int OnInit()
@@ -168,14 +148,16 @@ int OnInit()
 
    // Create indicator handles
    atrHandle = iATR(_Symbol, PERIOD_CURRENT, ST_ATR_Period);
-   rsiHandle = iRSI(_Symbol, PERIOD_CURRENT, RSI_Period, PRICE_CLOSE);
-   emaFastHandle = iMA(_Symbol, EMA_TF, EMA_Fast, 0, MODE_EMA, PRICE_CLOSE);
-   emaSlowHandle = iMA(_Symbol, EMA_TF, EMA_Slow, 0, MODE_EMA, PRICE_CLOSE);
 
-   if(atrHandle == INVALID_HANDLE || rsiHandle == INVALID_HANDLE ||
-      emaFastHandle == INVALID_HANDLE || emaSlowHandle == INVALID_HANDLE)
+   if(UseEMAFilter)
    {
-      Print("ERROR: Failed to create indicator handles");
+      emaFastHandle = iMA(_Symbol, EMA_TF, EMA_Fast, 0, MODE_EMA, PRICE_CLOSE);
+      emaSlowHandle = iMA(_Symbol, EMA_TF, EMA_Slow, 0, MODE_EMA, PRICE_CLOSE);
+   }
+
+   if(atrHandle == INVALID_HANDLE)
+   {
+      Print("ERROR: Failed to create ATR handle");
       return INIT_FAILED;
    }
 
@@ -190,18 +172,17 @@ int OnInit()
    ArrayResize(trades, 0);
    tradesCount = 0;
    lastBarTime = 0;
-   lastTradeTime = 0;
+   lastSignalTime = 0;
 
    MathSrand((uint)TimeCurrent() + (uint)GetTickCount());
 
    Print("╔═══════════════════════════════════════════════════════════════╗");
-   Print("║         ULTRACLA v1.0 - ULTIMATE TRADING SYSTEM               ║");
+   Print("║         ULTRACLA v2.0 - SIMPLIFIED & EFFECTIVE                ║");
    Print("╠═══════════════════════════════════════════════════════════════╣");
    Print("║ SuperTrend: ATR(", ST_ATR_Period, ") x ", ST_ATR_Multiplier);
    Print("║ SQZM Filter: ", UseSQZM ? "ON" : "OFF");
-   Print("║ EMA Filter: ", UseEMAFilter ? "ON" : "OFF", " (", EMA_Fast, "/", EMA_Slow, " on ", EnumToString(EMA_TF), ")");
-   Print("║ RSI Filter: ", UseRSIFilter ? "ON" : "OFF", " (Period ", RSI_Period, ")");
-   Print("║ Volume Filter: ", UseVolumeFilter ? "ON" : "OFF");
+   Print("║ EMA Filter: ", UseEMAFilter ? "ON" : "OFF");
+   Print("║ Candle Confirm: ", RequireCandleConf ? "ON" : "OFF");
    Print("║ Targets: ", Target1_Mult, "x / ", Target2_Mult, "x / ", Target3_Mult, "x ATR");
    Print("║ SL: ", SL_ATR_Mult, "x ATR (min ", MinSL_Points, " pts)");
    Print("║ Stealth: ", UseStealthMode ? "ON" : "OFF", " | News: ", UseNewsFilter ? "ON" : "OFF");
@@ -215,22 +196,21 @@ int OnInit()
 void OnDeinit(const int reason)
 {
    if(atrHandle != INVALID_HANDLE) IndicatorRelease(atrHandle);
-   if(rsiHandle != INVALID_HANDLE) IndicatorRelease(rsiHandle);
-   if(emaFastHandle != INVALID_HANDLE) IndicatorRelease(emaFastHandle);
-   if(emaSlowHandle != INVALID_HANDLE) IndicatorRelease(emaSlowHandle);
+   if(UseEMAFilter)
+   {
+      if(emaFastHandle != INVALID_HANDLE) IndicatorRelease(emaFastHandle);
+      if(emaSlowHandle != INVALID_HANDLE) IndicatorRelease(emaSlowHandle);
+   }
 
    Print("═══════════════════════════════════════════════════");
-   Print("         ULTRACLA - FINAL STATISTICS");
+   Print("         ULTRACLA V2 - FINAL STATISTICS");
    Print("═══════════════════════════════════════════════════");
    Print("Total BUY: ", statBuys, " | Total SELL: ", statSells);
    Print("Blocked by NEWS: ", statNewsBlocked);
    Print("Blocked by SPREAD: ", statSpreadBlocked);
-   Print("Blocked by VOLATILITY: ", statVolBlocked);
    Print("Blocked by LARGE CANDLE: ", statLargeCandleBlocked);
-   Print("Blocked by TREND: ", statTrendBlocked);
+   Print("Blocked by EMA TREND: ", statTrendBlocked);
    Print("Blocked by SQZM: ", statSQZMBlocked);
-   Print("Blocked by RSI: ", statRSIBlocked);
-   Print("Blocked by VOLUME: ", statVolumeBlocked);
    Print("═══════════════════════════════════════════════════");
 }
 
@@ -251,26 +231,10 @@ double GetATR(int shift = 1)
 }
 
 //+------------------------------------------------------------------+
-double GetATRPoints(int shift = 1)
-{
-   double atr = GetATR(shift);
-   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-   if(point <= 0) return 0;
-   return atr / point;
-}
-
-//+------------------------------------------------------------------+
-double GetRSI(int shift = 1)
-{
-   double buf[];
-   ArraySetAsSeries(buf, true);
-   if(CopyBuffer(rsiHandle, 0, shift, 1, buf) <= 0) return 50;
-   return buf[0];
-}
-
-//+------------------------------------------------------------------+
 bool GetEMATrend(int &trend)
 {
+   if(!UseEMAFilter) { trend = 0; return true; }
+
    double fast[], slow[];
    ArraySetAsSeries(fast, true);
    ArraySetAsSeries(slow, true);
@@ -278,9 +242,9 @@ bool GetEMATrend(int &trend)
    if(CopyBuffer(emaFastHandle, 0, 0, 2, fast) < 2) return false;
    if(CopyBuffer(emaSlowHandle, 0, 0, 2, slow) < 2) return false;
 
-   if(fast[0] > slow[0] && fast[1] > slow[1])
+   if(fast[0] > slow[0])
       trend = 1;   // Bullish
-   else if(fast[0] < slow[0] && fast[1] < slow[1])
+   else if(fast[0] < slow[0])
       trend = -1;  // Bearish
    else
       trend = 0;   // Neutral
@@ -331,17 +295,10 @@ bool IsLargeCandle()
 }
 
 //+------------------------------------------------------------------+
-bool IsVolatilityOK()
-{
-   double atrPts = GetATRPoints(1);
-   return (atrPts >= MinATR_Points && atrPts <= MaxATR_Points);
-}
-
-//+------------------------------------------------------------------+
 bool IsSpreadOK()
 {
-   int spread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
-   return (spread <= MaxSpread);
+   long spread = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
+   return ((int)spread <= MaxSpread);
 }
 
 //+------------------------------------------------------------------+
@@ -405,23 +362,6 @@ double CurrentDailyDD()
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    if(bal <= 0) return 0;
    return (pnl / bal) * 100.0;
-}
-
-//+------------------------------------------------------------------+
-bool IsVolumeAboveAverage()
-{
-   if(!UseVolumeFilter) return true;
-
-   long vol[];
-   ArraySetAsSeries(vol, true);
-   if(CopyTickVolume(_Symbol, PERIOD_CURRENT, 0, VolumePeriod + 2, vol) <= 0) return true;
-
-   double sum = 0;
-   for(int i = 2; i < VolumePeriod + 2; i++)
-      sum += (double)vol[i];
-
-   double avg = sum / VolumePeriod;
-   return ((double)vol[1] > avg * VolumeMultiplier);
 }
 
 //+------------------------------------------------------------------+
@@ -519,99 +459,82 @@ double CalculateSQZM(int &momentumDir)
 }
 
 //+------------------------------------------------------------------+
-//| GET SIGNALS WITH ALL FILTERS                                      |
+//| GET SIGNALS - SIMPLIFIED LOGIC                                    |
 //+------------------------------------------------------------------+
 void GetSignals(bool &buySignal, bool &sellSignal)
 {
    buySignal = false;
    sellSignal = false;
 
-   // 1. Calculate SuperTrend
+   // 1. Calculate SuperTrend DIRECTION (not change!)
    int stDirection;
    double upLine, dnLine;
    CalculateSuperTrend(stDirection, upLine, dnLine);
 
-   // Check for trend change
-   bool trendChangeUp = (stDir[0] == 1 && stDir[1] == -1);
-   bool trendChangeDn = (stDir[0] == -1 && stDir[1] == 1);
+   // No signal if neutral
+   if(stDirection == 0) return;
 
-   if(!trendChangeUp && !trendChangeDn) return;
+   // 2. Check minimum bars since last signal
+   if(lastSignalTime > 0)
+   {
+      int barsSinceLast = (int)((TimeCurrent() - lastSignalTime) / PeriodSeconds(PERIOD_CURRENT));
+      if(barsSinceLast < MinBarsSinceLast) return;
+   }
 
-   // 2. EMA Trend Filter
+   // 3. EMA Trend Filter (optional)
    if(UseEMAFilter)
    {
       int emaTrend;
       if(!GetEMATrend(emaTrend)) return;
 
-      if(trendChangeUp && emaTrend == -1)
+      if(stDirection == 1 && emaTrend == -1)
       {
          statTrendBlocked++;
          return;
       }
-      if(trendChangeDn && emaTrend == 1)
+      if(stDirection == -1 && emaTrend == 1)
       {
          statTrendBlocked++;
          return;
       }
    }
 
-   // 3. Squeeze Momentum Filter
+   // 4. Squeeze Momentum Filter
    if(UseSQZM)
    {
       int sqzmDir;
       double sqzmVal = CalculateSQZM(sqzmDir);
 
-      if(trendChangeUp)
+      // For BUY: SQZM should be positive (bullish momentum)
+      if(stDirection == 1 && sqzmVal <= 0)
       {
-         if(sqzmVal <= 0 || sqzmDir != 1)
-         {
-            statSQZMBlocked++;
-            return;
-         }
-      }
-      else if(trendChangeDn)
-      {
-         if(sqzmVal >= 0 || sqzmDir != -1)
-         {
-            statSQZMBlocked++;
-            return;
-         }
-      }
-   }
-
-   // 4. RSI Filter
-   if(UseRSIFilter)
-   {
-      double rsi = GetRSI(1);
-
-      if(trendChangeUp && rsi < RSI_BuyLevel)
-      {
-         statRSIBlocked++;
+         statSQZMBlocked++;
          return;
       }
-      if(trendChangeDn && rsi > RSI_SellLevel)
+      // For SELL: SQZM should be negative (bearish momentum)
+      if(stDirection == -1 && sqzmVal >= 0)
       {
-         statRSIBlocked++;
+         statSQZMBlocked++;
          return;
       }
    }
 
-   // 5. Volume Filter
-   if(UseVolumeFilter && !IsVolumeAboveAverage())
+   // 5. Candle confirmation
+   if(RequireCandleConf)
    {
-      statVolumeBlocked++;
-      return;
+      double open1 = iOpen(_Symbol, PERIOD_CURRENT, 1);
+      double close1 = iClose(_Symbol, PERIOD_CURRENT, 1);
+
+      if(stDirection == 1 && close1 <= open1) return;  // Need bullish candle
+      if(stDirection == -1 && close1 >= open1) return; // Need bearish candle
    }
 
-   // 6. Candle confirmation
-   double open1 = iOpen(_Symbol, PERIOD_CURRENT, 1);
-   double close1 = iClose(_Symbol, PERIOD_CURRENT, 1);
+   // Generate signals based on direction
+   buySignal = (stDirection == 1);
+   sellSignal = (stDirection == -1);
 
-   if(trendChangeUp && close1 <= open1) return;  // Need bullish candle
-   if(trendChangeDn && close1 >= open1) return;  // Need bearish candle
-
-   buySignal = trendChangeUp;
-   sellSignal = trendChangeDn;
+   if(buySignal || sellSignal)
+      lastSignalTime = TimeCurrent();
 }
 
 //+------------------------------------------------------------------+
@@ -779,61 +702,52 @@ void ManageAllPositions()
          }
       }
 
-      //=== 3. TRAILING LEVEL 2 (800 pips -> Lock 150-200) ===
-      if(trades[i].slPlaced && trades[i].trailLevel < 2)
+      //=== 3. Calculate profit in pips ===
+      double profitPips = (trades[i].direction == 1)
+         ? (currentPrice - trades[i].entryPrice) / point
+         : (trades[i].entryPrice - currentPrice) / point;
+
+      //=== 4. TRAILING LEVEL 2 (800 pips -> Lock 150-200) ===
+      if(trades[i].slPlaced && trades[i].trailLevel < 2 && profitPips >= Trail2_Pips)
       {
-         double profitPips = (trades[i].direction == 1)
-            ? (currentPrice - trades[i].entryPrice) / point
-            : (trades[i].entryPrice - currentPrice) / point;
+         double newSL;
+         if(trades[i].direction == 1)
+            newSL = trades[i].entryPrice + trades[i].randomL2Pips * point;
+         else
+            newSL = trades[i].entryPrice - trades[i].randomL2Pips * point;
 
-         if(profitPips >= Trail2_Pips)
+         newSL = NormalizeDouble(newSL, digits);
+         bool shouldMod = (trades[i].direction == 1 && newSL > currentSL) ||
+                          (trades[i].direction == -1 && (newSL < currentSL || currentSL == 0));
+
+         if(shouldMod && trade.PositionModify(ticket, newSL, 0))
          {
-            double newSL;
-            if(trades[i].direction == 1)
-               newSL = trades[i].entryPrice + trades[i].randomL2Pips * point;
-            else
-               newSL = trades[i].entryPrice - trades[i].randomL2Pips * point;
-
-            newSL = NormalizeDouble(newSL, digits);
-            bool shouldMod = (trades[i].direction == 1 && newSL > currentSL) ||
-                             (trades[i].direction == -1 && newSL < currentSL);
-
-            if(shouldMod && trade.PositionModify(ticket, newSL, 0))
-            {
-               trades[i].trailLevel = 2;
-               Print("ULTRACLA TRAIL L2 [", ticket, "]: Lock +", trades[i].randomL2Pips);
-            }
+            trades[i].trailLevel = 2;
+            Print("ULTRACLA TRAIL L2 [", ticket, "]: Lock +", trades[i].randomL2Pips);
          }
       }
 
-      //=== 4. TRAILING LEVEL 1 (500 pips -> BE + 38-43) ===
-      if(trades[i].slPlaced && trades[i].trailLevel < 1)
+      //=== 5. TRAILING LEVEL 1 (500 pips -> BE + 38-43) ===
+      if(trades[i].slPlaced && trades[i].trailLevel < 1 && profitPips >= Trail1_Pips)
       {
-         double profitPips = (trades[i].direction == 1)
-            ? (currentPrice - trades[i].entryPrice) / point
-            : (trades[i].entryPrice - currentPrice) / point;
+         double newSL;
+         if(trades[i].direction == 1)
+            newSL = trades[i].entryPrice + trades[i].randomBEPips * point;
+         else
+            newSL = trades[i].entryPrice - trades[i].randomBEPips * point;
 
-         if(profitPips >= Trail1_Pips)
+         newSL = NormalizeDouble(newSL, digits);
+         bool shouldMod = (trades[i].direction == 1 && newSL > currentSL) ||
+                          (trades[i].direction == -1 && (newSL < currentSL || currentSL == 0));
+
+         if(shouldMod && trade.PositionModify(ticket, newSL, 0))
          {
-            double newSL;
-            if(trades[i].direction == 1)
-               newSL = trades[i].entryPrice + trades[i].randomBEPips * point;
-            else
-               newSL = trades[i].entryPrice - trades[i].randomBEPips * point;
-
-            newSL = NormalizeDouble(newSL, digits);
-            bool shouldMod = (trades[i].direction == 1 && newSL > currentSL) ||
-                             (trades[i].direction == -1 && newSL < currentSL);
-
-            if(shouldMod && trade.PositionModify(ticket, newSL, 0))
-            {
-               trades[i].trailLevel = 1;
-               Print("ULTRACLA TRAIL L1 [", ticket, "]: BE+", trades[i].randomBEPips);
-            }
+            trades[i].trailLevel = 1;
+            Print("ULTRACLA TRAIL L1 [", ticket, "]: BE+", trades[i].randomBEPips);
          }
       }
 
-      //=== 5. TARGET 1 ===
+      //=== 6. TARGET 1 ===
       if(!trades[i].target1Hit)
       {
          bool t1Hit = false;
@@ -850,7 +764,7 @@ void ManageAllPositions()
          }
       }
 
-      //=== 6. TARGET 2 ===
+      //=== 7. TARGET 2 ===
       if(trades[i].target1Hit && !trades[i].target2Hit)
       {
          bool t2Hit = false;
@@ -867,7 +781,7 @@ void ManageAllPositions()
          }
       }
 
-      //=== 7. TARGET 3 ===
+      //=== 8. TARGET 3 ===
       if(trades[i].target2Hit && !trades[i].target3Hit)
       {
          bool t3Hit = false;
@@ -884,7 +798,7 @@ void ManageAllPositions()
          }
       }
 
-      //=== 8. TSL CHECKS ===
+      //=== 9. TSL CHECKS ===
       if(trades[i].target2Hit && trades[i].tsl2Level > 0)
       {
          bool tslHit = false;
@@ -914,7 +828,7 @@ void ManageAllPositions()
          }
       }
 
-      //=== 9. STEALTH SL CHECK (before broker SL placed) ===
+      //=== 10. STEALTH SL CHECK ===
       if(!trades[i].target1Hit && !trades[i].slPlaced)
       {
          bool slHit = false;
@@ -974,7 +888,6 @@ void OpenBuy()
    {
       ulong ticket = trade.ResultOrder();
       AddTrade(ticket, price, sl, t3, t1, t2, t3, 1, slDelay, bePips, l2Pips);
-      lastTradeTime = TimeCurrent();
       statBuys++;
 
       Print("╔════════════════════════════════════════════════╗");
@@ -1030,7 +943,6 @@ void OpenSell()
    {
       ulong ticket = trade.ResultOrder();
       AddTrade(ticket, price, sl, t3, t1, t2, t3, -1, slDelay, bePips, l2Pips);
-      lastTradeTime = TimeCurrent();
       statSells++;
 
       Print("╔════════════════════════════════════════════════╗");
@@ -1061,16 +973,8 @@ void OnTick()
    // Check daily DD
    if(CurrentDailyDD() <= -MaxDailyDD) return;
 
-   // Check cooldown
-   if(lastTradeTime > 0)
-   {
-      int cooldownSec = CooldownBars * PeriodSeconds(PERIOD_CURRENT);
-      if(TimeCurrent() - lastTradeTime < cooldownSec) return;
-   }
-
    // FILTERS
    if(IsLargeCandle()) { statLargeCandleBlocked++; return; }
-   if(!IsVolatilityOK()) { statVolBlocked++; return; }
    if(!IsSpreadOK()) { statSpreadBlocked++; return; }
    if(HasActiveNews()) { statNewsBlocked++; return; }
 
