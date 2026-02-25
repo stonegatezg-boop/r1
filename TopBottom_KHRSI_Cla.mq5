@@ -321,7 +321,7 @@ double CalculateVWAP()
       if(volume == 0) volume = 1;
 
       sumPV += typicalPrice * volume;
-      sumV += volume;
+      sumV += (double)volume;
       barsToday++;
    }
 
