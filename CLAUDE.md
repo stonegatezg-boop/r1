@@ -53,6 +53,19 @@ input int TrailingStart1 = 500;  // pips za BE
 input int TrailingStart2 = 800;  // pips za lock profit
 ```
 
+## Verzioniranje (OBAVEZNO)
+- **Novi EA**: Dodaj datum i vrijeme kreiranja u header (Zagreb time)
+- **Ispravke**: Dodaj datum i vrijeme ispravke u header
+- **Format**: `// Created: DD.MM.YYYY HH:MM (Zagreb)` ili `// Fixed: DD.MM.YYYY HH:MM (Zagreb)`
+
+```cpp
+//+------------------------------------------------------------------+
+//|                                                    IME_EA.mq5     |
+//|                   Created: 26.02.2026 15:30 (Zagreb)              |
+//|                   Fixed: 26.02.2026 16:45 (Zagreb) - opis fix    |
+//+------------------------------------------------------------------+
+```
+
 ## Napomene
 - Svi EA su za XAUUSD osim ako nije drugačije specificirano
 - 1 pip XAUUSD = 0.1 (100 points = 10 pips)
