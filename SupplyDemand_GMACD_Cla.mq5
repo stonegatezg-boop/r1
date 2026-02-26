@@ -2,6 +2,10 @@
 //|                                       SupplyDemand_GMACD_Cla.mq5 |
 //|                     Supply/Demand Pattern + Gaussian MACD HA     |
 //|                                          Za XAUUSD M5            |
+//|                   Created: 26.02.2026 14:00 (Zagreb)             |
+//|                   Fixed: 26.02.2026 20:15 (Zagreb)               |
+//|                   - Dodani timestamps za verzioniranje           |
+//|                   - Poboljšan pattern lookback (10 umjesto 15)   |
 //+------------------------------------------------------------------+
 #property copyright "Claude"
 #property link      ""
