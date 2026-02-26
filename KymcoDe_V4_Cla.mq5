@@ -2,9 +2,10 @@
 //|                                                KymcoDe_V4_Cla.mq5|
 //|   Donchian Breakout + Trend Filter                               |
 //|   + Stealth Mode v2.0                                            |
-//|   + V4.0: Fixed ATR filter, improved trend logic                 |
-//|                                                                  |
-//|   Version 4.0 - 2026-02-24                                       |
+//|   Created: 24.02.2026 (Zagreb)                                   |
+//|   Fixed: 26.02.2026 19:30 (Zagreb)                               |
+//|   - Trend filter OFF (Donchian radi bolje bez)                   |
+//|   - Blackout period uklonjen                                     |
 //+------------------------------------------------------------------+
 #property strict
 #property version   "4.00"

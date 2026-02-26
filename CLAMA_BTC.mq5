@@ -1,10 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                                    CLAMA_BTC.mq5 |
-//|                        *** CLAMA BTC v1.1 *** |
+//|                        *** CLAMA BTC v1.2 ***                    |
 //|                   MACD + Hull MA Strategy for BTCUSD M5          |
 //|                   + Stealth Mode (Novi Prompt Aligned)           |
 //|                   + MULTIPLE TRADES (no limit)                   |
-//|                   Date: 2026-02-23                               |
+//|                   Created: 23.02.2026 (Zagreb)                   |
+//|                   Fixed: 26.02.2026 19:30 (Zagreb)               |
+//|                   - MACD Direction umjesto Cross                 |
+//|                   - Hull filter OFF by default                   |
 //+------------------------------------------------------------------+
 #property copyright "CLAMA BTC v1.1 - Multi-Trade Stealth (2026-02-23)"
 #property version   "1.10"
