@@ -47,7 +47,6 @@ input group "=== SIGNAL SETTINGS ==="
 input bool     UseSlopeSignal    = true;    // Signal na slope promjenu
 input bool     UseCrossoverSignal = true;   // Signal na price crossover
 input bool     RequireCandleConfirm = true; // Zahtijevaj bull/bear svijeću
-input int      MinBarsBetweenTrades = 5;    // Min barova između trejdova
 
 input group "=== TRADE MANAGEMENT ==="
 input double   RiskRewardRatio   = 1.5;     // Risk:Reward Ratio
@@ -939,9 +938,6 @@ void OnTick()
         spreadBlockedCount++;
         return;
     }
-
-    // COOLDOWN CHECK
-    if(barsSinceLastTrade < MinBarsBetweenTrades) return;
 
     // SIGNAL LOGIC
     bool buySignal, sellSignal;
