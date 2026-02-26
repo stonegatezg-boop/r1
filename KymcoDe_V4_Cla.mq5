@@ -802,7 +802,6 @@ void OnTick()
 
    // Provjere za novi trade
    if(!IsTradingWindow()) return;
-   if(IsBlackoutPeriod()) return;
    if(IsLargeCandle()) return;
    if(!IsVolatilityOK()) return;
    if(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD) > MaxSpread) return;
