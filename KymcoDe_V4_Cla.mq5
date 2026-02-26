@@ -31,7 +31,7 @@ input int    MagicNumber        = 9024026;
 input double MaxDailyDD         = 3.0;
 
 input group "=== TREND FILTER ==="
-input bool   UseTrendFilter     = true;
+input bool   UseTrendFilter     = false;    // OFF - Donchian radi bolje bez
 input int    H1_EMA_Period      = 50;       // H1 EMA za glavni trend
 input int    HullPeriod         = 20;       // Hull MA za M5 trend
 input bool   StrictTrendFilter  = false;    // FALSE = lakši uvjeti
