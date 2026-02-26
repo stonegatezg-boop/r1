@@ -45,9 +45,9 @@ input int      SignalSMA        = 9;        // Signal SMA
 input bool     UseHistogramFilter = true;   // Require histogram momentum
 
 input group "=== TREND FILTER (Hull MA) ==="
-input bool     UseTrendFilter   = true;     // Use Hull MA filter
+input bool     UseTrendFilter   = false;    // Use Hull MA filter (OFF by default)
 input int      HullPeriod       = 20;       // Hull MA period
-input bool     StrictHullFilter = true;     // Strict trend matching
+input bool     StrictHullFilter = false;    // Strict trend matching (OFF by default)
 
 input group "=== TRADE MANAGEMENT ==="
 input double   SLMultiplier     = 1.5;      // SL = ATR * multiplier (BTC: tighter)
@@ -328,11 +328,12 @@ void GetMACDSignals(bool &buySignal, bool &sellSignal)
     if(CopyBuffer(macdHandle, 0, 0, 3, macdMain) <= 0) return;
     if(CopyBuffer(macdHandle, 1, 0, 3, macdSignal) <= 0) return;
 
-    bool macdCrossUp = (macdMain[1] > macdSignal[1]) && (macdMain[2] < macdSignal[2]);
-    bool macdCrossDown = (macdMain[1] < macdSignal[1]) && (macdMain[2] > macdSignal[2]);
+    // MACD Direction (not cross) - more signals
+    bool macdBullish = (macdMain[1] > macdSignal[1]);
+    bool macdBearish = (macdMain[1] < macdSignal[1]);
     int hullDir = GetHullDirection();
 
-    if(macdCrossUp)
+    if(macdBullish)
     {
         if(!UseTrendFilter || (StrictHullFilter ? hullDir == 1 : hullDir >= 0))
         {
@@ -341,7 +342,7 @@ void GetMACDSignals(bool &buySignal, bool &sellSignal)
         }
     }
 
-    if(macdCrossDown)
+    if(macdBearish)
     {
         if(!UseTrendFilter || (StrictHullFilter ? hullDir == -1 : hullDir <= 0))
         {
