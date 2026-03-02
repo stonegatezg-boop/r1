@@ -4,17 +4,18 @@
 //|   Timeframe: M5 entry  |  H1 bias  |  H4 structure               |
 //|   Instrument: XAUUSD (Gold vs USD)                               |
 //|   Created: 02.03.2026 15:30 (Zagreb)                             |
+//|   Fixed: 02.03.2026 16:30 (Zagreb) - Smart trailing, no KZ      |
 //|                                                                  |
 //|  IMPROVEMENTS over V3:                                           |
 //|  - Relaxed sweep detection (displacement-based)                  |
-//|  - Extended killzone windows                                     |
+//|  - Extended killzone windows (optional, OFF by default)          |
 //|  - Optional H1 bias (less strict)                                |
 //|  - Multiple FVG tracking                                         |
 //|  - Diagnostic logging                                            |
 //|  - Stealth TP (ne šalje brokeru)                                 |
 //|  - Delayed SL (7-13 sec)                                         |
 //|  - 3-target partial close system                                 |
-//|  - 2-level trailing stop                                         |
+//|  - SMART TRAILING (continues trailing after L2, never gives back)|
 //+------------------------------------------------------------------+
 #property copyright   "XAUUSD Ghost EA v4.0 Cla"
 #property version     "4.00"
@@ -44,12 +45,13 @@ input int     SweepConfirmBars  = 5;        // Broj M5 svjeća za potvrdu sweep-
 input double  SweepDisplacement = 0.3;      // Min displacement ratio (0.3 = 30% range)
 
 input group "═══ KILLZONE WINDOWS ═══"
-input bool    UseLondonKZ       = true;     // London Killzone
-input bool    UseNY_KZ          = true;     // NY Killzone
-input int     LondonKZ_Start    = 6;        // London KZ start GMT (ranije)
-input int     LondonKZ_End      = 11;       // London KZ end GMT (duže)
-input int     NY_KZ_Start       = 13;       // NY KZ start GMT (ranije)
-input int     NY_KZ_End         = 18;       // NY KZ end GMT (duže)
+input bool    UseKillzoneFilter = false;    // Killzone filter (OFF = trejda cijeli dan)
+input bool    UseLondonKZ       = true;     // London Killzone (ako je filter ON)
+input bool    UseNY_KZ          = true;     // NY Killzone (ako je filter ON)
+input int     LondonKZ_Start    = 6;        // London KZ start GMT
+input int     LondonKZ_End      = 11;       // London KZ end GMT
+input int     NY_KZ_Start       = 13;       // NY KZ start GMT
+input int     NY_KZ_End         = 18;       // NY KZ end GMT
 
 input group "═══ FVG & STRUCTURE ═══"
 input int     FVG_MinSize       = 3;        // Min FVG veličina (points) - sniženo
@@ -68,11 +70,13 @@ input int     Target1_Pips      = 200;      // Target 1 - zatvori 33%
 input int     Target2_Pips      = 350;      // Target 2 - zatvori 50% preostalog
 input int     Target3_Pips      = 600;      // Target 3 - zatvori ostatak
 
-input group "═══ 2-LEVEL TRAILING ═══"
-input int     TrailingStart1    = 300;      // Pips za BE move
-input int     BE_LockPips       = 40;       // Lock pips na BE (38-43 range)
-input int     TrailingStart2    = 500;      // Pips za profit lock
-input int     ProfitLockPips    = 150;      // Lock profit pips (150-200 range)
+input group "═══ SMART TRAILING ═══"
+input int     TrailingStart1    = 300;      // L1: Pips za BE move
+input int     BE_LockPips       = 40;       // L1: Lock pips na BE
+input int     TrailingStart2    = 500;      // L2: Pips za profit lock
+input int     ProfitLockPips    = 150;      // L2: Lock profit pips
+input int     TrailingStart3    = 800;      // L3: Smart trail aktivacija
+input int     TrailDistance     = 250;      // L3: Koliko pips iza cijene (SMART)
 
 input group "═══ STEALTH & TIMING ═══"
 input int     SL_DelayMin       = 7;        // Min delay za SL (sekunde)
@@ -165,10 +169,15 @@ int OnInit()
    Print("[GHOST V4] ══════════════════════════════════════");
    Print("[GHOST V4] Inicijalizacija uspješna");
    Print("[GHOST V4] Symbol: ", _Symbol, " | Point: ", g_point);
-   Print("[GHOST V4] Killzone London: ", LondonKZ_Start, "-", LondonKZ_End, " GMT");
-   Print("[GHOST V4] Killzone NY: ", NY_KZ_Start, "-", NY_KZ_End, " GMT");
+   Print("[GHOST V4] Killzone Filter: ", UseKillzoneFilter ? "UKLJUČEN" : "ISKLJUČEN (trejda cijeli dan)");
+   if(UseKillzoneFilter)
+   {
+      Print("[GHOST V4]   London: ", LondonKZ_Start, "-", LondonKZ_End, " GMT");
+      Print("[GHOST V4]   NY: ", NY_KZ_Start, "-", NY_KZ_End, " GMT");
+   }
    Print("[GHOST V4] H1 Bias: ", UseH1Bias ? "UKLJUČEN" : "ISKLJUČEN");
    Print("[GHOST V4] Stealth TP: ", UseStealthTP ? "DA" : "NE");
+   Print("[GHOST V4] Smart Trail: L3 aktivacija @ ", TrailingStart3, " pips, distance ", TrailDistance, " pips");
    Print("[GHOST V4] ══════════════════════════════════════");
 
    return INIT_SUCCEEDED;
@@ -511,6 +520,7 @@ void TryEntry(MqlDateTime &dt)
                Print("[GHOST V4]   SL (delayed): ", sl, " | TP (stealth): ", ask + tp_pts);
                Print("[GHOST V4]   Lot: ", lot, " | R:R: ", DoubleToString(tp_pts / sl_pts, 2));
                Print("[GHOST V4]   FVG zona: ", g_fvg[i].bottom, " - ", g_fvg[i].top);
+               Print("[GHOST V4]   ENTRY HOUR (GMT): ", dt.hour, ":00 - za analizu performansi");
                Print("[GHOST V4] ══════════════════════════════════════");
 
                // Queue delayed SL
@@ -545,6 +555,7 @@ void TryEntry(MqlDateTime &dt)
                Print("[GHOST V4]   SL (delayed): ", sl, " | TP (stealth): ", bid - tp_pts);
                Print("[GHOST V4]   Lot: ", lot, " | R:R: ", DoubleToString(tp_pts / sl_pts, 2));
                Print("[GHOST V4]   FVG zona: ", g_fvg[i].bottom, " - ", g_fvg[i].top);
+               Print("[GHOST V4]   ENTRY HOUR (GMT): ", dt.hour, ":00 - za analizu performansi");
                Print("[GHOST V4] ══════════════════════════════════════");
 
                AddPendingSL(ticket, sl);
@@ -625,9 +636,9 @@ void ManageOpenTrades()
             }
          }
 
-         // === 2-LEVEL TRAILING ===
+         // === SMART TRAILING ===
          // Level 1: Move to BE + lock pips
-         if(profitPips >= TrailingStart1)
+         if(profitPips >= TrailingStart1 && profitPips < TrailingStart2)
          {
             double newSL = NormalizeDouble(open + BE_LockPips * pipValue, g_digits);
             if(curSL < newSL)
@@ -638,13 +649,25 @@ void ManageOpenTrades()
          }
 
          // Level 2: Lock more profit
-         if(profitPips >= TrailingStart2)
+         if(profitPips >= TrailingStart2 && profitPips < TrailingStart3)
          {
             double newSL = NormalizeDouble(open + ProfitLockPips * pipValue, g_digits);
             if(curSL < newSL)
             {
                trade.PositionModify(ticket, newSL, curTP);
                Print("[GHOST V4] TRAILING L2: Locked ", ProfitLockPips, " pips @ ", newSL);
+            }
+         }
+
+         // Level 3: SMART TRAIL - continues following price!
+         // SL stays TrailDistance pips behind current price
+         if(profitPips >= TrailingStart3)
+         {
+            double newSL = NormalizeDouble(bid - TrailDistance * pipValue, g_digits);
+            if(newSL > curSL)
+            {
+               trade.PositionModify(ticket, newSL, curTP);
+               Print("[GHOST V4] SMART TRAIL: SL @ ", newSL, " | Profit: +", (int)profitPips, " pips | Locked: +", (int)((newSL - open) / pipValue), " pips");
             }
          }
       }
@@ -690,8 +713,8 @@ void ManageOpenTrades()
             }
          }
 
-         // === 2-LEVEL TRAILING ===
-         if(profitPips >= TrailingStart1)
+         // === SMART TRAILING ===
+         if(profitPips >= TrailingStart1 && profitPips < TrailingStart2)
          {
             double newSL = NormalizeDouble(open - BE_LockPips * pipValue, g_digits);
             if(curSL > newSL || curSL == 0)
@@ -701,13 +724,24 @@ void ManageOpenTrades()
             }
          }
 
-         if(profitPips >= TrailingStart2)
+         if(profitPips >= TrailingStart2 && profitPips < TrailingStart3)
          {
             double newSL = NormalizeDouble(open - ProfitLockPips * pipValue, g_digits);
             if(curSL > newSL || curSL == 0)
             {
                trade.PositionModify(ticket, newSL, curTP);
                Print("[GHOST V4] TRAILING L2: Locked ", ProfitLockPips, " pips @ ", newSL);
+            }
+         }
+
+         // Level 3: SMART TRAIL - continues following price!
+         if(profitPips >= TrailingStart3)
+         {
+            double newSL = NormalizeDouble(ask + TrailDistance * pipValue, g_digits);
+            if(newSL < curSL || curSL == 0)
+            {
+               trade.PositionModify(ticket, newSL, curTP);
+               Print("[GHOST V4] SMART TRAIL: SL @ ", newSL, " | Profit: +", (int)profitPips, " pips | Locked: +", (int)((open - newSL) / pipValue), " pips");
             }
          }
       }
@@ -847,6 +881,9 @@ bool IsWeekendBlocked(MqlDateTime &dt)
 
 bool IsInKillzone(MqlDateTime &dt)
 {
+   // Ako je killzone filter ISKLJUČEN, uvijek vraća true (trejda cijeli dan)
+   if(!UseKillzoneFilter) return true;
+
    int h = dt.hour;
    if(UseLondonKZ && h >= LondonKZ_Start && h < LondonKZ_End) return true;
    if(UseNY_KZ    && h >= NY_KZ_Start    && h < NY_KZ_End)    return true;
@@ -946,18 +983,24 @@ void DrawFVGBox(double bottom, double top, bool isBull, datetime t, int idx)
 
 void DrawDashboard()
 {
+   MqlDateTime dt;
+   TimeGMT(dt);
+
    string biasStr = (g_h1Bias == +1) ? "BULLISH" : ((g_h1Bias == -1) ? "BEARISH" : "NEUTRAL");
    string sweepStr = g_asian.highSwept ? "HIGH SWEPT" : (g_asian.lowSwept ? "LOW SWEPT" : "Waiting...");
    string fvgStr = (g_fvgCount > 0) ? StringFormat("%d active", g_fvgCount) : "None";
+   string kzStr = UseKillzoneFilter ? (IsInKillzone(dt) ? "IN KZ" : "OUT KZ") : "ALL DAY";
 
    string txt = StringFormat(
-      "GHOST V4  |  %s\n"
+      "GHOST V4 SMART  |  %s\n"
+      "GMT: %02d:%02d | Mode: %s\n"
       "Asian: %s [%.2f - %.2f]\n"
       "Sweep: %s\n"
       "FVG: %s\n"
       "H1 Bias: %s\n"
       "Trades: %d/%d",
       _Symbol,
+      dt.hour, dt.min, kzStr,
       g_asian.valid ? "OK" : "Building",
       g_asian.low, g_asian.high,
       sweepStr,
