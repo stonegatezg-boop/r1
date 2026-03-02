@@ -225,7 +225,7 @@ void OnTick()
    }
 
    // 6. Spread check
-   double spread = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
+   long spread = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
    if(spread > MaxSpread)
    {
       static datetime lastSpreadWarn = 0;
