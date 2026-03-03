@@ -5,8 +5,9 @@
 //|                   + NEWS FILTER & SPREAD FILTER                  |
 //|                   Based on CALF_A with Market Protection         |
 //|                   Version 1.0 - 2026-02-23                       |
-//|                   Fixed: 03.03.2026 - Novi trailing sustav       |
-//|                   (1000 pips aktivacija, 500 pips udaljenost)    |
+//|                   Fixed: 03.03.2026 - Nova USD Risk Logika       |
+//|                   Hard SL: -8 USD, Trail: 10 USD aktivacija      |
+//|                   MFE tracking, lock profit = MFE - 5 USD        |
 //+------------------------------------------------------------------+
 #property copyright "CALF A M - UT Bot + Market Protected (2026-02-23)"
 #property version   "1.00"
@@ -32,9 +33,11 @@ input int      SLDelayMin       = 7;
 input int      SLDelayMax       = 13;
 input double   LargeCandleATR   = 3.0;
 
-input group "=== TRAILING POSTAVKE ==="
-input int      TrailActivatePips = 1000;   // Aktivacija kada profit premaši X pipsa
-input int      TrailDistancePips = 500;    // Trailing udaljenost (500 pipsa od profita)
+input group "=== RISK MANAGEMENT (PIPS) ==="
+input int      HardSL_Pips           = 800;    // Hard Stop Loss (800 pips = 8 USD za 0.01 lot)
+input int      TrailActivation_Pips  = 1000;   // Trailing aktivacija (1000 pips = 10 USD)
+input int      TrailDistance_Pips    = 500;    // Trailing udaljenost (500 pips = 5 USD)
+input double   FixedLotSize          = 0.01;   // Fiksni lot size
 
 input group "=== NEWS FILTER (NOVO) ==="
 input bool     UseNewsFilter       = true;  // Koristi News Filter
@@ -51,7 +54,17 @@ input ulong    MagicNumber      = 100011;   // Magic Number (različit od CALF_A
 input int      Slippage         = 30;
 
 struct PendingTradeInfo { bool active; ENUM_ORDER_TYPE type; double lot; double intendedSL; double intendedTP; datetime signalTime; int delaySeconds; };
-struct StealthPosInfo { bool active; ulong ticket; double intendedSL; double stealthTP; double entryPrice; datetime openTime; int delaySeconds; bool trailActive; double lastTrailSL; };
+// MFE = Maximum Favorable Excursion (najviši dosegnuti profit)
+struct StealthPosInfo {
+    bool active;
+    ulong ticket;
+    double stealthTP;           // Stealth Take Profit cijena
+    double entryPrice;          // Entry cijena
+    datetime openTime;          // Vrijeme otvaranja
+    double maxProfit;           // MFE tracking - najviši dosegnuti profit (USD)
+    bool trailActive;           // Je li trailing aktiviran
+    double lockedProfitPrice;   // Trenutna SL cijena iz trailing-a
+};
 
 CTrade trade;
 int atrHandle;
@@ -88,11 +101,13 @@ int OnInit()
     g_posCount = 0;
 
     Print("╔══════════════════════════════════════════════════════════╗");
-    Print("║       CALF A M v1.0 - MARKET PROTECTED EDITION           ║");
+    Print("║       CALF A M v1.1 - USD RISK LOGIC                     ║");
     Print("╠══════════════════════════════════════════════════════════╣");
     Print("║ UT Bot Strategy + Stealth Mode");
-    Print("║ NEWS FILTER: ", UseNewsFilter ? "ON" : "OFF", " (Importance >= ", NewsImportance, ")");
-    Print("║ SPREAD FILTER: ", UseSpreadFilter ? "ON" : "OFF", " (Max ", MaxSpreadPoints, " points)");
+    Print("║ HARD SL: -", HardSL_Pips, " pips (", HardSL_Pips/100.0, " USD za 0.01 lot)");
+    Print("║ TRAIL ACTIVATION: ", TrailActivation_Pips, " pips (", TrailActivation_Pips/100.0, " USD)");
+    Print("║ TRAIL DISTANCE: ", TrailDistance_Pips, " pips (", TrailDistance_Pips/100.0, " USD)");
+    Print("║ NEWS FILTER: ", UseNewsFilter ? "ON" : "OFF", " | SPREAD FILTER: ", UseSpreadFilter ? "ON" : "OFF");
     Print("╚══════════════════════════════════════════════════════════╝");
 
     return INIT_SUCCEEDED;
@@ -294,16 +309,16 @@ void QueueTrade(ENUM_ORDER_TYPE type)
 {
     double atr = GetATR(); if(atr <= 0) return;
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
-    double sl = (type == ORDER_TYPE_BUY) ? price - SLMultiplier * atr : price + SLMultiplier * atr;
+    // TP ostaje ATR-based (stealth)
     double tp = (type == ORDER_TYPE_BUY) ? price + TPMultiplier * atr : price - TPMultiplier * atr;
-    double lots = CalculateLotSize(SLMultiplier * atr); if(lots <= 0) return;
+    // SL se NE šalje brokeru - koristimo Hard SL u USD
 
     if(UseStealthMode)
     {
         g_pendingTrade.active = true;
         g_pendingTrade.type = type;
-        g_pendingTrade.lot = lots;
-        g_pendingTrade.intendedSL = sl;
+        g_pendingTrade.lot = FixedLotSize;
+        g_pendingTrade.intendedSL = 0;  // Nema broker SL - koristimo USD hard SL
         g_pendingTrade.intendedTP = tp;
         g_pendingTrade.signalTime = TimeCurrent();
         g_pendingTrade.delaySeconds = RandomRange(OpenDelayMin, OpenDelayMax);
@@ -311,7 +326,7 @@ void QueueTrade(ENUM_ORDER_TYPE type)
     }
     else
     {
-        ExecuteTrade(type, lots, sl, tp);
+        ExecuteTrade(type, FixedLotSize, 0, tp);
     }
 }
 
@@ -319,30 +334,30 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
 {
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
-    sl = NormalizeDouble(sl, digits); tp = NormalizeDouble(tp, digits);
+    tp = NormalizeDouble(tp, digits);
     bool ok;
+
+    // STEALTH: Ne šaljemo SL brokeru - koristimo USD Hard SL
     if(UseStealthMode)
         ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, 0, 0, "CALF_A_M") : trade.Sell(lot, _Symbol, price, 0, 0, "CALF_A_M");
     else
-        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, sl, tp, "CALF_A_M BUY") : trade.Sell(lot, _Symbol, price, sl, tp, "CALF_A_M SELL");
+        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, 0, tp, "CALF_A_M BUY") : trade.Sell(lot, _Symbol, price, 0, tp, "CALF_A_M SELL");
 
-    if(ok && UseStealthMode)
+    if(ok)
     {
         ulong ticket = trade.ResultOrder();
         ArrayResize(g_positions, g_posCount + 1);
         g_positions[g_posCount].active = true;
         g_positions[g_posCount].ticket = ticket;
-        g_positions[g_posCount].intendedSL = sl;
         g_positions[g_posCount].stealthTP = tp;
         g_positions[g_posCount].entryPrice = price;
         g_positions[g_posCount].openTime = TimeCurrent();
-        g_positions[g_posCount].delaySeconds = RandomRange(SLDelayMin, SLDelayMax);
-        g_positions[g_posCount].trailActive = false;
-        g_positions[g_posCount].lastTrailSL = 0;
+        g_positions[g_posCount].maxProfit = 0;           // MFE starts at 0
+        g_positions[g_posCount].trailActive = false;     // Trailing not yet active
+        g_positions[g_posCount].lockedProfitPrice = 0;   // No locked profit yet
         g_posCount++;
-        Print("✓ CALF_A_M STEALTH: Opened #", ticket, ", SL delay ", g_positions[g_posCount-1].delaySeconds, "s");
+        Print("✓ CALF_A_M: Opened #", ticket, " @ ", price, " | Hard SL: -", HardSL_Pips, " pips | Trail: ", TrailActivation_Pips, "/", TrailDistance_Pips, " pips");
     }
-    else if(ok) Print("✓ CALF_A_M ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"), ": ", lot, " @ ", price);
 }
 
 void ProcessPendingTrade()
@@ -359,74 +374,140 @@ void ManageStealthPositions()
 {
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+
     for(int i = g_posCount - 1; i >= 0; i--)
     {
         if(!g_positions[i].active) continue;
         ulong ticket = g_positions[i].ticket;
         if(!PositionSelectByTicket(ticket)) { g_positions[i].active = false; continue; }
-        ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
-        double currentSL = PositionGetDouble(POSITION_SL);
-        double currentPrice = (posType == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
 
-        // Odgođeni SL
-        if(currentSL == 0 && g_positions[i].intendedSL != 0)
+        ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+        double currentPrice = (posType == POSITION_TYPE_BUY) ?
+                              SymbolInfoDouble(_Symbol, SYMBOL_BID) :
+                              SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+
+        // Izračunaj trenutni profit u PIPS
+        double profitPips = (posType == POSITION_TYPE_BUY) ?
+                            (currentPrice - g_positions[i].entryPrice) / point :
+                            (g_positions[i].entryPrice - currentPrice) / point;
+
+        //=================================================================
+        // 1. HARD STOP LOSS (-800 pips = -8 USD za 0.01 lot)
+        //    Zatvori poziciju odmah ako loss premaši HardSL_Pips
+        //=================================================================
+        if(profitPips <= -HardSL_Pips)
         {
-            if(TimeCurrent() >= g_positions[i].openTime + g_positions[i].delaySeconds)
-            {
-                double sl = NormalizeDouble(g_positions[i].intendedSL, digits);
-                if(trade.PositionModify(ticket, sl, 0)) Print("CALF_A_M STEALTH: SL set #", ticket);
-            }
+            trade.PositionClose(ticket);
+            Print("✗ CALF_A_M HARD SL HIT #", ticket, " | Loss: ", DoubleToString(profitPips, 0), " pips");
+            g_positions[i].active = false;
+            continue;
         }
 
-        // Stealth TP
+        //=================================================================
+        // 2. STEALTH TP - Zatvori ako cijena dotakne TP
+        //=================================================================
         if(g_positions[i].stealthTP > 0)
         {
             bool tpHit = (posType == POSITION_TYPE_BUY && currentPrice >= g_positions[i].stealthTP) ||
                          (posType == POSITION_TYPE_SELL && currentPrice <= g_positions[i].stealthTP);
-            if(tpHit) { trade.PositionClose(ticket); Print("CALF_A_M STEALTH: TP hit #", ticket); g_positions[i].active = false; continue; }
+            if(tpHit)
+            {
+                trade.PositionClose(ticket);
+                Print("✓ CALF_A_M TP HIT #", ticket, " | Profit: ", DoubleToString(profitPips, 0), " pips");
+                g_positions[i].active = false;
+                continue;
+            }
         }
 
-        // Trailing Stop (aktivacija na 1000 pipsa, prati na 500 pipsa udaljenosti)
-        if(currentSL > 0)
+        //=================================================================
+        // 3. MFE TRACKING - Prati najviši dosegnuti profit
+        //=================================================================
+        if(profitPips > g_positions[i].maxProfit)
         {
-            double profitPips = (posType == POSITION_TYPE_BUY) ?
-                                (currentPrice - g_positions[i].entryPrice) / point :
-                                (g_positions[i].entryPrice - currentPrice) / point;
+            g_positions[i].maxProfit = profitPips;
+        }
 
-            // Aktiviraj trailing kad profit premaši TrailActivatePips (1000)
-            if(profitPips >= TrailActivatePips)
+        //=================================================================
+        // 4. TRAILING STOP (aktivacija na 1000 pips, udaljenost 500 pips)
+        //    - Aktivira se SAMO kada profit >= TrailActivation_Pips
+        //    - Lock profit = MFE - TrailDistance_Pips
+        //    - SL se NIKAD ne vraća nazad
+        //=================================================================
+        if(g_positions[i].maxProfit >= TrailActivation_Pips)
+        {
+            // Izračunaj lock level: MFE - 500 pips
+            double lockPips = g_positions[i].maxProfit - TrailDistance_Pips;
+
+            // Izračunaj novu SL cijenu
+            double newSLPrice;
+            if(posType == POSITION_TYPE_BUY)
+                newSLPrice = g_positions[i].entryPrice + lockPips * point;
+            else
+                newSLPrice = g_positions[i].entryPrice - lockPips * point;
+
+            newSLPrice = NormalizeDouble(newSLPrice, digits);
+
+            // Provjeri treba li pomaknuti SL (samo naprijed, nikad nazad)
+            bool shouldMove = false;
+            if(g_positions[i].lockedProfitPrice == 0)
             {
-                // Izračunaj novi SL: trenutni profit - TrailDistancePips (500)
-                double trailPips = profitPips - TrailDistancePips;
-                double newSL;
+                shouldMove = true;  // Prvi put postavljamo trailing SL
+            }
+            else
+            {
+                // SL se pomiče samo ako je novi SL bolji
+                if(posType == POSITION_TYPE_BUY && newSLPrice > g_positions[i].lockedProfitPrice)
+                    shouldMove = true;
+                else if(posType == POSITION_TYPE_SELL && newSLPrice < g_positions[i].lockedProfitPrice)
+                    shouldMove = true;
+            }
 
-                if(posType == POSITION_TYPE_BUY)
-                    newSL = g_positions[i].entryPrice + trailPips * point;
-                else
-                    newSL = g_positions[i].entryPrice - trailPips * point;
+            if(shouldMove)
+            {
+                // STEALTH: NE šaljemo pravi SL brokeru - pratimo interno
+                // Ako cijena padne ispod lockPips, zatvaramo poziciju
+                g_positions[i].lockedProfitPrice = newSLPrice;
 
-                newSL = NormalizeDouble(newSL, digits);
-
-                // Pomakni SL samo ako je bolji od trenutnog
-                bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
-                                    (posType == POSITION_TYPE_SELL && newSL < currentSL);
-
-                if(shouldModify && trade.PositionModify(ticket, newSL, 0))
+                if(!g_positions[i].trailActive)
                 {
-                    if(!g_positions[i].trailActive)
-                    {
-                        g_positions[i].trailActive = true;
-                        Print("CALF_A_M TRAIL ACTIVATED #", ticket, " @ profit ", DoubleToString(profitPips, 0), " pips, SL moved to +", DoubleToString(trailPips, 0), " pips");
-                    }
-                    else
-                    {
-                        Print("CALF_A_M TRAIL UPDATE #", ticket, " @ profit ", DoubleToString(profitPips, 0), " pips, SL at +", DoubleToString(trailPips, 0), " pips");
-                    }
-                    g_positions[i].lastTrailSL = newSL;
+                    g_positions[i].trailActive = true;
+                    Print("▶ CALF_A_M TRAIL ACTIVATED #", ticket,
+                          " | MFE: ", DoubleToString(g_positions[i].maxProfit, 0), " pips",
+                          " | Lock: +", DoubleToString(lockPips, 0), " pips");
+                }
+                else
+                {
+                    Print("▶ CALF_A_M TRAIL UPDATE #", ticket,
+                          " | MFE: ", DoubleToString(g_positions[i].maxProfit, 0), " pips",
+                          " | Lock: +", DoubleToString(lockPips, 0), " pips");
+                }
+            }
+
+            // Provjeri je li cijena pala ispod locked profita (trailing SL hit)
+            if(g_positions[i].trailActive && g_positions[i].lockedProfitPrice > 0)
+            {
+                bool trailSLHit = false;
+                if(posType == POSITION_TYPE_BUY && currentPrice <= g_positions[i].lockedProfitPrice)
+                    trailSLHit = true;
+                else if(posType == POSITION_TYPE_SELL && currentPrice >= g_positions[i].lockedProfitPrice)
+                    trailSLHit = true;
+
+                if(trailSLHit)
+                {
+                    trade.PositionClose(ticket);
+                    double lockedPips = (posType == POSITION_TYPE_BUY) ?
+                                        (g_positions[i].lockedProfitPrice - g_positions[i].entryPrice) / point :
+                                        (g_positions[i].entryPrice - g_positions[i].lockedProfitPrice) / point;
+                    Print("✓ CALF_A_M TRAIL SL HIT #", ticket,
+                          " | Locked: +", DoubleToString(lockedPips, 0), " pips",
+                          " | MFE was: ", DoubleToString(g_positions[i].maxProfit, 0), " pips");
+                    g_positions[i].active = false;
+                    continue;
                 }
             }
         }
     }
+
     CleanupPositions();
 }
 
