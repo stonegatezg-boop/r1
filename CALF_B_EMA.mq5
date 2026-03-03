@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                                CALF_B_EMA.mq5    |
 //|                        *** CALF B - EMA Crossover ***            |
-//|                   + Stealth Mode v2.31 (SL PRICE FIX)            |
+//|                   + Stealth Mode v2.32 (RANDOM SL)               |
 //|                   Created: 23.02.2026 (Zagreb)                   |
 //|                   Fixed: 03.03.2026 14:30 (Zagreb) - MAE/MFE opt |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
@@ -10,8 +10,8 @@
 //|                   - Stealth samo za TP                           |
 //|                   - Pametni Trailing (1000/500 dynamic lock)     |
 //+------------------------------------------------------------------+
-#property copyright "CALF B - EMA 9/21 + Stealth v2.31 SL PRICE FIX (2026-03-03)"
-#property version   "2.31"
+#property copyright "CALF B - EMA 9/21 + Stealth v2.32 RANDOM SL (2026-03-03)"
+#property version   "2.32"
 #property strict
 #include <Trade\Trade.mqh>
 input group "=== EMA POSTAVKE ==="
@@ -191,8 +191,9 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-    // v2.31 FIX: Preračunaj SL na TRENUTNOJ cijeni (ne staroj iz queue-a)
-    double slDistance = HardSLPips * point * 10;
+    // v2.32 FIX: Random SL 789-811 pips (stealth) na TRENUTNOJ cijeni
+    int randomSLPips = RandomRange(789, 811);
+    double slDistance = randomSLPips * point * 10;
     sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     sl = NormalizeDouble(sl, digits); tp = NormalizeDouble(tp, digits);
     bool ok;

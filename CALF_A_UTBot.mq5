@@ -1,14 +1,14 @@
 //+------------------------------------------------------------------+
 //|                                              CALF_A_UTBot.mq5    |
 //|                        *** CALF A - UT Bot Only ***              |
-//|                   + Stealth Mode v2.2 (REAL SL FIX)              |
+//|                   + Stealth Mode v2.3 (RANDOM SL)                |
 //|                   Created: 23.02.2026 (Zagreb)                   |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
 //|                   - SL se postavlja ODMAH pri otvaranju          |
 //|                   - Stealth samo za TP                           |
 //+------------------------------------------------------------------+
-#property copyright "CALF A - UT Bot + Stealth v2.2 REAL SL"
-#property version   "2.20"
+#property copyright "CALF A - UT Bot + Stealth v2.3 RANDOM SL"
+#property version   "2.30"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -27,8 +27,7 @@ input group "=== STEALTH POSTAVKE ==="
 input bool     UseStealthMode   = true;
 input int      OpenDelayMin     = 0;
 input int      OpenDelayMax     = 4;
-input int      SLDelayMin       = 7;
-input int      SLDelayMax       = 13;
+// SLDelayMin/Max uklonjeni - SL se postavlja ODMAH (v2.3)
 input double   LargeCandleATR   = 3.0;
 
 input group "=== TRAILING POSTAVKE ==="
@@ -200,17 +199,26 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
 {
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+    // v2.3 FIX: Random SL 789-811 pips na TRENUTNOJ cijeni
+    int randomSLPips = RandomRange(789, 811);
+    double slDistance = randomSLPips * point * 10;
+    sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     sl = NormalizeDouble(sl, digits); tp = NormalizeDouble(tp, digits);
     bool ok;
-    // v2.2 FIX: PRAVI SL odmah, stealth samo za TP
+    // v2.3: Otvori BEZ SL-a, pa ODMAH postavi s PositionModify
     if(UseStealthMode)
-        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, sl, 0, "CALF_A") : trade.Sell(lot, _Symbol, price, sl, 0, "CALF_A");
+        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, 0, 0, "CALF_A") : trade.Sell(lot, _Symbol, price, 0, 0, "CALF_A");
     else
         ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, sl, tp, "CALF_A BUY") : trade.Sell(lot, _Symbol, price, sl, tp, "CALF_A SELL");
 
     if(ok && UseStealthMode)
     {
         ulong ticket = trade.ResultOrder();
+        if(trade.PositionModify(ticket, sl, 0))
+            Print("CALF_A: Opened #", ticket, " + SL ODMAH @ ", sl, " (", randomSLPips, " pips)");
+        else
+            Print("CALF_A WARNING: SL FAILED #", ticket, " - will retry!");
         ArrayResize(g_positions, g_posCount + 1);
         g_positions[g_posCount].active = true;
         g_positions[g_posCount].ticket = ticket;
@@ -222,7 +230,6 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
         g_positions[g_posCount].randomBEPips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
         g_positions[g_posCount].trailLevel = 0;
         g_posCount++;
-        Print("CALF_A: Opened #", ticket, " SL=", sl, " (REAL)");
     }
     else if(ok) Print("CALF_A ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"), ": ", lot, " @ ", price);
 }
