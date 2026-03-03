@@ -3,12 +3,14 @@
 //|                        CALF A PRO - UT Bot + Structural Breakout |
 //|                   + Stealth Mode v2.1                            |
 //|                   + NEWS FILTER & SPREAD FILTER                  |
-//|                   + STRUCTURAL BREAKOUT FILTER (NEW)             |
+//|                   + STRUCTURAL BREAKOUT FILTER                   |
+//|                   + 3-TARGET + 2-LEVEL TRAILING SYSTEM           |
 //|                   Based on CALF_A_M with Breakout Validation     |
 //|                   Created: 03.03.2026 (Zagreb)                   |
+//|                   Fixed: 03.03.2026 (Zagreb) - 2xATR, 3T+2LTrail |
 //+------------------------------------------------------------------+
-#property copyright "CALF A PRO - UT Bot + Structural Breakout (03.03.2026)"
-#property version   "1.00"
+#property copyright "CALF A PRO - 3T+2L Trailing (03.03.2026)"
+#property version   "1.10"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -29,12 +31,18 @@ input int      OpenDelayMin     = 0;
 input int      OpenDelayMax     = 4;
 input int      SLDelayMin       = 7;
 input int      SLDelayMax       = 13;
-input double   LargeCandleATR   = 3.0;
+input double   LargeCandleATR   = 2.0;      // 2x ATR Large Candle Filter
 
-input group "=== TRAILING POSTAVKE ==="
-input int      TrailActivatePips = 500;
-input int      TrailBEPipsMin   = 38;
-input int      TrailBEPipsMax   = 43;
+input group "=== 3-TARGET + 2-LEVEL TRAILING ==="
+input int      Target1_Pips      = 500;     // Target 1: Zatvori 33%, move to BE
+input int      Target2_Pips      = 800;     // Target 2: Zatvori 50%, lock profit
+input int      Target3_Pips      = 1200;    // Target 3: Zatvori ostatak
+input double   Target1_Percent   = 33.0;    // % za zatvoriti na T1
+input double   Target2_Percent   = 50.0;    // % preostalog za T2
+input int      TrailBEPipsMin    = 38;      // BE + min pips (Level 1)
+input int      TrailBEPipsMax    = 43;      // BE + max pips (Level 1)
+input int      TrailLockPipsMin  = 150;     // Lock profit min (Level 2)
+input int      TrailLockPipsMax  = 200;     // Lock profit max (Level 2)
 
 input group "=== NEWS FILTER ==="
 input bool     UseNewsFilter       = true;
@@ -55,7 +63,19 @@ input ulong    MagicNumber      = 100012;    // Magic Number (Calf A Pro)
 input int      Slippage         = 30;
 
 struct PendingTradeInfo { bool active; ENUM_ORDER_TYPE type; double lot; double intendedSL; double intendedTP; datetime signalTime; int delaySeconds; };
-struct StealthPosInfo { bool active; ulong ticket; double intendedSL; double stealthTP; double entryPrice; datetime openTime; int delaySeconds; int randomBEPips; int trailLevel; };
+struct StealthPosInfo {
+   bool active;
+   ulong ticket;
+   double intendedSL;
+   double entryPrice;
+   double originalLots;
+   datetime openTime;
+   int delaySeconds;
+   int randomBEPips;    // BE + pips (Level 1)
+   int randomLockPips;  // Lock profit pips (Level 2)
+   int targetLevel;     // 0=none, 1=T1 hit, 2=T2 hit, 3=T3 hit
+   int trailLevel;      // 0=none, 1=BE, 2=Lock
+};
 
 CTrade trade;
 int atrHandle;
@@ -93,12 +113,15 @@ int OnInit()
     g_posCount = 0;
 
     Print("╔══════════════════════════════════════════════════════════╗");
-    Print("║         CALF A PRO v1.0 - STRUCTURAL BREAKOUT            ║");
+    Print("║    CALF A PRO v1.1 - 3-TARGET + 2-LEVEL TRAILING         ║");
     Print("╠══════════════════════════════════════════════════════════╣");
-    Print("║ UT Bot Strategy + Stealth Mode + Breakout Validation");
-    Print("║ NEWS FILTER: ", UseNewsFilter ? "ON" : "OFF", " (Importance >= ", NewsImportance, ")");
-    Print("║ SPREAD FILTER: ", UseSpreadFilter ? "ON" : "OFF", " (Max ", MaxSpreadPoints, " points)");
-    Print("║ BREAKOUT FILTER: ", UseBreakoutFilter ? "ON" : "OFF", " (Lookback ", BreakoutLookback, " bars)");
+    Print("║ UT Bot + Stealth + Breakout + 3T/2L Trailing");
+    Print("║ Large Candle: ", LargeCandleATR, "x ATR");
+    Print("║ T1=", Target1_Pips, " pips (-", Target1_Percent, "%, BE+", TrailBEPipsMin, "-", TrailBEPipsMax, ")");
+    Print("║ T2=", Target2_Pips, " pips (-", Target2_Percent, "%, Lock+", TrailLockPipsMin, "-", TrailLockPipsMax, ")");
+    Print("║ T3=", Target3_Pips, " pips (Close all)");
+    Print("║ NEWS: ", UseNewsFilter ? "ON" : "OFF", " | SPREAD: ", UseSpreadFilter ? "ON" : "OFF", " (", MaxSpreadPoints, "pt)");
+    Print("║ BREAKOUT: ", UseBreakoutFilter ? "ON" : "OFF", " (", BreakoutLookback, " bars)");
     Print("╚══════════════════════════════════════════════════════════╝");
 
     return INIT_SUCCEEDED;
@@ -373,14 +396,16 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
         g_positions[g_posCount].active = true;
         g_positions[g_posCount].ticket = ticket;
         g_positions[g_posCount].intendedSL = sl;
-        g_positions[g_posCount].stealthTP = tp;
         g_positions[g_posCount].entryPrice = price;
+        g_positions[g_posCount].originalLots = lot;
         g_positions[g_posCount].openTime = TimeCurrent();
         g_positions[g_posCount].delaySeconds = RandomRange(SLDelayMin, SLDelayMax);
         g_positions[g_posCount].randomBEPips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
+        g_positions[g_posCount].randomLockPips = RandomRange(TrailLockPipsMin, TrailLockPipsMax);
+        g_positions[g_posCount].targetLevel = 0;
         g_positions[g_posCount].trailLevel = 0;
         g_posCount++;
-        Print("✓ Calf_A_Pro STEALTH: Opened #", ticket, ", SL delay ", g_positions[g_posCount-1].delaySeconds, "s");
+        Print("✓ Calf_A_Pro STEALTH: Opened #", ticket, " Lot=", lot, ", SL delay ", g_positions[g_posCount-1].delaySeconds, "s");
     }
     else if(ok) Print("✓ Calf_A_Pro ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"), ": ", lot, " @ ", price);
 }
@@ -399,44 +424,100 @@ void ManageStealthPositions()
 {
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+    double lotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+    double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+
     for(int i = g_posCount - 1; i >= 0; i--)
     {
         if(!g_positions[i].active) continue;
         ulong ticket = g_positions[i].ticket;
         if(!PositionSelectByTicket(ticket)) { g_positions[i].active = false; continue; }
+
         ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
         double currentSL = PositionGetDouble(POSITION_SL);
+        double currentLots = PositionGetDouble(POSITION_VOLUME);
         double currentPrice = (posType == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
 
-        // Odgođeni SL
+        // Izračunaj profit u pipsima (100 points = 10 pips za XAUUSD)
+        double profitPoints = (posType == POSITION_TYPE_BUY) ?
+                              (currentPrice - g_positions[i].entryPrice) / point :
+                              (g_positions[i].entryPrice - currentPrice) / point;
+
+        //=== 1. ODGOĐENI SL ===
         if(currentSL == 0 && g_positions[i].intendedSL != 0)
         {
             if(TimeCurrent() >= g_positions[i].openTime + g_positions[i].delaySeconds)
             {
                 double sl = NormalizeDouble(g_positions[i].intendedSL, digits);
-                if(trade.PositionModify(ticket, sl, 0)) Print("Calf_A_Pro STEALTH: SL set #", ticket);
+                if(trade.PositionModify(ticket, sl, 0))
+                    Print("Calf_A_Pro STEALTH: SL set #", ticket);
             }
         }
 
-        // Stealth TP
-        if(g_positions[i].stealthTP > 0)
+        //=== 2. TARGET 1: Zatvori 33% + Move SL to BE ===
+        if(g_positions[i].targetLevel < 1 && profitPoints >= Target1_Pips * 10) // *10 jer su pips u inputu
         {
-            bool tpHit = (posType == POSITION_TYPE_BUY && currentPrice >= g_positions[i].stealthTP) ||
-                         (posType == POSITION_TYPE_SELL && currentPrice <= g_positions[i].stealthTP);
-            if(tpHit) { trade.PositionClose(ticket); Print("Calf_A_Pro STEALTH: TP hit #", ticket); g_positions[i].active = false; continue; }
-        }
-
-        // Trailing BE
-        if(g_positions[i].trailLevel < 1 && currentSL > 0)
-        {
-            double profitPips = (posType == POSITION_TYPE_BUY) ? (currentPrice - g_positions[i].entryPrice) / point : (g_positions[i].entryPrice - currentPrice) / point;
-            if(profitPips >= TrailActivatePips)
+            // Partial close 33%
+            double closeAmount = NormalizeDouble(g_positions[i].originalLots * Target1_Percent / 100.0, 2);
+            closeAmount = MathFloor(closeAmount / lotStep) * lotStep;
+            if(closeAmount >= minLot && closeAmount < currentLots)
             {
-                double newSL = (posType == POSITION_TYPE_BUY) ? g_positions[i].entryPrice + g_positions[i].randomBEPips * point : g_positions[i].entryPrice - g_positions[i].randomBEPips * point;
-                newSL = NormalizeDouble(newSL, digits);
-                bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) || (posType == POSITION_TYPE_SELL && newSL < currentSL);
-                if(shouldModify && trade.PositionModify(ticket, newSL, 0)) { g_positions[i].trailLevel = 1; Print("Calf_A_Pro STEALTH: Trail BE+", g_positions[i].randomBEPips, " #", ticket); }
+                if(trade.PositionClosePartial(ticket, closeAmount))
+                    Print("✓ T1 HIT: Zatvorio ", closeAmount, " lots (-33%) #", ticket);
             }
+
+            // Move SL to BE + random pips (Level 1 trailing)
+            double newSL = (posType == POSITION_TYPE_BUY) ?
+                           g_positions[i].entryPrice + g_positions[i].randomBEPips * point :
+                           g_positions[i].entryPrice - g_positions[i].randomBEPips * point;
+            newSL = NormalizeDouble(newSL, digits);
+            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
+                               (posType == POSITION_TYPE_SELL && (currentSL == 0 || newSL < currentSL));
+            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
+                Print("✓ T1 TRAIL: SL moved to BE+", g_positions[i].randomBEPips, " #", ticket);
+
+            g_positions[i].targetLevel = 1;
+            g_positions[i].trailLevel = 1;
+        }
+
+        //=== 3. TARGET 2: Zatvori 50% preostalog + Lock profit ===
+        if(g_positions[i].targetLevel == 1 && profitPoints >= Target2_Pips * 10)
+        {
+            // Refresh position after T1 partial close
+            if(!PositionSelectByTicket(ticket)) { g_positions[i].active = false; continue; }
+            currentLots = PositionGetDouble(POSITION_VOLUME);
+            currentSL = PositionGetDouble(POSITION_SL);
+
+            // Partial close 50% of remaining
+            double closeAmount = NormalizeDouble(currentLots * Target2_Percent / 100.0, 2);
+            closeAmount = MathFloor(closeAmount / lotStep) * lotStep;
+            if(closeAmount >= minLot && closeAmount < currentLots)
+            {
+                if(trade.PositionClosePartial(ticket, closeAmount))
+                    Print("✓ T2 HIT: Zatvorio ", closeAmount, " lots (-50% preostalog) #", ticket);
+            }
+
+            // Lock profit (Level 2 trailing)
+            double newSL = (posType == POSITION_TYPE_BUY) ?
+                           g_positions[i].entryPrice + g_positions[i].randomLockPips * point :
+                           g_positions[i].entryPrice - g_positions[i].randomLockPips * point;
+            newSL = NormalizeDouble(newSL, digits);
+            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
+                               (posType == POSITION_TYPE_SELL && newSL < currentSL);
+            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
+                Print("✓ T2 TRAIL: Locked +", g_positions[i].randomLockPips, " pips profit #", ticket);
+
+            g_positions[i].targetLevel = 2;
+            g_positions[i].trailLevel = 2;
+        }
+
+        //=== 4. TARGET 3: Zatvori ostatak ===
+        if(g_positions[i].targetLevel == 2 && profitPoints >= Target3_Pips * 10)
+        {
+            if(trade.PositionClose(ticket))
+                Print("✓ T3 HIT: Zatvorio ostatak pozicije #", ticket);
+            g_positions[i].targetLevel = 3;
+            g_positions[i].active = false;
         }
     }
     CleanupPositions();
