@@ -1,15 +1,17 @@
 //+------------------------------------------------------------------+
 //|                                                    CALF_A_M.mq5  |
 //|                        *** CALF A M - UT Bot + Market Protection |
-//|                   + Stealth Mode v2.1                            |
+//|                   + Stealth Mode v2.2 (REAL SL FIX)              |
 //|                   + NEWS FILTER & SPREAD FILTER                  |
 //|                   + 3-LEVEL MFE TRAILING SYSTEM                  |
 //|                   Based on CALF_A with Market Protection         |
 //|                   Created: 2026-02-23                            |
 //|                   Fixed: 03.03.2026 (Zagreb) - MFE Trailing v1.2 |
+//|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
+//|                   - SL 800 pips ODMAH pri otvaranju              |
 //+------------------------------------------------------------------+
-#property copyright "CALF A M - MFE Trailing (03.03.2026)"
-#property version   "1.20"
+#property copyright "CALF A M - MFE Trailing v2.2 REAL SL"
+#property version   "2.20"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -310,25 +312,28 @@ bool HasOpenPosition()
 void QueueTrade(ENUM_ORDER_TYPE type)
 {
     double atr = GetATR(); if(atr <= 0) return;
+    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     // TP ostaje ATR-based (stealth)
     double tp = (type == ORDER_TYPE_BUY) ? price + TPMultiplier * atr : price - TPMultiplier * atr;
-    // SL se NE šalje brokeru - koristimo Hard SL u USD
+    // v2.2 FIX: PRAVI SL odmah (800 pips)
+    double slDist = HardSL_Pips * point * 10;  // 800 pips = 80 price units
+    double sl = (type == ORDER_TYPE_BUY) ? price - slDist : price + slDist;
 
     if(UseStealthMode)
     {
         g_pendingTrade.active = true;
         g_pendingTrade.type = type;
         g_pendingTrade.lot = FixedLotSize;
-        g_pendingTrade.intendedSL = 0;  // Nema broker SL - koristimo USD hard SL
+        g_pendingTrade.intendedSL = sl;  // v2.2: PRAVI SL
         g_pendingTrade.intendedTP = tp;
         g_pendingTrade.signalTime = TimeCurrent();
         g_pendingTrade.delaySeconds = RandomRange(OpenDelayMin, OpenDelayMax);
-        Print("CALF_A_M: Trade queued, delay ", g_pendingTrade.delaySeconds, "s");
+        Print("CALF_A_M: Trade queued, SL=", HardSL_Pips, " pips");
     }
     else
     {
-        ExecuteTrade(type, FixedLotSize, 0, tp);
+        ExecuteTrade(type, FixedLotSize, sl, tp);
     }
 }
 
@@ -336,14 +341,15 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
 {
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+    sl = NormalizeDouble(sl, digits);
     tp = NormalizeDouble(tp, digits);
     bool ok;
 
-    // STEALTH: Ne šaljemo SL brokeru - koristimo USD Hard SL
+    // v2.2 FIX: PRAVI SL odmah, stealth samo za TP
     if(UseStealthMode)
-        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, 0, 0, "CALF_A_M") : trade.Sell(lot, _Symbol, price, 0, 0, "CALF_A_M");
+        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, sl, 0, "CALF_A_M") : trade.Sell(lot, _Symbol, price, sl, 0, "CALF_A_M");
     else
-        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, 0, tp, "CALF_A_M BUY") : trade.Sell(lot, _Symbol, price, 0, tp, "CALF_A_M SELL");
+        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, sl, tp, "CALF_A_M BUY") : trade.Sell(lot, _Symbol, price, sl, tp, "CALF_A_M SELL");
 
     if(ok)
     {
@@ -357,7 +363,7 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
         g_positions[g_posCount].trailLevel = 0;
         g_positions[g_posCount].maxProfitPoints = 0;
         g_posCount++;
-        Print("✓ CALF_A_M: Opened #", ticket, " @ ", price, " | Hard SL: -", HardSL_Pips, " pips");
+        Print("✓ CALF_A_M: Opened #", ticket, " SL=", sl, " (REAL ", HardSL_Pips, " pips)");
     }
 }
 
@@ -397,11 +403,12 @@ void ManageStealthPositions()
         if(profitPoints > g_positions[i].maxProfitPoints)
             g_positions[i].maxProfitPoints = profitPoints;
 
-        //=== 1. HARD STOP LOSS (stealth) ===
-        if(profitPoints <= -HardSL_Pips * 10)
+        //=== 1. BACKUP SL (broker SL je postavljen) ===
+        // v2.2: Pravi SL je postavljen odmah, ovo je samo backup provjera
+        if(PositionGetDouble(POSITION_SL) == 0 && profitPoints <= -HardSL_Pips * 10)
         {
             trade.PositionClose(ticket);
-            Print("✗ CALF_A_M HARD SL #", ticket, " | Loss: ", NormalizeDouble(profitPoints/10, 1), " pips");
+            Print("✗ CALF_A_M BACKUP SL #", ticket, " | Loss: ", NormalizeDouble(profitPoints/10, 1), " pips");
             g_positions[i].active = false;
             continue;
         }

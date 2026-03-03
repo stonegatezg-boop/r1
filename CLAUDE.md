@@ -2,8 +2,35 @@
 
 ## Stealth Execution (OBAVEZNO za sve EA)
 - **Stealth TP**: NIKAD ne šalji TP brokeru, zatvori trejd kad cijena dotakne target
-- **Stealth SL**: Pošalji SL brokeru s odgodom 7-13 sekundi (random)
-- **Razlog**: Broker ne vidi naše nivoe unaprijed
+- **PRAVI SL ODMAH**: SL se postavlja ODMAH pri otvaranju trejda (NE s odgodom!)
+- **Razlog za pravi SL**: Ako se EA restarta ili MT5 crashira, SL ostaje na brokeru i štiti poziciju
+- **Backup provjera**: EA dodatno provjerava je li SL postavljen i postavlja ga ako nije
+
+### KRITIČNI FIX (03.03.2026)
+**Problem**: Stealth SL s odgodom 7-13 sekundi može failirati ako:
+- PositionModify() vrati false (server odbije)
+- EA se restarta prije postavljanja SL
+- MT5 crashira ili izgubi konekciju
+
+**Rješenje**: SL se postavlja ODMAH kod `trade.Buy()` / `trade.Sell()`:
+```cpp
+// ISPRAVNO (v2.2+):
+trade.Buy(lot, _Symbol, price, sl, 0, "EA_NAME");  // SL odmah, TP=0 (stealth)
+
+// POGREŠNO (staro):
+trade.Buy(lot, _Symbol, price, 0, 0, "EA_NAME");   // SL=0, postavlja se kasnije
+```
+
+### Ažurirani CALF EA (03.03.2026 22:30 Zagreb)
+| EA | Verzija | SL Status |
+|----|---------|-----------|
+| CALF_A_UTBot | v2.2 | PRAVI SL ODMAH |
+| CALF_A_M | v2.2 | PRAVI SL ODMAH (800 pips) |
+| CALF_B_EMA | v2.3 | PRAVI SL ODMAH (800 pips) |
+| CALF_C_Supertrend | v3.1 | PRAVI SL ODMAH (800 pips) |
+| CALF_D_RSI | v2.2 | PRAVI SL ODMAH |
+| CALF_E_Breakout | v3.1 | PRAVI SL ODMAH (800 pips) |
+| Calf_A_Pro | v2.2 | PRAVI SL ODMAH |
 
 ## 3 Target System
 - **Target 1**: Zatvori 33% pozicije

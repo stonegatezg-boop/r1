@@ -1,15 +1,15 @@
 //+------------------------------------------------------------------+
 //|                                                CALF_E_Breakout.mq5|
 //|                        *** CALF E - Breakout ***                  |
-//|                   + Stealth Mode v3.0 (3-Level Trailing)         |
+//|                   + Stealth Mode v3.1 (REAL SL FIX)              |
 //|                   Created: 23.02.2026 (Zagreb)                    |
 //|                   Fixed: 03.03.2026 14:30 (Zagreb)                |
-//|                   - Hard SL 800 pips                              |
-//|                   - Level 2/3 trailing                            |
-//|                   - Range compression filter                      |
+//|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
+//|                   - SL 800 pips ODMAH pri otvaranju              |
+//|                   - Stealth samo za TP                           |
 //+------------------------------------------------------------------+
-#property copyright "CALF E - Breakout + Stealth v3.0"
-#property version   "3.00"
+#property copyright "CALF E - Breakout v3.1 REAL SL"
+#property version   "3.10"
 #property strict
 #include <Trade\Trade.mqh>
 input group "=== BREAKOUT POSTAVKE ==="
@@ -149,8 +149,9 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp) {
    sl = NormalizeDouble(sl, digits);
    tp = NormalizeDouble(tp, digits);
    bool ok;
+   // v3.1 FIX: PRAVI SL odmah, stealth samo za TP
    if(UseStealthMode)
-      ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, 0, 0, "CALF_E") : trade.Sell(lot, _Symbol, price, 0, 0, "CALF_E");
+      ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, sl, 0, "CALF_E") : trade.Sell(lot, _Symbol, price, sl, 0, "CALF_E");
    else
       ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, sl, tp, "CALF_E BUY") : trade.Sell(lot, _Symbol, price, sl, tp, "CALF_E SELL");
    if(ok && UseStealthMode) {
@@ -162,12 +163,12 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp) {
       g_positions[g_posCount].stealthTP = tp;
       g_positions[g_posCount].entryPrice = price;
       g_positions[g_posCount].openTime = TimeCurrent();
-      g_positions[g_posCount].delaySeconds = RandomRange(SLDelayMin, SLDelayMax);
+      g_positions[g_posCount].delaySeconds = 0;
       g_positions[g_posCount].randomBEPips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
       g_positions[g_posCount].randomLock2Pips = RandomRange(TrailLock2_PipsMin, TrailLock2_PipsMax);
       g_positions[g_posCount].trailLevel = 0;
       g_posCount++;
-      Print("CALF_E STEALTH: Opened #", ticket, " SL=", HardSL_Pips, " pips");
+      Print("CALF_E: Opened #", ticket, " SL=", sl, " (REAL ", HardSL_Pips, " pips)");
    } else if(ok) Print("CALF_E: ", lot);
 }
 void ProcessPendingTrade() { if(!g_pendingTrade.active) return; if(TimeCurrent() >= g_pendingTrade.signalTime + g_pendingTrade.delaySeconds) { ExecuteTrade(g_pendingTrade.type, g_pendingTrade.lot, g_pendingTrade.intendedSL, g_pendingTrade.intendedTP); g_pendingTrade.active = false; } }
@@ -183,10 +184,10 @@ void ManageStealthPositions() {
       double currentPrice = (posType == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
       double profitPips = (posType == POSITION_TYPE_BUY) ? (currentPrice - g_positions[i].entryPrice) / point : (g_positions[i].entryPrice - currentPrice) / point;
 
-      // Postavi SL nakon delay-a
-      if(currentSL == 0 && g_positions[i].intendedSL != 0 && TimeCurrent() >= g_positions[i].openTime + g_positions[i].delaySeconds) {
+      // v3.1: SL backup (pravi SL je postavljen odmah)
+      if(currentSL == 0 && g_positions[i].intendedSL != 0) {
          if(trade.PositionModify(ticket, NormalizeDouble(g_positions[i].intendedSL, digits), 0))
-            Print("CALF_E STEALTH: SL set #", ticket);
+            Print("CALF_E BACKUP: SL set #", ticket);
       }
 
       // Stealth TP check

@@ -1,11 +1,14 @@
 //+------------------------------------------------------------------+
 //|                                              CALF_A_UTBot.mq5    |
 //|                        *** CALF A - UT Bot Only ***              |
-//|                   + Stealth Mode v2.1                            |
-//|                   Version 2.1 - 2026-02-23                       |
+//|                   + Stealth Mode v2.2 (REAL SL FIX)              |
+//|                   Created: 23.02.2026 (Zagreb)                   |
+//|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
+//|                   - SL se postavlja ODMAH pri otvaranju          |
+//|                   - Stealth samo za TP                           |
 //+------------------------------------------------------------------+
-#property copyright "CALF A - UT Bot + Stealth (2026-02-23)"
-#property version   "2.10"
+#property copyright "CALF A - UT Bot + Stealth v2.2 REAL SL"
+#property version   "2.20"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -199,8 +202,9 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     sl = NormalizeDouble(sl, digits); tp = NormalizeDouble(tp, digits);
     bool ok;
+    // v2.2 FIX: PRAVI SL odmah, stealth samo za TP
     if(UseStealthMode)
-        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, 0, 0, "CALF_A") : trade.Sell(lot, _Symbol, price, 0, 0, "CALF_A");
+        ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, sl, 0, "CALF_A") : trade.Sell(lot, _Symbol, price, sl, 0, "CALF_A");
     else
         ok = (type == ORDER_TYPE_BUY) ? trade.Buy(lot, _Symbol, price, sl, tp, "CALF_A BUY") : trade.Sell(lot, _Symbol, price, sl, tp, "CALF_A SELL");
 
@@ -214,11 +218,11 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
         g_positions[g_posCount].stealthTP = tp;
         g_positions[g_posCount].entryPrice = price;
         g_positions[g_posCount].openTime = TimeCurrent();
-        g_positions[g_posCount].delaySeconds = RandomRange(SLDelayMin, SLDelayMax);
+        g_positions[g_posCount].delaySeconds = 0;
         g_positions[g_posCount].randomBEPips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
         g_positions[g_posCount].trailLevel = 0;
         g_posCount++;
-        Print("CALF_A STEALTH: Opened #", ticket, ", SL delay ", g_positions[g_posCount-1].delaySeconds, "s");
+        Print("CALF_A: Opened #", ticket, " SL=", sl, " (REAL)");
     }
     else if(ok) Print("CALF_A ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"), ": ", lot, " @ ", price);
 }
@@ -246,13 +250,11 @@ void ManageStealthPositions()
         double currentSL = PositionGetDouble(POSITION_SL);
         double currentPrice = (posType == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
 
+        // v2.2: SL se postavlja ODMAH - ovo je backup
         if(currentSL == 0 && g_positions[i].intendedSL != 0)
         {
-            if(TimeCurrent() >= g_positions[i].openTime + g_positions[i].delaySeconds)
-            {
-                double sl = NormalizeDouble(g_positions[i].intendedSL, digits);
-                if(trade.PositionModify(ticket, sl, 0)) Print("CALF_A STEALTH: SL set #", ticket);
-            }
+            double sl = NormalizeDouble(g_positions[i].intendedSL, digits);
+            if(trade.PositionModify(ticket, sl, 0)) Print("CALF_A BACKUP: SL set #", ticket);
         }
 
         if(g_positions[i].stealthTP > 0)
