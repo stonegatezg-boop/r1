@@ -60,6 +60,7 @@ struct PendingTradeInfo { bool active; ENUM_ORDER_TYPE type; double lot; double 
 struct StealthPosInfo {
     bool active;
     ulong ticket;
+    double intendedSL;          // SL za backup retry
     double stealthTP;           // Stealth Take Profit cijena
     double entryPrice;          // Entry cijena
     datetime openTime;          // Vrijeme otvaranja
@@ -417,12 +418,20 @@ void ManageStealthPositions()
         if(profitPoints > g_positions[i].maxProfitPoints)
             g_positions[i].maxProfitPoints = profitPoints;
 
-        //=== 1. BACKUP SL (broker SL je postavljen) ===
-        // v2.2: Pravi SL je postavljen odmah, ovo je samo backup provjera
+        //=== 1. BACKUP SL RETRY ===
+        // v2.3: Ako SL nije postavljen, pokušaj ponovo
+        double currentSL = PositionGetDouble(POSITION_SL);
+        if(currentSL == 0 && g_positions[i].intendedSL != 0)
+        {
+            double sl = NormalizeDouble(g_positions[i].intendedSL, digits);
+            if(trade.PositionModify(ticket, sl, 0))
+                Print("✓ CALF_A_M BACKUP: SL RETRY uspješan #", ticket, " @ ", sl);
+        }
+        // Ako SL još uvijek nije postavljen i gubitak prevelik, zatvori
         if(PositionGetDouble(POSITION_SL) == 0 && profitPoints <= -HardSL_Pips * 10)
         {
             trade.PositionClose(ticket);
-            Print("✗ CALF_A_M BACKUP SL #", ticket, " | Loss: ", NormalizeDouble(profitPoints/10, 1), " pips");
+            Print("✗ CALF_A_M BACKUP SL CLOSE #", ticket, " | Loss: ", NormalizeDouble(profitPoints/10, 1), " pips");
             g_positions[i].active = false;
             continue;
         }
