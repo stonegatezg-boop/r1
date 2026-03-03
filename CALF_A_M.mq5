@@ -420,7 +420,6 @@ void ManageStealthPositions()
 
         //=== 1. BACKUP SL RETRY ===
         // v2.3: Ako SL nije postavljen, pokušaj ponovo
-        double currentSL = PositionGetDouble(POSITION_SL);
         if(currentSL == 0 && g_positions[i].intendedSL != 0)
         {
             double sl = NormalizeDouble(g_positions[i].intendedSL, digits);
