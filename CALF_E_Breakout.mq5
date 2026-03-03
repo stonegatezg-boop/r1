@@ -5,7 +5,7 @@
 //|                   Created: 23.02.2026 (Zagreb)                    |
 //|                   Fixed: 03.03.2026 14:30 (Zagreb)                |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
-//|                   - SL 800 pips ODMAH pri otvaranju              |
+//|                   - SL 789-811 pips (random) ODMAH               |
 //|                   - Stealth samo za TP                           |
 //+------------------------------------------------------------------+
 #property copyright "CALF E - Breakout v3.2 RANDOM SL"
@@ -123,8 +123,8 @@ void QueueTrade(ENUM_ORDER_TYPE type) {
    if(atr <= 0) return;
    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
    double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   // Hard SL 800 pips
-   double slDist = HardSL_Pips * point;
+   // v3.2: SL se računa random 789-811 pips u ExecuteTrade()
+   double slDist = HardSL_Pips * point * 10;  // za lot calc
    double sl = (type == ORDER_TYPE_BUY) ? price - slDist : price + slDist;
    double tp = (type == ORDER_TYPE_BUY) ? price + TPMultiplier * atr : price - TPMultiplier * atr;
    double lots = CalculateLotSize(slDist);

@@ -5,7 +5,7 @@
 //|                   Created: 23.02.2026 (Zagreb)                   |
 //|                   Fixed: 03.03.2026 14:30 (Zagreb)               |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
-//|                   - SL 800 pips ODMAH pri otvaranju              |
+//|                   - SL 789-811 pips (random) ODMAH               |
 //|                   - Stealth samo za TP                           |
 //+------------------------------------------------------------------+
 #property copyright "CALF C - Supertrend v3.2 RANDOM SL"

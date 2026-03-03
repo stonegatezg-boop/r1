@@ -6,7 +6,7 @@
 //|                   Fixed: 03.03.2026 14:30 (Zagreb) - MAE/MFE opt |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
 //|                   Fixed: 03.03.2026 23:xx (Zagreb) - SL na trenutnoj cijeni |
-//|                   - Hard SL 800 pips ODMAH pri otvaranju         |
+//|                   - SL 789-811 pips (random) ODMAH               |
 //|                   - Stealth samo za TP                           |
 //|                   - Pametni Trailing (1000/500 dynamic lock)     |
 //+------------------------------------------------------------------+
@@ -178,8 +178,8 @@ void QueueTrade(ENUM_ORDER_TYPE type)
     double atr = GetATR(); if(atr <= 0) return;
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
-    // v2.2: Hard SL od 800 pips (MAE analiza pokazuje -8 USD kao granicu smrti tradea)
-    double slDistance = HardSLPips * point * 10; // pips to price (1 pip = 10 points za XAUUSD)
+    // v2.32: SL se računa random 789-811 pips u ExecuteTrade()
+    double slDistance = HardSLPips * point * 10; // ~800 pips za lot calc
     double sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     double tp = (type == ORDER_TYPE_BUY) ? price + TPMultiplier * atr : price - TPMultiplier * atr;
     double lots = CalculateLotSize(slDistance); if(lots <= 0) return;

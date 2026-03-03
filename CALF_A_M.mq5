@@ -8,7 +8,7 @@
 //|                   Created: 2026-02-23                            |
 //|                   Fixed: 03.03.2026 (Zagreb) - MFE Trailing v1.2 |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
-//|                   - SL 800 pips ODMAH pri otvaranju              |
+//|                   - SL 789-811 pips (random) ODMAH               |
 //+------------------------------------------------------------------+
 #property copyright "CALF A M - MFE Trailing v2.3 RANDOM SL"
 #property version   "2.30"
@@ -315,8 +315,8 @@ void QueueTrade(ENUM_ORDER_TYPE type)
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     // TP ostaje ATR-based (stealth)
     double tp = (type == ORDER_TYPE_BUY) ? price + TPMultiplier * atr : price - TPMultiplier * atr;
-    // v2.2 FIX: PRAVI SL odmah (800 pips)
-    double slDist = HardSL_Pips * point * 10;  // 800 pips = 80 price units
+    // v2.3: SL se računa random 789-811 pips u ExecuteTrade()
+    double slDist = HardSL_Pips * point * 10;  // ~800 pips za lot calc
     double sl = (type == ORDER_TYPE_BUY) ? price - slDist : price + slDist;
 
     if(UseStealthMode)
