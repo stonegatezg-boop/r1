@@ -3,14 +3,13 @@
 //|                        *** CALF A M - UT Bot + Market Protection |
 //|                   + Stealth Mode v2.1                            |
 //|                   + NEWS FILTER & SPREAD FILTER                  |
+//|                   + 3-LEVEL MFE TRAILING SYSTEM                  |
 //|                   Based on CALF_A with Market Protection         |
-//|                   Version 1.0 - 2026-02-23                       |
-//|                   Fixed: 03.03.2026 - Nova USD Risk Logika       |
-//|                   Hard SL: -8 USD, Trail: 10 USD aktivacija      |
-//|                   MFE tracking, lock profit = MFE - 5 USD        |
+//|                   Created: 2026-02-23                            |
+//|                   Fixed: 03.03.2026 (Zagreb) - MFE Trailing v1.2 |
 //+------------------------------------------------------------------+
-#property copyright "CALF A M - UT Bot + Market Protected (2026-02-23)"
-#property version   "1.00"
+#property copyright "CALF A M - MFE Trailing (03.03.2026)"
+#property version   "1.20"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -31,13 +30,16 @@ input int      OpenDelayMin     = 0;
 input int      OpenDelayMax     = 4;
 input int      SLDelayMin       = 7;
 input int      SLDelayMax       = 13;
-input double   LargeCandleATR   = 3.0;
+input double   LargeCandleATR   = 2.0;      // 2x ATR Large Candle Filter
 
-input group "=== RISK MANAGEMENT (PIPS) ==="
-input int      HardSL_Pips           = 800;    // Hard Stop Loss (800 pips = 8 USD za 0.01 lot)
-input int      TrailActivation_Pips  = 1000;   // Trailing aktivacija (1000 pips = 10 USD)
-input int      TrailDistance_Pips    = 500;    // Trailing udaljenost (500 pips = 5 USD)
-input double   FixedLotSize          = 0.01;   // Fiksni lot size
+input group "=== 3-LEVEL TRAILING (MFE-based) ==="
+input int      HardSL_Pips        = 800;      // Hard Stop Loss (stealth)
+input int      Level1_Pips        = 500;      // L1: Aktivacija BE trailing
+input int      Level1_BEPips      = 40;       // L1: SL = BE + ovo
+input int      Level2_Pips        = 1000;     // L2: Aktivacija lock trailing
+input int      Level2_LockPips    = 300;      // L2: Lock ovaj profit
+input double   Level3_MFEPercent  = 30.0;     // L3: Trailing = MFE - X%
+input double   FixedLotSize       = 0.01;     // Fiksni lot size
 
 input group "=== NEWS FILTER (NOVO) ==="
 input bool     UseNewsFilter       = true;  // Koristi News Filter
@@ -54,16 +56,14 @@ input ulong    MagicNumber      = 100011;   // Magic Number (različit od CALF_A
 input int      Slippage         = 30;
 
 struct PendingTradeInfo { bool active; ENUM_ORDER_TYPE type; double lot; double intendedSL; double intendedTP; datetime signalTime; int delaySeconds; };
-// MFE = Maximum Favorable Excursion (najviši dosegnuti profit)
 struct StealthPosInfo {
     bool active;
     ulong ticket;
     double stealthTP;           // Stealth Take Profit cijena
     double entryPrice;          // Entry cijena
     datetime openTime;          // Vrijeme otvaranja
-    double maxProfit;           // MFE tracking - najviši dosegnuti profit (USD)
-    bool trailActive;           // Je li trailing aktiviran
-    double lockedProfitPrice;   // Trenutna SL cijena iz trailing-a
+    int trailLevel;             // 0=none, 1=BE, 2=Lock, 3=MFE
+    double maxProfitPoints;     // MFE tracking (Maximum Favorable Excursion)
 };
 
 CTrade trade;
@@ -101,13 +101,15 @@ int OnInit()
     g_posCount = 0;
 
     Print("╔══════════════════════════════════════════════════════════╗");
-    Print("║       CALF A M v1.1 - USD RISK LOGIC                     ║");
+    Print("║       CALF A M v1.2 - MFE TRAILING SYSTEM                ║");
     Print("╠══════════════════════════════════════════════════════════╣");
-    Print("║ UT Bot Strategy + Stealth Mode");
-    Print("║ HARD SL: -", HardSL_Pips, " pips (", HardSL_Pips/100.0, " USD za 0.01 lot)");
-    Print("║ TRAIL ACTIVATION: ", TrailActivation_Pips, " pips (", TrailActivation_Pips/100.0, " USD)");
-    Print("║ TRAIL DISTANCE: ", TrailDistance_Pips, " pips (", TrailDistance_Pips/100.0, " USD)");
-    Print("║ NEWS FILTER: ", UseNewsFilter ? "ON" : "OFF", " | SPREAD FILTER: ", UseSpreadFilter ? "ON" : "OFF");
+    Print("║ UT Bot Strategy + Stealth Mode + MFE Trailing");
+    Print("║ Large Candle: ", LargeCandleATR, "x ATR");
+    Print("║ Hard SL: -", HardSL_Pips, " pips (stealth)");
+    Print("║ L1: +", Level1_Pips, " pips → BE+", Level1_BEPips);
+    Print("║ L2: +", Level2_Pips, " pips → Lock ", Level2_LockPips, " pips");
+    Print("║ L3: MFE - ", Level3_MFEPercent, "% (Dynamic)");
+    Print("║ NEWS: ", UseNewsFilter ? "ON" : "OFF", " | SPREAD: ", UseSpreadFilter ? "ON" : "OFF", " (", MaxSpreadPoints, "pt)");
     Print("╚══════════════════════════════════════════════════════════╝");
 
     return INIT_SUCCEEDED;
@@ -352,11 +354,10 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
         g_positions[g_posCount].stealthTP = tp;
         g_positions[g_posCount].entryPrice = price;
         g_positions[g_posCount].openTime = TimeCurrent();
-        g_positions[g_posCount].maxProfit = 0;           // MFE starts at 0
-        g_positions[g_posCount].trailActive = false;     // Trailing not yet active
-        g_positions[g_posCount].lockedProfitPrice = 0;   // No locked profit yet
+        g_positions[g_posCount].trailLevel = 0;
+        g_positions[g_posCount].maxProfitPoints = 0;
         g_posCount++;
-        Print("✓ CALF_A_M: Opened #", ticket, " @ ", price, " | Hard SL: -", HardSL_Pips, " pips | Trail: ", TrailActivation_Pips, "/", TrailDistance_Pips, " pips");
+        Print("✓ CALF_A_M: Opened #", ticket, " @ ", price, " | Hard SL: -", HardSL_Pips, " pips");
     }
 }
 
@@ -382,30 +383,30 @@ void ManageStealthPositions()
         if(!PositionSelectByTicket(ticket)) { g_positions[i].active = false; continue; }
 
         ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+        double currentSL = PositionGetDouble(POSITION_SL);
         double currentPrice = (posType == POSITION_TYPE_BUY) ?
                               SymbolInfoDouble(_Symbol, SYMBOL_BID) :
                               SymbolInfoDouble(_Symbol, SYMBOL_ASK);
 
-        // Izračunaj trenutni profit u PIPS
-        double profitPips = (posType == POSITION_TYPE_BUY) ?
-                            (currentPrice - g_positions[i].entryPrice) / point :
-                            (g_positions[i].entryPrice - currentPrice) / point;
+        // Profit u POINTS
+        double profitPoints = (posType == POSITION_TYPE_BUY) ?
+                              (currentPrice - g_positions[i].entryPrice) / point :
+                              (g_positions[i].entryPrice - currentPrice) / point;
 
-        //=================================================================
-        // 1. HARD STOP LOSS (-800 pips = -8 USD za 0.01 lot)
-        //    Zatvori poziciju odmah ako loss premaši HardSL_Pips
-        //=================================================================
-        if(profitPips <= -HardSL_Pips)
+        // Ažuriraj MFE (Maximum Favorable Excursion)
+        if(profitPoints > g_positions[i].maxProfitPoints)
+            g_positions[i].maxProfitPoints = profitPoints;
+
+        //=== 1. HARD STOP LOSS (stealth) ===
+        if(profitPoints <= -HardSL_Pips * 10)
         {
             trade.PositionClose(ticket);
-            Print("✗ CALF_A_M HARD SL HIT #", ticket, " | Loss: ", DoubleToString(profitPips, 0), " pips");
+            Print("✗ CALF_A_M HARD SL #", ticket, " | Loss: ", NormalizeDouble(profitPoints/10, 1), " pips");
             g_positions[i].active = false;
             continue;
         }
 
-        //=================================================================
-        // 2. STEALTH TP - Zatvori ako cijena dotakne TP
-        //=================================================================
+        //=== 2. STEALTH TP ===
         if(g_positions[i].stealthTP > 0)
         {
             bool tpHit = (posType == POSITION_TYPE_BUY && currentPrice >= g_positions[i].stealthTP) ||
@@ -413,97 +414,60 @@ void ManageStealthPositions()
             if(tpHit)
             {
                 trade.PositionClose(ticket);
-                Print("✓ CALF_A_M TP HIT #", ticket, " | Profit: ", DoubleToString(profitPips, 0), " pips");
+                Print("✓ CALF_A_M TP HIT #", ticket, " | Profit: ", NormalizeDouble(profitPoints/10, 1), " pips");
                 g_positions[i].active = false;
                 continue;
             }
         }
 
-        //=================================================================
-        // 3. MFE TRACKING - Prati najviši dosegnuti profit
-        //=================================================================
-        if(profitPips > g_positions[i].maxProfit)
+        //=== 3. LEVEL 1: +500 pips → BE+40 ===
+        if(g_positions[i].trailLevel < 1 && profitPoints >= Level1_Pips * 10)
         {
-            g_positions[i].maxProfit = profitPips;
+            double newSL = (posType == POSITION_TYPE_BUY) ?
+                           g_positions[i].entryPrice + Level1_BEPips * point :
+                           g_positions[i].entryPrice - Level1_BEPips * point;
+            newSL = NormalizeDouble(newSL, digits);
+            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
+                               (posType == POSITION_TYPE_SELL && (currentSL == 0 || newSL < currentSL));
+            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
+            {
+                g_positions[i].trailLevel = 1;
+                Print("✓ L1: BE+", Level1_BEPips, " pips #", ticket, " (profit: ", NormalizeDouble(profitPoints/10, 1), " pips)");
+            }
         }
 
-        //=================================================================
-        // 4. TRAILING STOP (aktivacija na 1000 pips, udaljenost 500 pips)
-        //    - Aktivira se SAMO kada profit >= TrailActivation_Pips
-        //    - Lock profit = MFE - TrailDistance_Pips
-        //    - SL se NIKAD ne vraća nazad
-        //=================================================================
-        if(g_positions[i].maxProfit >= TrailActivation_Pips)
+        //=== 4. LEVEL 2: +1000 pips → Lock 300 ===
+        if(g_positions[i].trailLevel == 1 && profitPoints >= Level2_Pips * 10)
         {
-            // Izračunaj lock level: MFE - 500 pips
-            double lockPips = g_positions[i].maxProfit - TrailDistance_Pips;
-
-            // Izračunaj novu SL cijenu
-            double newSLPrice;
-            if(posType == POSITION_TYPE_BUY)
-                newSLPrice = g_positions[i].entryPrice + lockPips * point;
-            else
-                newSLPrice = g_positions[i].entryPrice - lockPips * point;
-
-            newSLPrice = NormalizeDouble(newSLPrice, digits);
-
-            // Provjeri treba li pomaknuti SL (samo naprijed, nikad nazad)
-            bool shouldMove = false;
-            if(g_positions[i].lockedProfitPrice == 0)
+            double newSL = (posType == POSITION_TYPE_BUY) ?
+                           g_positions[i].entryPrice + Level2_LockPips * point :
+                           g_positions[i].entryPrice - Level2_LockPips * point;
+            newSL = NormalizeDouble(newSL, digits);
+            currentSL = PositionGetDouble(POSITION_SL);
+            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
+                               (posType == POSITION_TYPE_SELL && newSL < currentSL);
+            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
             {
-                shouldMove = true;  // Prvi put postavljamo trailing SL
+                g_positions[i].trailLevel = 2;
+                Print("✓ L2: Lock +", Level2_LockPips, " pips #", ticket, " (profit: ", NormalizeDouble(profitPoints/10, 1), " pips)");
             }
-            else
+        }
+
+        //=== 5. LEVEL 3: MFE - 30% (Dinamički trailing) ===
+        if(g_positions[i].trailLevel >= 2 && g_positions[i].maxProfitPoints > Level2_Pips * 10)
+        {
+            double mfeKeep = g_positions[i].maxProfitPoints * (1.0 - Level3_MFEPercent / 100.0);
+            double newSL = (posType == POSITION_TYPE_BUY) ?
+                           g_positions[i].entryPrice + mfeKeep * point :
+                           g_positions[i].entryPrice - mfeKeep * point;
+            newSL = NormalizeDouble(newSL, digits);
+            currentSL = PositionGetDouble(POSITION_SL);
+            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
+                               (posType == POSITION_TYPE_SELL && newSL < currentSL);
+            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
             {
-                // SL se pomiče samo ako je novi SL bolji
-                if(posType == POSITION_TYPE_BUY && newSLPrice > g_positions[i].lockedProfitPrice)
-                    shouldMove = true;
-                else if(posType == POSITION_TYPE_SELL && newSLPrice < g_positions[i].lockedProfitPrice)
-                    shouldMove = true;
-            }
-
-            if(shouldMove)
-            {
-                // STEALTH: NE šaljemo pravi SL brokeru - pratimo interno
-                // Ako cijena padne ispod lockPips, zatvaramo poziciju
-                g_positions[i].lockedProfitPrice = newSLPrice;
-
-                if(!g_positions[i].trailActive)
-                {
-                    g_positions[i].trailActive = true;
-                    Print("▶ CALF_A_M TRAIL ACTIVATED #", ticket,
-                          " | MFE: ", DoubleToString(g_positions[i].maxProfit, 0), " pips",
-                          " | Lock: +", DoubleToString(lockPips, 0), " pips");
-                }
-                else
-                {
-                    Print("▶ CALF_A_M TRAIL UPDATE #", ticket,
-                          " | MFE: ", DoubleToString(g_positions[i].maxProfit, 0), " pips",
-                          " | Lock: +", DoubleToString(lockPips, 0), " pips");
-                }
-            }
-
-            // Provjeri je li cijena pala ispod locked profita (trailing SL hit)
-            if(g_positions[i].trailActive && g_positions[i].lockedProfitPrice > 0)
-            {
-                bool trailSLHit = false;
-                if(posType == POSITION_TYPE_BUY && currentPrice <= g_positions[i].lockedProfitPrice)
-                    trailSLHit = true;
-                else if(posType == POSITION_TYPE_SELL && currentPrice >= g_positions[i].lockedProfitPrice)
-                    trailSLHit = true;
-
-                if(trailSLHit)
-                {
-                    trade.PositionClose(ticket);
-                    double lockedPips = (posType == POSITION_TYPE_BUY) ?
-                                        (g_positions[i].lockedProfitPrice - g_positions[i].entryPrice) / point :
-                                        (g_positions[i].entryPrice - g_positions[i].lockedProfitPrice) / point;
-                    Print("✓ CALF_A_M TRAIL SL HIT #", ticket,
-                          " | Locked: +", DoubleToString(lockedPips, 0), " pips",
-                          " | MFE was: ", DoubleToString(g_positions[i].maxProfit, 0), " pips");
-                    g_positions[i].active = false;
-                    continue;
-                }
+                g_positions[i].trailLevel = 3;
+                Print("✓ L3 MFE: Trail to +", NormalizeDouble(mfeKeep/10, 1), " pips (MFE=", NormalizeDouble(g_positions[i].maxProfitPoints/10, 1), ") #", ticket);
             }
         }
     }
