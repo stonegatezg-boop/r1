@@ -5,6 +5,8 @@
 //|                   + NEWS FILTER & SPREAD FILTER                  |
 //|                   Based on CALF_A with Market Protection         |
 //|                   Version 1.0 - 2026-02-23                       |
+//|                   Fixed: 03.03.2026 - Novi trailing sustav       |
+//|                   (1000 pips aktivacija, 500 pips udaljenost)    |
 //+------------------------------------------------------------------+
 #property copyright "CALF A M - UT Bot + Market Protected (2026-02-23)"
 #property version   "1.00"
@@ -31,9 +33,8 @@ input int      SLDelayMax       = 13;
 input double   LargeCandleATR   = 3.0;
 
 input group "=== TRAILING POSTAVKE ==="
-input int      TrailActivatePips = 500;
-input int      TrailBEPipsMin   = 38;
-input int      TrailBEPipsMax   = 43;
+input int      TrailActivatePips = 1000;   // Aktivacija kada profit premaši X pipsa
+input int      TrailDistancePips = 500;    // Trailing udaljenost (500 pipsa od profita)
 
 input group "=== NEWS FILTER (NOVO) ==="
 input bool     UseNewsFilter       = true;  // Koristi News Filter
@@ -50,7 +51,7 @@ input ulong    MagicNumber      = 100011;   // Magic Number (različit od CALF_A
 input int      Slippage         = 30;
 
 struct PendingTradeInfo { bool active; ENUM_ORDER_TYPE type; double lot; double intendedSL; double intendedTP; datetime signalTime; int delaySeconds; };
-struct StealthPosInfo { bool active; ulong ticket; double intendedSL; double stealthTP; double entryPrice; datetime openTime; int delaySeconds; int randomBEPips; int trailLevel; };
+struct StealthPosInfo { bool active; ulong ticket; double intendedSL; double stealthTP; double entryPrice; datetime openTime; int delaySeconds; bool trailActive; double lastTrailSL; };
 
 CTrade trade;
 int atrHandle;
@@ -336,8 +337,8 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
         g_positions[g_posCount].entryPrice = price;
         g_positions[g_posCount].openTime = TimeCurrent();
         g_positions[g_posCount].delaySeconds = RandomRange(SLDelayMin, SLDelayMax);
-        g_positions[g_posCount].randomBEPips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
-        g_positions[g_posCount].trailLevel = 0;
+        g_positions[g_posCount].trailActive = false;
+        g_positions[g_posCount].lastTrailSL = 0;
         g_posCount++;
         Print("✓ CALF_A_M STEALTH: Opened #", ticket, ", SL delay ", g_positions[g_posCount-1].delaySeconds, "s");
     }
@@ -385,16 +386,44 @@ void ManageStealthPositions()
             if(tpHit) { trade.PositionClose(ticket); Print("CALF_A_M STEALTH: TP hit #", ticket); g_positions[i].active = false; continue; }
         }
 
-        // Trailing BE
-        if(g_positions[i].trailLevel < 1 && currentSL > 0)
+        // Trailing Stop (aktivacija na 1000 pipsa, prati na 500 pipsa udaljenosti)
+        if(currentSL > 0)
         {
-            double profitPips = (posType == POSITION_TYPE_BUY) ? (currentPrice - g_positions[i].entryPrice) / point : (g_positions[i].entryPrice - currentPrice) / point;
+            double profitPips = (posType == POSITION_TYPE_BUY) ?
+                                (currentPrice - g_positions[i].entryPrice) / point :
+                                (g_positions[i].entryPrice - currentPrice) / point;
+
+            // Aktiviraj trailing kad profit premaši TrailActivatePips (1000)
             if(profitPips >= TrailActivatePips)
             {
-                double newSL = (posType == POSITION_TYPE_BUY) ? g_positions[i].entryPrice + g_positions[i].randomBEPips * point : g_positions[i].entryPrice - g_positions[i].randomBEPips * point;
+                // Izračunaj novi SL: trenutni profit - TrailDistancePips (500)
+                double trailPips = profitPips - TrailDistancePips;
+                double newSL;
+
+                if(posType == POSITION_TYPE_BUY)
+                    newSL = g_positions[i].entryPrice + trailPips * point;
+                else
+                    newSL = g_positions[i].entryPrice - trailPips * point;
+
                 newSL = NormalizeDouble(newSL, digits);
-                bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) || (posType == POSITION_TYPE_SELL && newSL < currentSL);
-                if(shouldModify && trade.PositionModify(ticket, newSL, 0)) { g_positions[i].trailLevel = 1; Print("CALF_A_M STEALTH: Trail BE+", g_positions[i].randomBEPips, " #", ticket); }
+
+                // Pomakni SL samo ako je bolji od trenutnog
+                bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
+                                    (posType == POSITION_TYPE_SELL && newSL < currentSL);
+
+                if(shouldModify && trade.PositionModify(ticket, newSL, 0))
+                {
+                    if(!g_positions[i].trailActive)
+                    {
+                        g_positions[i].trailActive = true;
+                        Print("CALF_A_M TRAIL ACTIVATED #", ticket, " @ profit ", DoubleToString(profitPips, 0), " pips, SL moved to +", DoubleToString(trailPips, 0), " pips");
+                    }
+                    else
+                    {
+                        Print("CALF_A_M TRAIL UPDATE #", ticket, " @ profit ", DoubleToString(profitPips, 0), " pips, SL at +", DoubleToString(trailPips, 0), " pips");
+                    }
+                    g_positions[i].lastTrailSL = newSL;
+                }
             }
         }
     }
