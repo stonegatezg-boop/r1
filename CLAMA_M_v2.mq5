@@ -18,6 +18,7 @@ struct TradeData
     ulong    ticket;
     double   entryPrice;
     datetime openTime;
+    double   stealthTP;            // Stealth TP (ne šalje se brokeru)
     int      trailLevel;           // 0=none, 1=L1, 2=L2, 3=L3
     int      barsInTrade;
     double   maxProfitPips;        // MFE tracking
@@ -37,6 +38,7 @@ input int      ATRPeriod        = 20;       // ATR Period
 
 input group "=== TRADE MANAGEMENT ==="
 input double   SLMultiplier     = 2.0;      // Stop Loss (x ATR) - ODMAH na entry
+input double   TPMultiplier     = 3.0;      // Take Profit (x ATR) - STEALTH
 input double   RiskPercent      = 1.0;      // Risk % od Balance-a
 input int      MaxOpenTrades    = 5;        // Max otvorenih tradeova
 
@@ -565,12 +567,13 @@ void SyncTradesArray()
 //+------------------------------------------------------------------+
 //| Add Trade to Array                                                |
 //+------------------------------------------------------------------+
-void AddTrade(ulong ticket, double entry)
+void AddTrade(ulong ticket, double entry, double tp)
 {
     ArrayResize(trades, tradesCount + 1);
     trades[tradesCount].ticket = ticket;
     trades[tradesCount].entryPrice = entry;
     trades[tradesCount].openTime = TimeCurrent();
+    trades[tradesCount].stealthTP = tp;
     trades[tradesCount].trailLevel = 0;
     trades[tradesCount].barsInTrade = 0;
     trades[tradesCount].maxProfitPips = 0;
@@ -631,6 +634,28 @@ void ManageAllPositions()
         // Update MFE
         if(profitPips > trades[i].maxProfitPips)
             trades[i].maxProfitPips = profitPips;
+
+        //=== 0. STEALTH TP CHECK ===
+        if(trades[i].stealthTP > 0)
+        {
+            double currentPrice;
+            bool tpHit = false;
+            if(posType == POSITION_TYPE_BUY)
+            {
+                currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+                if(currentPrice >= trades[i].stealthTP) tpHit = true;
+            }
+            else
+            {
+                currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+                if(currentPrice <= trades[i].stealthTP) tpHit = true;
+            }
+            if(tpHit)
+            {
+                ClosePosition(ticket, "Stealth TP HIT @ " + DoubleToString(currentPrice, digits));
+                continue;
+            }
+        }
 
         //=== 1. EARLY FAILURE EXIT: -80 pips ===
         if(profitPips <= -EarlyFailurePips)
@@ -787,12 +812,15 @@ void OpenBuy()
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     sl = NormalizeDouble(sl, digits);
 
+    // Stealth TP = 3x ATR (ne šalje se brokeru)
+    double stealthTP = NormalizeDouble(price + TPMultiplier * atr, digits);
+
     // PRAVI SL ODMAH na entry (prema CLAUDE.md standardu)
     if(trade.Buy(lots, _Symbol, price, sl, 0, "CLAMA_M_v2 BUY"))
     {
         ulong ticket = trade.ResultOrder();
-        AddTrade(ticket, price);
-        Print("CLAMA M v2 BUY [", ticket, "]: ", lots, " @ ", price, " SL=", sl, " (", DoubleToString(slDistance / pipValue, 0), " pips)");
+        AddTrade(ticket, price, stealthTP);
+        Print("CLAMA M v2 BUY [", ticket, "]: ", lots, " @ ", price, " SL=", sl, " StealthTP=", stealthTP);
         barsSinceLastTrade = 0;
     }
 }
@@ -815,12 +843,15 @@ void OpenSell()
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     sl = NormalizeDouble(sl, digits);
 
+    // Stealth TP = 3x ATR (ne šalje se brokeru)
+    double stealthTP = NormalizeDouble(price - TPMultiplier * atr, digits);
+
     // PRAVI SL ODMAH na entry (prema CLAUDE.md standardu)
     if(trade.Sell(lots, _Symbol, price, sl, 0, "CLAMA_M_v2 SELL"))
     {
         ulong ticket = trade.ResultOrder();
-        AddTrade(ticket, price);
-        Print("CLAMA M v2 SELL [", ticket, "]: ", lots, " @ ", price, " SL=", sl, " (", DoubleToString(slDistance / pipValue, 0), " pips)");
+        AddTrade(ticket, price, stealthTP);
+        Print("CLAMA M v2 SELL [", ticket, "]: ", lots, " @ ", price, " SL=", sl, " StealthTP=", stealthTP);
         barsSinceLastTrade = 0;
     }
 }
