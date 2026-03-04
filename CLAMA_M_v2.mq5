@@ -6,7 +6,8 @@
 //|                   + Inside Candle (Optional) + Impulse Filter    |
 //|                   + MFE Trailing + Early/Time Failure Exits      |
 //|                   Created: 04.03.2026 (Zagreb)                   |
-//|                   Updated: 04.03.2026 23:00 (Zagreb) - MFE Trail |
+//|                   Updated: 04.03.2026 - MFE Trail                |
+//|                   Updated: 04.03.2026 - Tuning filters & MFE     |
 //+------------------------------------------------------------------+
 #property copyright "CLAMA M v2.1 - MFE Trailing Edition (2026-03-04)"
 #property version   "2.10"
@@ -45,9 +46,9 @@ input int      MaxOpenTrades    = 5;        // Max otvorenih tradeova
 
 input group "=== ENTRY FILTERS ==="
 input double   LargeCandleATR   = 3.0;      // Large Candle Filter (> 3x ATR)
-input double   CompressionATR   = 2.0;      // Compression Filter (< 2.0x ATR)
+input double   CompressionATR   = 1.5;      // Compression Filter (< 1.5x ATR)
 input int      CompressionBars  = 5;        // Broj barova za kompresiju
-input double   ImpulseATR       = 2.5;      // Impulse Filter (> 2.5x ATR skip)
+input double   ImpulseATR       = 3.0;      // Impulse Filter (> 3.0x ATR skip)
 input int      ImpulseBars      = 3;        // Broj barova za impulse check
 input bool     RequireBothFilters = false;  // Require BOTH compression AND inside (false=OR)
 
@@ -66,8 +67,8 @@ input int      Level3_TrailPips    = 200;   // L3: Trail distance (pips)
 
 input group "=== MFE TRAILING ==="
 input bool     UseMFETrailing      = true;  // Koristi MFE Trailing
-input int      MFE_ActivatePips    = 800;   // MFE aktivacija (maxProfit pips)
-input int      MFE_TrailDistance   = 300;   // MFE trail distance (pips od maxProfit)
+input int      MFE_ActivatePips    = 1500;  // MFE aktivacija (maxProfit pips)
+input int      MFE_TrailDistance   = 500;   // MFE trail distance (pips od maxProfit)
 
 input group "=== MAX DURATION ==="
 input int      MaxBarsInTrade   = 48;       // Max barova u tradeu (~4 sata)
@@ -892,7 +893,7 @@ void OpenBuy()
     double stealthTP = NormalizeDouble(price + TPMultiplier * atr, digits);
 
     // PRAVI SL ODMAH na entry (prema CLAUDE.md standardu)
-    if(trade.Buy(lots, _Symbol, price, sl, 0, "CLAMA_M_v2 BUY"))
+    if(trade.Buy(lots, _Symbol, price, sl, 0, "CLAMA_M_v2.1 BUY"))
     {
         ulong ticket = trade.ResultOrder();
         AddTrade(ticket, price, stealthTP);
@@ -923,7 +924,7 @@ void OpenSell()
     double stealthTP = NormalizeDouble(price - TPMultiplier * atr, digits);
 
     // PRAVI SL ODMAH na entry (prema CLAUDE.md standardu)
-    if(trade.Sell(lots, _Symbol, price, sl, 0, "CLAMA_M_v2 SELL"))
+    if(trade.Sell(lots, _Symbol, price, sl, 0, "CLAMA_M_v2.1 SELL"))
     {
         ulong ticket = trade.ResultOrder();
         AddTrade(ticket, price, stealthTP);
