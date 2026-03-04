@@ -2,6 +2,7 @@
 //|                                          SwingFree_MACDL_Cla.mq5 |
 //|                         Swing Free Range Filter + MACD Leader    |
 //|                                          Za XAUUSD M5            |
+//|                   Fixed: 04.03.2026 (Zagreb) - pip calc fix      |
 //+------------------------------------------------------------------+
 #property copyright "Claude"
 #property link      ""
@@ -106,15 +107,25 @@ int OnInit()
 {
    trade.SetExpertMagicNumber(MagicNumber);
 
-   if(SymbolInfoInteger(_Symbol, SYMBOL_DIGITS) == 2)
+   // XAUUSD pip = 0.1 (fixed) bez obzira na broker digits (2 ili 3)
+   if(StringFind(_Symbol, "XAU") >= 0 || StringFind(_Symbol, "GOLD") >= 0)
    {
       pipValue = 0.1;
       pipDigits = 1;
    }
    else
    {
-      pipValue = SymbolInfoDouble(_Symbol, SYMBOL_POINT) * 10;
-      pipDigits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS) - 1;
+      int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+      if(digits == 5 || digits == 3)
+      {
+         pipValue = SymbolInfoDouble(_Symbol, SYMBOL_POINT) * 10;
+         pipDigits = digits - 1;
+      }
+      else
+      {
+         pipValue = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+         pipDigits = digits;
+      }
    }
 
    // Initialize range filter

@@ -2,6 +2,7 @@
 //|                                                   Template_EA.mq5 |
 //|                                    TEMPLATE - NE KORISTITI DIREKTNO |
 //|                         Kopiraj i prilagodi signal logiku za novi EA |
+//|                   Fixed: 04.03.2026 (Zagreb) - pip calc fix      |
 //+------------------------------------------------------------------+
 #property copyright "Template"
 #property link      ""
@@ -97,16 +98,25 @@ int OnInit()
 {
    trade.SetExpertMagicNumber(MagicNumber);
 
-   // Pip value za XAUUSD
-   if(SymbolInfoInteger(_Symbol, SYMBOL_DIGITS) == 2)
+   // XAUUSD pip = 0.1 (fixed) bez obzira na broker digits (2 ili 3)
+   if(StringFind(_Symbol, "XAU") >= 0 || StringFind(_Symbol, "GOLD") >= 0)
    {
       pipValue = 0.1;
       pipDigits = 1;
    }
    else
    {
-      pipValue = SymbolInfoDouble(_Symbol, SYMBOL_POINT) * 10;
-      pipDigits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS) - 1;
+      int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+      if(digits == 5 || digits == 3)
+      {
+         pipValue = SymbolInfoDouble(_Symbol, SYMBOL_POINT) * 10;
+         pipDigits = digits - 1;
+      }
+      else
+      {
+         pipValue = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+         pipDigits = digits;
+      }
    }
 
    // Provjeri postojeće pozicije
