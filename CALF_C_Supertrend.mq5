@@ -1,15 +1,16 @@
 //+------------------------------------------------------------------+
 //|                                           CALF_C_Supertrend.mq5  |
 //|                        *** CALF C - Supertrend ***                |
-//|                   + Stealth Mode v3.2 (RANDOM SL)                |
+//|                   + Stealth Mode v3.3 (PIP FIX)                  |
 //|                   Created: 23.02.2026 (Zagreb)                   |
 //|                   Fixed: 03.03.2026 14:30 (Zagreb)               |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
+//|                   Fixed: 04.03.2026 (Zagreb) - PIP FIX *10       |
 //|                   - SL 789-811 pips (random) ODMAH               |
 //|                   - Stealth samo za TP                           |
 //+------------------------------------------------------------------+
-#property copyright "CALF C - Supertrend v3.2 RANDOM SL"
-#property version   "3.20"
+#property copyright "CALF C - Supertrend v3.3 PIP FIX"
+#property version   "3.30"
 #property strict
 #include <Trade\Trade.mqh>
 input group "=== SUPERTREND POSTAVKE ==="
@@ -154,8 +155,8 @@ void QueueTrade(ENUM_ORDER_TYPE type)
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
 
-    // Fiksni SL u pipsima (1 pip XAUUSD = 10 points)
-    double slDistance = FixedSL_Pips * 10 * point;  // Convert pips to price distance
+    // Fiksni SL u pipsima (1 pip XAUUSD = 0.01 = point)
+    double slDistance = FixedSL_Pips * point;  // ISPRAVNO: bez * 10
     double sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
 
     // TP = 0 jer koristimo MFE trailing (stealth)
@@ -184,9 +185,9 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp) {
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-    // v3.2 FIX: Random SL 789-811 pips na TRENUTNOJ cijeni
+    // v3.3 FIX: Random SL 789-811 pips (1 pip = 0.01 za XAUUSD)
     int randomSLPips = RandomRange(789, 811);
-    double slDistance = randomSLPips * point * 10;
+    double slDistance = randomSLPips * point;  // ISPRAVNO: bez * 10
     sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     sl = NormalizeDouble(sl, digits); tp = NormalizeDouble(tp, digits);
     bool ok;

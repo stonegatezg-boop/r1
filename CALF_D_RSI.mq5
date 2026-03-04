@@ -1,14 +1,15 @@
 //+------------------------------------------------------------------+
 //|                                                CALF_D_RSI.mq5    |
 //|                        *** CALF D - RSI Reversal ***             |
-//|                   + Stealth Mode v2.3 (RANDOM SL)                |
+//|                   + Stealth Mode v2.4 (PIP FIX)                  |
 //|                   Created: 23.02.2026 (Zagreb)                   |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
+//|                   Fixed: 04.03.2026 (Zagreb) - PIP FIX *10       |
 //|                   - SL se postavlja ODMAH pri otvaranju          |
 //|                   - Stealth samo za TP                           |
 //+------------------------------------------------------------------+
-#property copyright "CALF D - RSI + Stealth v2.3 RANDOM SL"
-#property version   "2.30"
+#property copyright "CALF D - RSI + Stealth v2.4 PIP FIX"
+#property version   "2.40"
 #property strict
 #include <Trade\Trade.mqh>
 input group "=== RSI POSTAVKE ==="
@@ -108,9 +109,9 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp) {
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-    // v2.3 FIX: Random SL 789-811 pips na TRENUTNOJ cijeni
+    // v2.4 FIX: Random SL 789-811 pips (1 pip = 0.01 za XAUUSD)
     int randomSLPips = RandomRange(789, 811);
-    double slDistance = randomSLPips * point * 10;
+    double slDistance = randomSLPips * point;  // ISPRAVNO: bez * 10
     sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     sl = NormalizeDouble(sl, digits); tp = NormalizeDouble(tp, digits);
     bool ok;

@@ -1,17 +1,18 @@
 //+------------------------------------------------------------------+
 //|                                                  Calf_A_Pro.mq5  |
 //|                        CALF A PRO - UT Bot + Structural Breakout |
-//|                   + Stealth Mode v2.3 (RANDOM SL)                |
+//|                   + Stealth Mode v2.4 (PIP FIX)                  |
 //|                   + NEWS FILTER & SPREAD FILTER                  |
 //|                   + STRUCTURAL BREAKOUT FILTER                   |
 //|                   + 3-LEVEL MFE TRAILING SYSTEM                  |
 //|                   Based on CALF_A_M with Breakout Validation     |
 //|                   Created: 03.03.2026 (Zagreb)                   |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
+//|                   Fixed: 04.03.2026 (Zagreb) - PIP FIX *10       |
 //|                   - SL se postavlja ODMAH pri otvaranju          |
 //+------------------------------------------------------------------+
-#property copyright "CALF A PRO - MFE Trailing v2.3 RANDOM SL"
-#property version   "2.30"
+#property copyright "CALF A PRO - MFE Trailing v2.4 PIP FIX"
+#property version   "2.40"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -376,9 +377,9 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-    // v2.3 FIX: Random SL 789-811 pips na TRENUTNOJ cijeni
+    // v2.4 FIX: Random SL 789-811 pips (1 pip = 0.01 za XAUUSD)
     int randomSLPips = RandomRange(789, 811);
-    double slDistance = randomSLPips * point * 10;
+    double slDistance = randomSLPips * point;  // ISPRAVNO: bez * 10
     sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     sl = NormalizeDouble(sl, digits); tp = NormalizeDouble(tp, digits);
     bool ok;
@@ -452,7 +453,7 @@ void ManageStealthPositions()
         }
 
         //=== 2. LEVEL 1: +500 pips → BE+40 ===
-        if(g_positions[i].trailLevel < 1 && profitPoints >= Level1_Pips * 10)
+        if(g_positions[i].trailLevel < 1 && profitPoints >= Level1_Pips)
         {
             double newSL = (posType == POSITION_TYPE_BUY) ?
                            g_positions[i].entryPrice + Level1_BEPips * point :
@@ -463,12 +464,12 @@ void ManageStealthPositions()
             if(shouldModify && trade.PositionModify(ticket, newSL, 0))
             {
                 g_positions[i].trailLevel = 1;
-                Print("✓ L1: BE+", Level1_BEPips, " pips #", ticket, " (profit: ", profitPoints/10, " pips)");
+                Print("✓ L1: BE+", Level1_BEPips, " pips #", ticket, " (profit: ", profitPoints, " pips)");
             }
         }
 
         //=== 3. LEVEL 2: +1000 pips → Lock 300 ===
-        if(g_positions[i].trailLevel == 1 && profitPoints >= Level2_Pips * 10)
+        if(g_positions[i].trailLevel == 1 && profitPoints >= Level2_Pips)
         {
             double newSL = (posType == POSITION_TYPE_BUY) ?
                            g_positions[i].entryPrice + Level2_LockPips * point :
@@ -481,12 +482,12 @@ void ManageStealthPositions()
             if(shouldModify && trade.PositionModify(ticket, newSL, 0))
             {
                 g_positions[i].trailLevel = 2;
-                Print("✓ L2: Lock +", Level2_LockPips, " pips #", ticket, " (profit: ", profitPoints/10, " pips)");
+                Print("✓ L2: Lock +", Level2_LockPips, " pips #", ticket, " (profit: ", profitPoints, " pips)");
             }
         }
 
         //=== 4. LEVEL 3: MFE - 30% (Dinamički trailing) ===
-        if(g_positions[i].trailLevel >= 2 && g_positions[i].maxProfitPoints > Level2_Pips * 10)
+        if(g_positions[i].trailLevel >= 2 && g_positions[i].maxProfitPoints > Level2_Pips)
         {
             // Izračunaj novi SL baziran na MFE - 30%
             double mfeKeep = g_positions[i].maxProfitPoints * (1.0 - Level3_MFEPercent / 100.0);
@@ -502,7 +503,7 @@ void ManageStealthPositions()
             if(shouldModify && trade.PositionModify(ticket, newSL, 0))
             {
                 g_positions[i].trailLevel = 3;
-                Print("✓ L3 MFE: Trail to +", NormalizeDouble(mfeKeep/10, 1), " pips (MFE=", NormalizeDouble(g_positions[i].maxProfitPoints/10, 1), ") #", ticket);
+                Print("✓ L3 MFE: Trail to +", NormalizeDouble(mfeKeep, 1), " pips (MFE=", NormalizeDouble(g_positions[i].maxProfitPoints, 1), ") #", ticket);
             }
         }
     }

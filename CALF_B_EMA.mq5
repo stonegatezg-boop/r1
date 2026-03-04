@@ -1,17 +1,17 @@
 //+------------------------------------------------------------------+
 //|                                                CALF_B_EMA.mq5    |
 //|                        *** CALF B - EMA Crossover ***            |
-//|                   + Stealth Mode v2.32 (RANDOM SL)               |
+//|                   + Stealth Mode v2.4 (PIP FIX)                  |
 //|                   Created: 23.02.2026 (Zagreb)                   |
 //|                   Fixed: 03.03.2026 14:30 (Zagreb) - MAE/MFE opt |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
-//|                   Fixed: 03.03.2026 23:xx (Zagreb) - SL na trenutnoj cijeni |
+//|                   Fixed: 04.03.2026 (Zagreb) - PIP FIX *10       |
 //|                   - SL 789-811 pips (random) ODMAH               |
 //|                   - Stealth samo za TP                           |
 //|                   - Pametni Trailing (1000/500 dynamic lock)     |
 //+------------------------------------------------------------------+
-#property copyright "CALF B - EMA 9/21 + Stealth v2.32 RANDOM SL (2026-03-03)"
-#property version   "2.32"
+#property copyright "CALF B - EMA 9/21 + Stealth v2.4 PIP FIX"
+#property version   "2.40"
 #property strict
 #include <Trade\Trade.mqh>
 input group "=== EMA POSTAVKE ==="
@@ -127,8 +127,8 @@ bool IsExhausted(bool isBuy)
     if(sameDirection == ExhaustionCandles && totalRange > ExhaustionATRMult * atr[0])
     {
         Print("CALF_B: EXHAUSTION DETECTED - ", ExhaustionCandles, " candles same dir, range=",
-              NormalizeDouble(totalRange/_Point/10, 1), " pips > ",
-              NormalizeDouble(ExhaustionATRMult * atr[0]/_Point/10, 1), " pips threshold");
+              NormalizeDouble(totalRange/_Point, 1), " pips > ",
+              NormalizeDouble(ExhaustionATRMult * atr[0]/_Point, 1), " pips threshold");
         return true;
     }
     return false;
@@ -178,8 +178,8 @@ void QueueTrade(ENUM_ORDER_TYPE type)
     double atr = GetATR(); if(atr <= 0) return;
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
-    // v2.32: SL se računa random 789-811 pips u ExecuteTrade()
-    double slDistance = HardSLPips * point * 10; // ~800 pips za lot calc
+    // v2.4: SL se računa random 789-811 pips u ExecuteTrade()
+    double slDistance = HardSLPips * point;  // ISPRAVNO: bez * 10
     double sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     double tp = (type == ORDER_TYPE_BUY) ? price + TPMultiplier * atr : price - TPMultiplier * atr;
     double lots = CalculateLotSize(slDistance); if(lots <= 0) return;
@@ -191,9 +191,9 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-    // v2.32 FIX: Random SL 789-811 pips (stealth) na TRENUTNOJ cijeni
+    // v2.4 FIX: Random SL 789-811 pips (1 pip = 0.01 za XAUUSD)
     int randomSLPips = RandomRange(789, 811);
-    double slDistance = randomSLPips * point * 10;
+    double slDistance = randomSLPips * point;  // ISPRAVNO: bez * 10
     sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     sl = NormalizeDouble(sl, digits); tp = NormalizeDouble(tp, digits);
     bool ok;
@@ -239,10 +239,10 @@ void ManageStealthPositions()
         double currentSL = PositionGetDouble(POSITION_SL);
         double currentPrice = (posType == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
 
-        // Izračunaj trenutni profit u pipsima (points / 10 za XAUUSD)
+        // Izračunaj trenutni profit u pipsima (1 pip = 0.01 = point za XAUUSD)
         double profitPips = (posType == POSITION_TYPE_BUY)
-            ? (currentPrice - g_positions[i].entryPrice) / point / 10
-            : (g_positions[i].entryPrice - currentPrice) / point / 10;
+            ? (currentPrice - g_positions[i].entryPrice) / point
+            : (g_positions[i].entryPrice - currentPrice) / point;
 
         // v2.2: Ažuriraj MFE (Maximum Favorable Excursion)
         if(profitPips > g_positions[i].maxFavorable)
@@ -281,9 +281,9 @@ void ManageStealthPositions()
 
             double newSL;
             if(posType == POSITION_TYPE_BUY)
-                newSL = g_positions[i].entryPrice + lockPips * point * 10;
+                newSL = g_positions[i].entryPrice + lockPips * point;  // ISPRAVNO: bez * 10
             else
-                newSL = g_positions[i].entryPrice - lockPips * point * 10;
+                newSL = g_positions[i].entryPrice - lockPips * point;  // ISPRAVNO: bez * 10
 
             newSL = NormalizeDouble(newSL, digits);
 
