@@ -95,5 +95,21 @@ input int TrailingStart2 = 800;  // pips za lock profit
 
 ## Napomene
 - Svi EA su za XAUUSD osim ako nije drugačije specificirano
-- 1 pip XAUUSD = 0.1 (100 points = 10 pips)
+- **1 pip XAUUSD = 0.01** (100 points = 1 pip, cijena format xxxx.xx)
 - Uvijek koristi MagicNumber za identifikaciju svojih trejdova
+
+## XAUUSD Pip Kalkulacija (KRITIČNO!)
+```cpp
+// ISPRAVNO za XAUUSD:
+double pipValue = 0.01;  // 1 pip = 0.01
+double sl_distance = SL_Pips * pipValue;  // 800 pips = 8.00
+
+// POGREŠNO (staro):
+double pipValue = 0.1;   // OVO JE 10x PREVELIKO!
+// 800 pips * 0.1 = 80.00 (zapravo 8000 pipsa!)
+```
+
+**Primjer:**
+- Cijena: 2650.00
+- SL 800 pips = 2650.00 - 8.00 = 2642.00 ✅
+- SL 800 pips s greškom (0.1) = 2650.00 - 80.00 = 2570.00 ❌ (8000 pipsa!)
