@@ -1,9 +1,10 @@
 //+------------------------------------------------------------------+
 //|                                                  Mix1_ADX_Cla.mq5|
 //|      *** Mix1 EMA Cross + Trend Channel + ADX/DI Histogram ***   |
-//|                   + Stealth Mode v2.1                            |
+//|                   + Stealth Mode v2.2                            |
 //|                   Based on @gu5tavo71 TradingView Indicator      |
-//|                   Version 1.0 - 2026-02-25                       |
+//|                   Created: 2026-02-25                            |
+//|                   Fixed: 04.03.2026 - SL ODMAH, 3-level trail    |
 //+------------------------------------------------------------------+
 //| Strategy:                                                        |
 //| - EMA Cross (26/50) for trend direction                          |
@@ -12,8 +13,8 @@
 //| BUY: TrendDir=1 + Bullish candle + DI+ > DI-                     |
 //| SELL: TrendDir=-1 + Bearish candle + DI- > DI+                   |
 //+------------------------------------------------------------------+
-#property copyright "Mix1_ADX_Cla v1.0 (2026-02-25)"
-#property version   "1.00"
+#property copyright "Mix1_ADX_Cla v2.2 (04.03.2026)"
+#property version   "2.20"
 #property strict
 
 #include <Trade\\Trade.mqh>
@@ -52,20 +53,25 @@ input int      ClosePercent2      = 50;      // % ostatka za T2
 input int      ATRPeriod          = 14;      // ATR period
 
 input group "=== STEALTH POSTAVKE ==="
-input bool     UseStealthMode     = true;    // Stealth mod
-input int      OpenDelayMin       = 0;       // Min delay otvaranja (sekunde)
-input int      OpenDelayMax       = 4;       // Max delay otvaranja
-input int      SLDelayMin         = 7;       // Min delay SL postavljanja
-input int      SLDelayMax         = 13;      // Max delay SL postavljanja
+input bool     UseStealthMode     = true;    // Stealth mod (TP hidden)
 input double   LargeCandleATR     = 3.0;     // Filter velikih svijeća
 
-input group "=== TRAILING POSTAVKE ==="
-input int      TrailActivatePips  = 500;     // Aktivacija trailinga (pipsi)
-input int      TrailBEPipsMin     = 38;      // BE + min pipsi
-input int      TrailBEPipsMax     = 43;      // BE + max pipsi
-input int      TrailLevel2Pips    = 800;     // Level 2 aktivacija
-input int      TrailLockPipsMin   = 150;     // Lock min pipsi
-input int      TrailLockPipsMax   = 200;     // Lock max pipsi
+input group "=== 3-LEVEL TRAILING ==="
+input int      TrailL1_Pips       = 500;     // L1: Aktivacija (pips profit)
+input int      TrailL1_BE         = 40;      // L1: BE + pips
+input int      TrailL2_Pips       = 800;     // L2: Aktivacija (pips profit)
+input int      TrailL2_Lock       = 150;     // L2: Lock profit pips
+input int      TrailL3_Pips       = 1200;    // L3: Aktivacija (pips profit)
+input int      TrailL3_Distance   = 200;     // L3: Trail distance pips
+
+input group "=== MFE TRAILING ==="
+input int      MFE_Activate       = 1500;    // MFE aktivacija (pips)
+input int      MFE_Distance       = 500;     // MFE trail distance (pips)
+
+input group "=== EARLY & TIME FAILURE ==="
+input int      EarlyFailurePips   = 800;     // Early failure exit (- pips)
+input int      TimeFailureBars    = 3;       // Barova za time failure
+input int      TimeFailurePips    = 20;      // Min profit za time failure
 
 input group "=== FILTERI ==="
 input double   MaxSpread          = 50;      // Max spread (points)
@@ -78,35 +84,20 @@ input int      Slippage           = 30;      // Slippage (points)
 //+------------------------------------------------------------------+
 //| STRUCTURES                                                        |
 //+------------------------------------------------------------------+
-struct PendingTradeInfo
-{
-    bool            active;
-    ENUM_ORDER_TYPE type;
-    double          lot;
-    double          intendedSL;
-    double          intendedTP1;
-    double          intendedTP2;
-    double          intendedTP3;
-    datetime        signalTime;
-    int             delaySeconds;
-};
-
 struct StealthPosInfo
 {
     bool     active;
     ulong    ticket;
-    double   intendedSL;
     double   stealthTP1;
     double   stealthTP2;
     double   stealthTP3;
     double   entryPrice;
     double   initialLots;
     datetime openTime;
-    int      delaySeconds;
-    int      randomBEPips;
-    int      randomLockPips;
     int      targetHit;
     int      trailLevel;
+    double   maxProfitPips;
+    int      barsInTrade;
 };
 
 //+------------------------------------------------------------------+
@@ -122,9 +113,9 @@ int maTrendHandle;
 datetime lastBarTime;
 int prevTrendDir = 0;
 
-PendingTradeInfo g_pendingTrade;
 StealthPosInfo g_positions[];
 int g_posCount = 0;
+double pipValue = 0.01;  // XAUUSD: 1 pip = 0.01
 
 // Statistics
 int totalBuys = 0;
@@ -170,24 +161,35 @@ int OnInit()
 
     lastBarTime = 0;
     prevTrendDir = 0;
-    g_pendingTrade.active = false;
 
     ArrayResize(g_positions, 0);
     g_posCount = 0;
 
     MathSrand((uint)TimeCurrent() + (uint)GetTickCount());
 
+    // Set pipValue based on symbol
+    string symbol = _Symbol;
+    if(StringFind(symbol, "XAU") >= 0 || StringFind(symbol, "GOLD") >= 0)
+        pipValue = 0.01;
+    else if(SymbolInfoInteger(_Symbol, SYMBOL_DIGITS) == 3 || SymbolInfoInteger(_Symbol, SYMBOL_DIGITS) == 5)
+        pipValue = 0.0001;
+    else
+        pipValue = 0.01;
+
     Print("╔═══════════════════════════════════════════════════════════════╗");
-    Print("║     MIX1 EMA CROSS + TREND CHANNEL + ADX/DI CLA v1.0          ║");
+    Print("║     MIX1 EMA CROSS + TREND CHANNEL + ADX/DI CLA v2.2          ║");
     Print("╠═══════════════════════════════════════════════════════════════╣");
     Print("║ EMA Fast: ", EMA_Fast, " | EMA Med: ", EMA_Medium, " | MA Trend: ", MA_Trend);
     Print("║ Channel ATR: ", Channel_ATR_Mult, " | ADX Threshold: ", ADX_Threshold);
     Print("║ DI Buffer: ", DI_Buffer, "%");
     Print("║ Targets: ", Target1_ATR, "x / ", Target2_ATR, "x / ", Target3_ATR, "x ATR");
-    Print("║ Stealth: ", UseStealthMode ? "ON" : "OFF");
-    Print("║ Trailing L1: ", TrailActivatePips, " pips -> BE+", TrailBEPipsMin, "-", TrailBEPipsMax);
-    Print("║ Trailing L2: ", TrailLevel2Pips, " pips -> Lock+", TrailLockPipsMin, "-", TrailLockPipsMax);
-    Print("║ Trading: Sunday 00:01 - Friday 11:30");
+    Print("║ SL: ODMAH na ulasku | TP: STEALTH (hidden)");
+    Print("║ TRAILING L1: ", TrailL1_Pips, " pips -> BE+", TrailL1_BE);
+    Print("║ TRAILING L2: ", TrailL2_Pips, " pips -> Lock ", TrailL2_Lock);
+    Print("║ TRAILING L3: ", TrailL3_Pips, " pips -> Trail ", TrailL3_Distance);
+    Print("║ MFE: ", MFE_Activate, " pips -> Trail ", MFE_Distance);
+    Print("║ EARLY FAILURE: -", EarlyFailurePips, " pips");
+    Print("║ pipValue: ", pipValue);
     Print("╚═══════════════════════════════════════════════════════════════╝");
 
     return INIT_SUCCEEDED;
@@ -214,12 +216,6 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| UTILITY FUNCTIONS                                                 |
 //+------------------------------------------------------------------+
-int RandomRange(int minVal, int maxVal)
-{
-    if(minVal >= maxVal) return minVal;
-    return minVal + (MathRand() % (maxVal - minVal + 1));
-}
-
 bool IsNewBar()
 {
     datetime t = iTime(_Symbol, PERIOD_CURRENT, 0);
@@ -512,9 +508,9 @@ double CalculateLotSize(double slDistance)
 }
 
 //+------------------------------------------------------------------+
-//| TRADE EXECUTION                                                   |
+//| TRADE EXECUTION - SL ODMAH                                        |
 //+------------------------------------------------------------------+
-void QueueTrade(ENUM_ORDER_TYPE type)
+void OpenTrade(ENUM_ORDER_TYPE type)
 {
     double atr = GetATR(1);
     if(atr <= 0) return;
@@ -543,91 +539,51 @@ void QueueTrade(ENUM_ORDER_TYPE type)
     double lots = CalculateLotSize(SLMultiplier * atr);
     if(lots <= 0) return;
 
-    if(UseStealthMode)
-    {
-        g_pendingTrade.active = true;
-        g_pendingTrade.type = type;
-        g_pendingTrade.lot = lots;
-        g_pendingTrade.intendedSL = sl;
-        g_pendingTrade.intendedTP1 = tp1;
-        g_pendingTrade.intendedTP2 = tp2;
-        g_pendingTrade.intendedTP3 = tp3;
-        g_pendingTrade.signalTime = TimeCurrent();
-        g_pendingTrade.delaySeconds = RandomRange(OpenDelayMin, OpenDelayMax);
-
-        Print("Mix1_ADX: Trade QUEUED - ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"),
-              " Delay: ", g_pendingTrade.delaySeconds, "s");
-    }
-    else
-    {
-        ExecuteTrade(type, lots, sl, tp1);
-    }
-}
-
-void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
-{
-    double price = (type == ORDER_TYPE_BUY) ?
-                   SymbolInfoDouble(_Symbol, SYMBOL_ASK) :
-                   SymbolInfoDouble(_Symbol, SYMBOL_BID);
-
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     sl = NormalizeDouble(sl, digits);
+    tp1 = NormalizeDouble(tp1, digits);
+    tp2 = NormalizeDouble(tp2, digits);
+    tp3 = NormalizeDouble(tp3, digits);
 
     bool ok;
-
-    if(UseStealthMode)
-    {
-        ok = (type == ORDER_TYPE_BUY) ?
-             trade.Buy(lot, _Symbol, price, 0, 0, "MIX1") :
-             trade.Sell(lot, _Symbol, price, 0, 0, "MIX1");
-    }
+    // SL ODMAH na ulasku, TP=0 (stealth)
+    if(type == ORDER_TYPE_BUY)
+        ok = trade.Buy(lots, _Symbol, price, sl, 0, "MIX1 BUY");
     else
-    {
-        ok = (type == ORDER_TYPE_BUY) ?
-             trade.Buy(lot, _Symbol, price, sl, tp, "MIX1 BUY") :
-             trade.Sell(lot, _Symbol, price, sl, tp, "MIX1 SELL");
-    }
+        ok = trade.Sell(lots, _Symbol, price, sl, 0, "MIX1 SELL");
 
-    if(ok && UseStealthMode)
+    if(ok)
     {
         ulong ticket = trade.ResultOrder();
 
         ArrayResize(g_positions, g_posCount + 1);
         g_positions[g_posCount].active = true;
         g_positions[g_posCount].ticket = ticket;
-        g_positions[g_posCount].intendedSL = g_pendingTrade.intendedSL;
-        g_positions[g_posCount].stealthTP1 = g_pendingTrade.intendedTP1;
-        g_positions[g_posCount].stealthTP2 = g_pendingTrade.intendedTP2;
-        g_positions[g_posCount].stealthTP3 = g_pendingTrade.intendedTP3;
+        g_positions[g_posCount].stealthTP1 = tp1;
+        g_positions[g_posCount].stealthTP2 = tp2;
+        g_positions[g_posCount].stealthTP3 = tp3;
         g_positions[g_posCount].entryPrice = price;
-        g_positions[g_posCount].initialLots = lot;
+        g_positions[g_posCount].initialLots = lots;
         g_positions[g_posCount].openTime = TimeCurrent();
-        g_positions[g_posCount].delaySeconds = RandomRange(SLDelayMin, SLDelayMax);
-        g_positions[g_posCount].randomBEPips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
-        g_positions[g_posCount].randomLockPips = RandomRange(TrailLockPipsMin, TrailLockPipsMax);
         g_positions[g_posCount].targetHit = 0;
         g_positions[g_posCount].trailLevel = 0;
+        g_positions[g_posCount].maxProfitPips = 0;
+        g_positions[g_posCount].barsInTrade = 0;
         g_posCount++;
 
         if(type == ORDER_TYPE_BUY) totalBuys++;
         else totalSells++;
 
         Print("╔════════════════════════════════════════════════╗");
-        Print("║ MIX1_ADX STEALTH ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"), " #", ticket);
+        Print("║ MIX1_ADX ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"), " - SL ODMAH #", ticket);
         Print("╠════════════════════════════════════════════════╣");
-        Print("║ Entry: ", DoubleToString(price, digits), " | Lots: ", DoubleToString(lot, 2));
-        Print("║ SL: ", DoubleToString(sl, digits), " (delay ", g_positions[g_posCount-1].delaySeconds, "s)");
-        Print("║ T1: ", DoubleToString(g_pendingTrade.intendedTP1, digits));
-        Print("║ T2: ", DoubleToString(g_pendingTrade.intendedTP2, digits));
-        Print("║ T3: ", DoubleToString(g_pendingTrade.intendedTP3, digits));
-        Print("║ Trail: BE+", g_positions[g_posCount-1].randomBEPips, " | L2+", g_positions[g_posCount-1].randomLockPips);
+        Print("║ Entry: ", DoubleToString(price, digits), " | Lots: ", DoubleToString(lots, 2));
+        Print("║ SL: ", DoubleToString(sl, digits), " (ODMAH)");
+        Print("║ T1: ", DoubleToString(tp1, digits));
+        Print("║ T2: ", DoubleToString(tp2, digits));
+        Print("║ T3: ", DoubleToString(tp3, digits));
+        Print("║ Trail: L1@", TrailL1_Pips, " L2@", TrailL2_Pips, " L3@", TrailL3_Pips);
         Print("╚════════════════════════════════════════════════╝");
-    }
-    else if(ok)
-    {
-        if(type == ORDER_TYPE_BUY) totalBuys++;
-        else totalSells++;
-        Print("Mix1_ADX: Trade opened - Lots: ", DoubleToString(lot, 2));
     }
     else
     {
@@ -635,24 +591,11 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
     }
 }
 
-void ProcessPendingTrade()
-{
-    if(!g_pendingTrade.active) return;
-
-    if(TimeCurrent() >= g_pendingTrade.signalTime + g_pendingTrade.delaySeconds)
-    {
-        ExecuteTrade(g_pendingTrade.type, g_pendingTrade.lot,
-                    g_pendingTrade.intendedSL, g_pendingTrade.intendedTP1);
-        g_pendingTrade.active = false;
-    }
-}
-
 //+------------------------------------------------------------------+
-//| STEALTH POSITION MANAGEMENT                                       |
+//| STEALTH POSITION MANAGEMENT - 3-LEVEL TRAILING + MFE              |
 //+------------------------------------------------------------------+
 void ManageStealthPositions()
 {
-    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     double lotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
     double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
@@ -676,27 +619,27 @@ void ManageStealthPositions()
                              SymbolInfoDouble(_Symbol, SYMBOL_BID) :
                              SymbolInfoDouble(_Symbol, SYMBOL_ASK);
 
-        // 1. Delayed SL placement
-        if(currentSL == 0 && g_positions[i].intendedSL != 0)
-        {
-            if(TimeCurrent() >= g_positions[i].openTime + g_positions[i].delaySeconds)
-            {
-                double newSL = NormalizeDouble(g_positions[i].intendedSL, digits);
-                if(trade.PositionModify(ticket, newSL, 0))
-                {
-                    Print("Mix1_ADX: SL set #", ticket, " at ", newSL);
-                }
-            }
-        }
-
         // Calculate profit in pips
         double profitPips = 0;
         if(posType == POSITION_TYPE_BUY)
-            profitPips = (currentPrice - g_positions[i].entryPrice) / point;
+            profitPips = (currentPrice - g_positions[i].entryPrice) / pipValue;
         else
-            profitPips = (g_positions[i].entryPrice - currentPrice) / point;
+            profitPips = (g_positions[i].entryPrice - currentPrice) / pipValue;
 
-        // 2. Target 1
+        // Update MFE
+        if(profitPips > g_positions[i].maxProfitPips)
+            g_positions[i].maxProfitPips = profitPips;
+
+        //=== 1. EARLY FAILURE EXIT ===
+        if(profitPips <= -EarlyFailurePips)
+        {
+            trade.PositionClose(ticket);
+            g_positions[i].active = false;
+            Print("Mix1_ADX: EARLY FAILURE @ ", DoubleToString(-profitPips, 0), " pips loss");
+            continue;
+        }
+
+        //=== 2. Target 1 ===
         if(g_positions[i].targetHit < 1)
         {
             bool t1Hit = (posType == POSITION_TYPE_BUY && currentPrice >= g_positions[i].stealthTP1) ||
@@ -714,16 +657,6 @@ void ManageStealthPositions()
                     {
                         g_positions[i].targetHit = 1;
                         Print("Mix1_ADX: T1 HIT - Closed ", closeAmount, " lots");
-
-                        // Move SL to BE
-                        double beSL;
-                        if(posType == POSITION_TYPE_BUY)
-                            beSL = g_positions[i].entryPrice + g_positions[i].randomBEPips * point;
-                        else
-                            beSL = g_positions[i].entryPrice - g_positions[i].randomBEPips * point;
-
-                        beSL = NormalizeDouble(beSL, digits);
-                        trade.PositionModify(ticket, beSL, 0);
                     }
                 }
                 else if(closeAmount >= currentLots)
@@ -735,7 +668,7 @@ void ManageStealthPositions()
             }
         }
 
-        // 3. Target 2
+        //=== 3. Target 2 ===
         if(g_positions[i].targetHit == 1)
         {
             bool t2Hit = (posType == POSITION_TYPE_BUY && currentPrice >= g_positions[i].stealthTP2) ||
@@ -767,7 +700,7 @@ void ManageStealthPositions()
             }
         }
 
-        // 4. Target 3
+        //=== 4. Target 3 ===
         if(g_positions[i].targetHit >= 1)
         {
             bool t3Hit = (posType == POSITION_TYPE_BUY && currentPrice >= g_positions[i].stealthTP3) ||
@@ -782,55 +715,129 @@ void ManageStealthPositions()
             }
         }
 
-        // 5. 2-Level Trailing
-        if(g_positions[i].targetHit >= 1 && currentSL > 0)
+        //=== 5. 3-LEVEL TRAILING ===
+        // Level 3 (1200+ pips - trail distance)
+        if(g_positions[i].trailLevel < 3 && profitPips >= TrailL3_Pips)
         {
-            // Level 1
-            if(g_positions[i].trailLevel < 1 && profitPips >= TrailActivatePips)
+            double newSL;
+            if(posType == POSITION_TYPE_BUY)
+                newSL = currentPrice - TrailL3_Distance * pipValue;
+            else
+                newSL = currentPrice + TrailL3_Distance * pipValue;
+
+            newSL = NormalizeDouble(newSL, digits);
+
+            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
+                               (posType == POSITION_TYPE_SELL && newSL < currentSL);
+
+            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
             {
-                double newSL;
-                if(posType == POSITION_TYPE_BUY)
-                    newSL = g_positions[i].entryPrice + g_positions[i].randomBEPips * point;
-                else
-                    newSL = g_positions[i].entryPrice - g_positions[i].randomBEPips * point;
-
-                newSL = NormalizeDouble(newSL, digits);
-
-                bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
-                                   (posType == POSITION_TYPE_SELL && newSL < currentSL);
-
-                if(shouldModify && trade.PositionModify(ticket, newSL, 0))
-                {
-                    g_positions[i].trailLevel = 1;
-                    Print("Mix1_ADX: Trail L1 - BE+", g_positions[i].randomBEPips);
-                }
+                g_positions[i].trailLevel = 3;
+                Print("Mix1_ADX L3: Trail ", TrailL3_Distance, " pips (SL=", newSL, ")");
             }
+        }
+        // Level 2 (800+ pips - lock profit)
+        else if(g_positions[i].trailLevel < 2 && profitPips >= TrailL2_Pips)
+        {
+            double newSL;
+            if(posType == POSITION_TYPE_BUY)
+                newSL = g_positions[i].entryPrice + TrailL2_Lock * pipValue;
+            else
+                newSL = g_positions[i].entryPrice - TrailL2_Lock * pipValue;
 
-            // Level 2
-            if(g_positions[i].trailLevel < 2 && profitPips >= TrailLevel2Pips)
+            newSL = NormalizeDouble(newSL, digits);
+
+            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
+                               (posType == POSITION_TYPE_SELL && newSL < currentSL);
+
+            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
             {
-                double newSL;
-                if(posType == POSITION_TYPE_BUY)
-                    newSL = g_positions[i].entryPrice + g_positions[i].randomLockPips * point;
-                else
-                    newSL = g_positions[i].entryPrice - g_positions[i].randomLockPips * point;
+                g_positions[i].trailLevel = 2;
+                Print("Mix1_ADX L2: Lock ", TrailL2_Lock, " pips (SL=", newSL, ")");
+            }
+        }
+        // Level 1 (500+ pips - BE + buffer)
+        else if(g_positions[i].trailLevel < 1 && profitPips >= TrailL1_Pips)
+        {
+            double newSL;
+            if(posType == POSITION_TYPE_BUY)
+                newSL = g_positions[i].entryPrice + TrailL1_BE * pipValue;
+            else
+                newSL = g_positions[i].entryPrice - TrailL1_BE * pipValue;
 
-                newSL = NormalizeDouble(newSL, digits);
+            newSL = NormalizeDouble(newSL, digits);
 
-                bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
-                                   (posType == POSITION_TYPE_SELL && newSL < currentSL);
+            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
+                               (posType == POSITION_TYPE_SELL && newSL < currentSL);
 
-                if(shouldModify && trade.PositionModify(ticket, newSL, 0))
-                {
-                    g_positions[i].trailLevel = 2;
-                    Print("Mix1_ADX: Trail L2 - Lock+", g_positions[i].randomLockPips);
-                }
+            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
+            {
+                g_positions[i].trailLevel = 1;
+                Print("Mix1_ADX L1: BE+", TrailL1_BE, " pips (SL=", newSL, ")");
+            }
+        }
+
+        //=== 6. MFE TRAILING ===
+        if(g_positions[i].maxProfitPips >= MFE_Activate && g_positions[i].trailLevel >= 3)
+        {
+            double mfeSL;
+            if(posType == POSITION_TYPE_BUY)
+                mfeSL = currentPrice - MFE_Distance * pipValue;
+            else
+                mfeSL = currentPrice + MFE_Distance * pipValue;
+
+            mfeSL = NormalizeDouble(mfeSL, digits);
+
+            bool shouldModify = (posType == POSITION_TYPE_BUY && mfeSL > currentSL) ||
+                               (posType == POSITION_TYPE_SELL && mfeSL < currentSL);
+
+            if(shouldModify && trade.PositionModify(ticket, mfeSL, 0))
+            {
+                Print("Mix1_ADX MFE: Trail ", MFE_Distance, " pips (SL=", mfeSL, ")");
             }
         }
     }
 
     // Cleanup
     CleanupPositions();
+}
+
+//+------------------------------------------------------------------+
+//| Check Time Exits                                                  |
+//+------------------------------------------------------------------+
+void CheckTimeExits()
+{
+    for(int i = g_posCount - 1; i >= 0; i--)
+    {
+        if(!g_positions[i].active) continue;
+
+        g_positions[i].barsInTrade++;
+
+        // Time failure exit (3+ bars with < 20 pips profit)
+        if(g_positions[i].barsInTrade >= TimeFailureBars)
+        {
+            ulong ticket = g_positions[i].ticket;
+            if(!PositionSelectByTicket(ticket)) continue;
+
+            ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+            double currentPrice = (posType == POSITION_TYPE_BUY) ?
+                                 SymbolInfoDouble(_Symbol, SYMBOL_BID) :
+                                 SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+
+            double profitPips = 0;
+            if(posType == POSITION_TYPE_BUY)
+                profitPips = (currentPrice - g_positions[i].entryPrice) / pipValue;
+            else
+                profitPips = (g_positions[i].entryPrice - currentPrice) / pipValue;
+
+            if(profitPips < TimeFailurePips && profitPips > -TimeFailurePips)
+            {
+                trade.PositionClose(ticket);
+                g_positions[i].active = false;
+                Print("Mix1_ADX: TIME FAILURE - ", g_positions[i].barsInTrade, " bars, ", DoubleToString(profitPips, 0), " pips");
+            }
+        }
+    }
 }
 
 void CleanupPositions()
@@ -859,18 +866,19 @@ void CleanupPositions()
 void OnTick()
 {
     // Always manage positions
-    ProcessPendingTrade();
     ManageStealthPositions();
 
     // Only check for new signals on new bar
     if(!IsNewBar()) return;
+
+    // Time exit check
+    CheckTimeExits();
 
     // Check filters
     if(HasOpenPosition()) return;
     if(!IsTradingWindow()) return;
     if(!IsSpreadOK()) return;
     if(IsLargeCandle()) return;
-    if(g_pendingTrade.active) return;
 
     // Get signal
     int signal = GetTradeSignal();
@@ -878,12 +886,12 @@ void OnTick()
     if(signal == 1)
     {
         Print("=== MIX1_ADX BUY SIGNAL ===");
-        QueueTrade(ORDER_TYPE_BUY);
+        OpenTrade(ORDER_TYPE_BUY);
     }
     else if(signal == -1)
     {
         Print("=== MIX1_ADX SELL SIGNAL ===");
-        QueueTrade(ORDER_TYPE_SELL);
+        OpenTrade(ORDER_TYPE_SELL);
     }
 }
 //+------------------------------------------------------------------+
