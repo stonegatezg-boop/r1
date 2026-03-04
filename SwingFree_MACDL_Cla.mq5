@@ -2,11 +2,12 @@
 //|                                          SwingFree_MACDL_Cla.mq5 |
 //|                         Swing Free Range Filter + MACD Leader    |
 //|                                          Za XAUUSD M5            |
-//|                   Fixed: 04.03.2026 (Zagreb) - pip calc fix      |
+//|                   Version 2.2 - Fixed: 04.03.2026 (Zagreb)       |
+//|                   SL ODMAH + 3-level trailing + MFE              |
 //+------------------------------------------------------------------+
-#property copyright "Claude"
+#property copyright "SwingFree_MACDL_Cla v2.2 (2026-03-04)"
 #property link      ""
-#property version   "1.00"
+#property version   "2.22"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -37,20 +38,26 @@ input int      Target1_Pips = 300;
 input int      Target2_Pips = 500;
 input int      Target3_Pips = 800;
 
-// === TRAILING STOP ===
-input string   INFO5 = "=== TRAILING STOP ===";
-input int      TrailingStart1 = 500;
-input int      BEOffset_Min = 38;
-input int      BEOffset_Max = 43;
-input int      TrailingStart2 = 800;
-input int      LockProfit_Min = 150;
-input int      LockProfit_Max = 200;
+// === SL POSTAVKE ===
+input string   INFO5 = "=== SL POSTAVKE ===";
+input int      SL_Pips = 300;
 
-// === STEALTH POSTAVKE ===
-input string   INFO6 = "=== STEALTH ===";
-input int      StealthSL_DelayMin = 7;
-input int      StealthSL_DelayMax = 13;
-input int      SL_Pips = 300;                 // Default SL u pips
+// === TRAILING POSTAVKE (3 LEVEL + MFE) ===
+input string   INFO5b = "=== TRAILING (3 LEVEL + MFE) ===";
+input int      TrailLevel1_Pips = 500;
+input int      TrailLevel1_BE = 40;
+input int      TrailLevel2_Pips = 800;
+input int      TrailLevel2_Lock = 150;
+input int      TrailLevel3_Pips = 1200;
+input int      TrailLevel3_Lock = 200;
+input int      MFE_ActivatePips = 1500;
+input int      MFE_TrailDistance = 500;
+
+// === FAILURE EXIT ===
+input string   INFO5c = "=== FAILURE EXIT ===";
+input int      EarlyFailurePips = 800;
+input int      TimeFailureBars = 3;
+input int      TimeFailureMinPips = 20;
 
 // === FILTERI ===
 input string   INFO7 = "=== FILTERI ===";
@@ -81,14 +88,11 @@ bool     target1Hit = false;
 bool     target2Hit = false;
 double   originalLots = 0;
 
-// Stealth SL
-bool     slSentToBroker = false;
-datetime slSendTime = 0;
-int      slDelaySeconds = 0;
-
 // Trailing
-bool     trailingLevel1Done = false;
-bool     trailingLevel2Done = false;
+int      trailLevel = 0;
+double   maxProfitPips = 0;
+int      barsInTrade = 0;
+datetime lastBarTime = 0;
 
 // Points conversion
 double   pipValue;
@@ -107,11 +111,11 @@ int OnInit()
 {
    trade.SetExpertMagicNumber(MagicNumber);
 
-   // XAUUSD pip = 0.1 (fixed) bez obzira na broker digits (2 ili 3)
+   // XAUUSD pip = 0.01 (ISPRAVNO!)
    if(StringFind(_Symbol, "XAU") >= 0 || StringFind(_Symbol, "GOLD") >= 0)
    {
-      pipValue = 0.1;
-      pipDigits = 1;
+      pipValue = 0.01;  // FIXED: bilo 0.1, sada 0.01
+      pipDigits = 2;
    }
    else
    {
@@ -133,7 +137,17 @@ int OnInit()
 
    CheckExistingPosition();
 
-   Print("SwingFree_MACDL_Cla initialized. Pip value: ", pipValue);
+   Print("╔═══════════════════════════════════════════════════════════════╗");
+   Print("║     SWINGFREE_MACDL_CLA v2.2 - SL ODMAH                      ║");
+   Print("╠═══════════════════════════════════════════════════════════════╣");
+   Print("║ pipValue: ", pipValue, " | SL: ", SL_Pips, " pips (PRAVI SL ODMAH)");
+   Print("║ Trail L1: ", TrailLevel1_Pips, " pips -> BE+", TrailLevel1_BE);
+   Print("║ Trail L2: ", TrailLevel2_Pips, " pips -> Lock+", TrailLevel2_Lock);
+   Print("║ Trail L3: ", TrailLevel3_Pips, " pips -> Lock+", TrailLevel3_Lock);
+   Print("║ MFE: ", MFE_ActivatePips, " pips -> Trail ", MFE_TrailDistance);
+   Print("║ Failure: Early -", EarlyFailurePips, " | Time ", TimeFailureBars, " bars <", TimeFailureMinPips);
+   Print("╚═══════════════════════════════════════════════════════════════╝");
+
    return(INIT_SUCCEEDED);
 }
 
@@ -441,13 +455,14 @@ bool IsTradingTime()
 }
 
 //+------------------------------------------------------------------+
-//| OPEN BUY                                                           |
+//| OPEN BUY - SL ODMAH                                               |
 //+------------------------------------------------------------------+
 void OpenBuy()
 {
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double sl = NormalizeDouble(ask - SL_Pips * pipValue, _Digits);
 
-   if(trade.Buy(LotSize, _Symbol, ask, 0, 0, "SwingFree BUY"))
+   if(trade.Buy(LotSize, _Symbol, ask, sl, 0, "SwingFree BUY"))
    {
       currentTicket = trade.ResultOrder();
       entryPrice = ask;
@@ -458,25 +473,27 @@ void OpenBuy()
 
       target1Hit = false;
       target2Hit = false;
-      slSentToBroker = false;
-      trailingLevel1Done = false;
-      trailingLevel2Done = false;
+      trailLevel = 0;
+      maxProfitPips = 0;
+      barsInTrade = 0;
 
-      slDelaySeconds = StealthSL_DelayMin + MathRand() % (StealthSL_DelayMax - StealthSL_DelayMin + 1);
-      slSendTime = TimeCurrent() + slDelaySeconds;
-
-      Print("BUY opened at ", ask);
+      Print("╔════════════════════════════════════════════════╗");
+      Print("║ SWINGFREE BUY #", currentTicket, " | SL ODMAH");
+      Print("╠════════════════════════════════════════════════╣");
+      Print("║ Entry: ", DoubleToString(ask, _Digits), " | SL: ", DoubleToString(sl, _Digits));
+      Print("╚════════════════════════════════════════════════╝");
    }
 }
 
 //+------------------------------------------------------------------+
-//| OPEN SELL                                                          |
+//| OPEN SELL - SL ODMAH                                              |
 //+------------------------------------------------------------------+
 void OpenSell()
 {
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double sl = NormalizeDouble(bid + SL_Pips * pipValue, _Digits);
 
-   if(trade.Sell(LotSize, _Symbol, bid, 0, 0, "SwingFree SELL"))
+   if(trade.Sell(LotSize, _Symbol, bid, sl, 0, "SwingFree SELL"))
    {
       currentTicket = trade.ResultOrder();
       entryPrice = bid;
@@ -487,14 +504,15 @@ void OpenSell()
 
       target1Hit = false;
       target2Hit = false;
-      slSentToBroker = false;
-      trailingLevel1Done = false;
-      trailingLevel2Done = false;
+      trailLevel = 0;
+      maxProfitPips = 0;
+      barsInTrade = 0;
 
-      slDelaySeconds = StealthSL_DelayMin + MathRand() % (StealthSL_DelayMax - StealthSL_DelayMin + 1);
-      slSendTime = TimeCurrent() + slDelaySeconds;
-
-      Print("SELL opened at ", bid);
+      Print("╔════════════════════════════════════════════════╗");
+      Print("║ SWINGFREE SELL #", currentTicket, " | SL ODMAH");
+      Print("╠════════════════════════════════════════════════╣");
+      Print("║ Entry: ", DoubleToString(bid, _Digits), " | SL: ", DoubleToString(sl, _Digits));
+      Print("╚════════════════════════════════════════════════╝");
    }
 }
 
@@ -518,36 +536,45 @@ void ManagePosition()
    else
       profitPips = (entryPrice - currentPrice) / pipValue;
 
-   // Stealth SL
-   if(!slSentToBroker && TimeCurrent() >= slSendTime)
-      SendStealthSL();
+   // Update MFE
+   if(profitPips > maxProfitPips)
+      maxProfitPips = profitPips;
+
+   // Check new bar for time tracking
+   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
+   if(currentBarTime != lastBarTime)
+   {
+      lastBarTime = currentBarTime;
+      barsInTrade++;
+
+      // Time failure check
+      if(barsInTrade >= TimeFailureBars && profitPips < TimeFailureMinPips && profitPips > -EarlyFailurePips/2)
+      {
+         if(trade.PositionClose(currentTicket))
+         {
+            hasOpenPosition = false;
+            Print("TIME EXIT after ", barsInTrade, " bars, profit: ", DoubleToString(profitPips, 1), " pips");
+            return;
+         }
+      }
+   }
+
+   // Early failure exit
+   if(profitPips <= -EarlyFailurePips)
+   {
+      if(trade.PositionClose(currentTicket))
+      {
+         hasOpenPosition = false;
+         Print("EARLY FAILURE at ", DoubleToString(profitPips, 0), " pips");
+         return;
+      }
+   }
 
    // Stealth TP - check targets
    CheckTargets(profitPips, currentPrice);
 
    // Trailing
    ManageTrailing(profitPips);
-}
-
-//+------------------------------------------------------------------+
-//| SEND STEALTH SL                                                    |
-//+------------------------------------------------------------------+
-void SendStealthSL()
-{
-   double slPrice = 0;
-
-   if(positionType == 0)
-      slPrice = entryPrice - SL_Pips * pipValue;
-   else
-      slPrice = entryPrice + SL_Pips * pipValue;
-
-   slPrice = NormalizeDouble(slPrice, _Digits);
-
-   if(trade.PositionModify(currentTicket, slPrice, 0))
-   {
-      slSentToBroker = true;
-      Print("Stealth SL sent at ", slPrice, " (delayed ", slDelaySeconds, "s)");
-   }
 }
 
 //+------------------------------------------------------------------+
@@ -601,48 +628,89 @@ void CheckTargets(double profitPips, double currentPrice)
 }
 
 //+------------------------------------------------------------------+
-//| MANAGE TRAILING STOP                                               |
+//| MANAGE TRAILING STOP - 3 LEVEL + MFE                              |
 //+------------------------------------------------------------------+
 void ManageTrailing(double profitPips)
 {
-   if(!slSentToBroker) return;
-
    double currentSL = PositionGetDouble(POSITION_SL);
+   if(currentSL == 0) return;
+
    double newSL = currentSL;
+   bool shouldModify = false;
 
-   if(!trailingLevel1Done && profitPips >= TrailingStart1)
+   // Level 1: 500 pips -> BE + 40 pips
+   if(trailLevel < 1 && profitPips >= TrailLevel1_Pips)
    {
-      int offset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
-
       if(positionType == 0)
-         newSL = entryPrice + offset * pipValue;
+         newSL = entryPrice + TrailLevel1_BE * pipValue;
       else
-         newSL = entryPrice - offset * pipValue;
+         newSL = entryPrice - TrailLevel1_BE * pipValue;
 
       newSL = NormalizeDouble(newSL, _Digits);
+      shouldModify = (positionType == 0 && newSL > currentSL) ||
+                     (positionType == 1 && newSL < currentSL);
 
-      if(trade.PositionModify(currentTicket, newSL, 0))
+      if(shouldModify && trade.PositionModify(currentTicket, newSL, 0))
       {
-         trailingLevel1Done = true;
-         Print("Trailing Level 1: SL moved to BE + ", offset, " pips");
+         trailLevel = 1;
+         Print("Trail L1: BE+", TrailLevel1_BE, " pips");
       }
    }
 
-   if(!trailingLevel2Done && trailingLevel1Done && profitPips >= TrailingStart2)
+   // Level 2: 800 pips -> Lock 150 pips
+   if(trailLevel < 2 && profitPips >= TrailLevel2_Pips)
    {
-      int lockPips = LockProfit_Min + MathRand() % (LockProfit_Max - LockProfit_Min + 1);
-
       if(positionType == 0)
-         newSL = entryPrice + lockPips * pipValue;
+         newSL = entryPrice + TrailLevel2_Lock * pipValue;
       else
-         newSL = entryPrice - lockPips * pipValue;
+         newSL = entryPrice - TrailLevel2_Lock * pipValue;
 
       newSL = NormalizeDouble(newSL, _Digits);
+      shouldModify = (positionType == 0 && newSL > currentSL) ||
+                     (positionType == 1 && newSL < currentSL);
 
-      if(trade.PositionModify(currentTicket, newSL, 0))
+      if(shouldModify && trade.PositionModify(currentTicket, newSL, 0))
       {
-         trailingLevel2Done = true;
-         Print("Trailing Level 2: Locked ", lockPips, " pips profit");
+         trailLevel = 2;
+         Print("Trail L2: Lock+", TrailLevel2_Lock, " pips");
+      }
+   }
+
+   // Level 3: 1200 pips -> Lock 200 pips
+   if(trailLevel < 3 && profitPips >= TrailLevel3_Pips)
+   {
+      if(positionType == 0)
+         newSL = entryPrice + TrailLevel3_Lock * pipValue;
+      else
+         newSL = entryPrice - TrailLevel3_Lock * pipValue;
+
+      newSL = NormalizeDouble(newSL, _Digits);
+      shouldModify = (positionType == 0 && newSL > currentSL) ||
+                     (positionType == 1 && newSL < currentSL);
+
+      if(shouldModify && trade.PositionModify(currentTicket, newSL, 0))
+      {
+         trailLevel = 3;
+         Print("Trail L3: Lock+", TrailLevel3_Lock, " pips");
+      }
+   }
+
+   // MFE Trailing
+   if(maxProfitPips >= MFE_ActivatePips)
+   {
+      double mfeSL;
+      if(positionType == 0)
+         mfeSL = entryPrice + (maxProfitPips - MFE_TrailDistance) * pipValue;
+      else
+         mfeSL = entryPrice - (maxProfitPips - MFE_TrailDistance) * pipValue;
+
+      mfeSL = NormalizeDouble(mfeSL, _Digits);
+      shouldModify = (positionType == 0 && mfeSL > currentSL) ||
+                     (positionType == 1 && mfeSL < currentSL);
+
+      if(shouldModify && trade.PositionModify(currentTicket, mfeSL, 0))
+      {
+         Print("MFE Trail: Lock MFE-", MFE_TrailDistance, " (MFE: ", DoubleToString(maxProfitPips, 0), " pips)");
       }
    }
 }
@@ -665,7 +733,9 @@ void CheckExistingPosition()
             entryTime = (datetime)PositionGetInteger(POSITION_TIME);
             hasOpenPosition = true;
             originalLots = PositionGetDouble(POSITION_VOLUME);
-            slSentToBroker = (PositionGetDouble(POSITION_SL) != 0);
+            trailLevel = 0;
+            maxProfitPips = 0;
+            barsInTrade = 0;
 
             Print("Existing position found. Ticket: ", ticket);
             break;
