@@ -1,15 +1,16 @@
 //+------------------------------------------------------------------+
 //|                                           Vikas_SQZMOM_Cla.mq5  |
-//|                   *** Vikas SQZMOM Cla v1.1 ***                  |
+//|                   *** Vikas SQZMOM Cla v1.2 ***                  |
 //|         SuperTrend + Squeeze Momentum + GAN Targets + TSL       |
-//|                   + STEALTH EXECUTION (TP/SL)                   |
+//|                   + STEALTH EXECUTION (TP only)                 |
 //|                   + NEWS FILTER & SPREAD FILTER                 |
-//|                   + HUMAN-LIKE TRAILING                         |
+//|                   + 3-LEVEL TRAILING + MFE                      |
 //|                   Based on TradingView Strategy                 |
-//|                   Date: 2026-02-24                              |
+//|                   Created: 2026-02-24                           |
+//|                   Fixed: 04.03.2026 - SL ODMAH, 3-level trail   |
 //+------------------------------------------------------------------+
-#property copyright "Vikas SQZMOM Cla v1.1 (2026-02-24)"
-#property version   "1.10"
+#property copyright "Vikas SQZMOM Cla v1.2 (04.03.2026)"
+#property version   "1.20"
 #property strict
 #include <Trade\Trade.mqh>
 
@@ -18,7 +19,6 @@ struct TradeData
 {
     ulong    ticket;
     double   entryPrice;
-    double   intendedSL;          // Pravi SL (delayed)
     double   stealthTP;           // Interni TP (nikad ne šalje brokeru)
     double   target1;
     double   target2;
@@ -26,18 +26,16 @@ struct TradeData
     double   tsl1Level;           // TSL nakon TARGET1
     double   tsl2Level;           // TSL nakon TARGET2
     datetime openTime;
-    int      slDelaySeconds;      // Random 7-13s
     int      direction;           // 1=LONG, -1=SHORT
-    bool     slPlaced;            // Je li SL već postavljen
     bool     target1Hit;
     bool     target2Hit;
     bool     target3Hit;
     int      remainingQty;        // 3->2->1->0
     int      barsInTrade;
+    double   maxProfitPips;       // MFE tracking
 
     // Trailing varijable (per-trade)
-    int      trailLevel;          // 0=none, 1=BE activated
-    int      randomBEPips;        // Random 38-43 (generira se jednom)
+    int      trailLevel;          // 0=none, 1=L1, 2=L2, 3=L3
 };
 
 //--- Input parameters
@@ -68,17 +66,25 @@ input double   RiskPercent      = 1.0;      // Risk % od Balance-a
 input int      MaxOpenTrades    = 3;        // Max otvorenih pozicija
 input int      MaxBarsInTrade   = 100;      // Max barova u tradeu
 
-input group "=== STEALTH EXECUTION ==="
-input int      SLDelayMin       = 7;        // Min delay za SL (sekunde)
-input int      SLDelayMax       = 13;       // Max delay za SL (sekunde)
-
 input group "=== LARGE CANDLE FILTER ==="
 input double   LargeCandleATR   = 3.0;      // Filter svijeća > X * ATR
 
-input group "=== TRAILING STOP (HUMAN-LIKE) ==="
-input int      TrailActivatePips   = 500;   // Aktivacija trailing-a (pips profit)
-input int      TrailBEPipsMin      = 38;    // BE + min pips
-input int      TrailBEPipsMax      = 43;    // BE + max pips
+input group "=== 3-LEVEL TRAILING ==="
+input int      TrailL1_Pips     = 500;      // L1: Aktivacija (pips profit)
+input int      TrailL1_BE       = 40;       // L1: BE + pips
+input int      TrailL2_Pips     = 800;      // L2: Aktivacija (pips profit)
+input int      TrailL2_Lock     = 150;      // L2: Lock profit pips
+input int      TrailL3_Pips     = 1200;     // L3: Aktivacija (pips profit)
+input int      TrailL3_Distance = 200;      // L3: Trail distance pips
+
+input group "=== MFE TRAILING ==="
+input int      MFE_Activate     = 1500;     // MFE aktivacija (pips)
+input int      MFE_Distance     = 500;      // MFE trail distance (pips)
+
+input group "=== EARLY & TIME FAILURE ==="
+input int      EarlyFailurePips = 800;      // Early failure exit (- pips)
+input int      TimeFailureBars  = 3;        // Barova za time failure
+input int      TimeFailurePips  = 20;       // Min profit za time failure
 
 input group "=== TSL SUSTAV (TARGET BASED) ==="
 input bool     UseTSL           = true;     // Koristi TSL sustav
@@ -106,6 +112,7 @@ datetime       lastBarTime;
 int            barsSinceLastTrade;
 TradeData      trades[];
 int            tradesCount = 0;
+double         pipValue = 0.01;  // XAUUSD: 1 pip = 0.01
 
 // SuperTrend varijable
 double         superTrendUp[];
@@ -151,18 +158,31 @@ int OnInit()
 
     MathSrand((uint)TimeCurrent() + (uint)GetTickCount());
 
+    // Set pipValue based on symbol
+    string symbol = _Symbol;
+    if(StringFind(symbol, "XAU") >= 0 || StringFind(symbol, "GOLD") >= 0)
+        pipValue = 0.01;
+    else if(SymbolInfoInteger(_Symbol, SYMBOL_DIGITS) == 3 || SymbolInfoInteger(_Symbol, SYMBOL_DIGITS) == 5)
+        pipValue = 0.0001;
+    else
+        pipValue = 0.01;
+
     Print("╔═══════════════════════════════════════════════════════════════╗");
-    Print("║        VIKAS SQZMOM CLA v1.1 - STEALTH EDITION                ║");
+    Print("║        VIKAS SQZMOM CLA v1.2 - SL ODMAH + 3-LEVEL TRAIL       ║");
     Print("╠═══════════════════════════════════════════════════════════════╣");
     Print("║ SuperTrend: ATR(", ATR_Period, ") x ", ATR_Multiplier);
     Print("║ Squeeze Momentum: BB(", BB_Length, ") + KC(", KC_Length, ")");
     Print("║ Targets: ", Target1_Multiplier, "x / ", Target2_Multiplier, "x / ", Target3_Multiplier, "x range");
-    Print("║ STEALTH: SL delay ", SLDelayMin, "-", SLDelayMax, "s | TP hidden");
-    Print("║ TRAILING: ", TrailActivatePips, " pips -> BE+", TrailBEPipsMin, "-", TrailBEPipsMax);
+    Print("║ SL: ODMAH na ulasku | TP: STEALTH (hidden)");
+    Print("║ TRAILING L1: ", TrailL1_Pips, " pips -> BE+", TrailL1_BE);
+    Print("║ TRAILING L2: ", TrailL2_Pips, " pips -> Lock ", TrailL2_Lock);
+    Print("║ TRAILING L3: ", TrailL3_Pips, " pips -> Trail ", TrailL3_Distance);
+    Print("║ MFE: ", MFE_Activate, " pips -> Trail ", MFE_Distance);
+    Print("║ EARLY FAILURE: -", EarlyFailurePips, " pips");
     Print("║ Large Candle Filter: > ", LargeCandleATR, "x ATR");
     Print("║ NEWS FILTER: ", UseNewsFilter ? "ON" : "OFF");
     Print("║ SPREAD FILTER: ", UseSpreadFilter ? "ON" : "OFF", " (Max ", MaxSpreadPoints, ")");
-    Print("║ Trading: Sunday 00:01 - Friday 11:30 (Server Time)");
+    Print("║ pipValue: ", pipValue);
     Print("╚═══════════════════════════════════════════════════════════════╝");
 
     return INIT_SUCCEEDED;
@@ -176,7 +196,7 @@ void OnDeinit(const int reason)
     if(atrHandle != INVALID_HANDLE) IndicatorRelease(atrHandle);
 
     Print("═══════════════════════════════════════════════════");
-    Print("     VIKAS SQZMOM CLA - ZAVRŠNA STATISTIKA");
+    Print("     VIKAS SQZMOM CLA v1.2 - ZAVRŠNA STATISTIKA");
     Print("═══════════════════════════════════════════════════");
     Print("Total BUY signala: ", totalBuys);
     Print("Total SELL signala: ", totalSells);
@@ -184,15 +204,6 @@ void OnDeinit(const int reason)
     Print("Blokirano zbog SPREAD: ", spreadBlockedCount);
     Print("Blokirano zbog LARGE CANDLE: ", largeCandleBlockedCount);
     Print("═══════════════════════════════════════════════════");
-}
-
-//+------------------------------------------------------------------+
-//| Random Range Helper                                               |
-//+------------------------------------------------------------------+
-int RandomRange(int minVal, int maxVal)
-{
-    if(minVal >= maxVal) return minVal;
-    return minVal + (MathRand() % (maxVal - minVal + 1));
 }
 
 //+------------------------------------------------------------------+
@@ -712,12 +723,11 @@ void SyncTradesArray()
 //+------------------------------------------------------------------+
 //| Add Trade to tracking                                             |
 //+------------------------------------------------------------------+
-void AddTrade(ulong ticket, double entry, double sl, double tp, double t1, double t2, double t3, int dir, int slDelay, int bePips)
+void AddTrade(ulong ticket, double entry, double tp, double t1, double t2, double t3, int dir)
 {
     ArrayResize(trades, tradesCount + 1);
     trades[tradesCount].ticket = ticket;
     trades[tradesCount].entryPrice = entry;
-    trades[tradesCount].intendedSL = sl;
     trades[tradesCount].stealthTP = tp;
     trades[tradesCount].target1 = t1;
     trades[tradesCount].target2 = t2;
@@ -725,16 +735,14 @@ void AddTrade(ulong ticket, double entry, double sl, double tp, double t1, doubl
     trades[tradesCount].tsl1Level = 0;
     trades[tradesCount].tsl2Level = 0;
     trades[tradesCount].openTime = TimeCurrent();
-    trades[tradesCount].slDelaySeconds = slDelay;
     trades[tradesCount].direction = dir;
-    trades[tradesCount].slPlaced = false;
     trades[tradesCount].target1Hit = false;
     trades[tradesCount].target2Hit = false;
     trades[tradesCount].target3Hit = false;
     trades[tradesCount].remainingQty = 3;
     trades[tradesCount].barsInTrade = 0;
+    trades[tradesCount].maxProfitPips = 0;
     trades[tradesCount].trailLevel = 0;
-    trades[tradesCount].randomBEPips = bePips;
     tradesCount++;
 }
 
@@ -781,29 +789,27 @@ double GetProfitPips(ulong ticket, double entryPrice, int dir)
 {
     if(!PositionSelectByTicket(ticket)) return 0;
 
-    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     double currentPrice;
 
     if(dir == 1)  // LONG
     {
         currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-        return (currentPrice - entryPrice) / point;
+        return (currentPrice - entryPrice) / pipValue;
     }
     else  // SHORT
     {
         currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-        return (entryPrice - currentPrice) / point;
+        return (entryPrice - currentPrice) / pipValue;
     }
 }
 
 //+------------------------------------------------------------------+
-//| Manage All Positions - STEALTH + TSL Logic                        |
+//| Manage All Positions - STEALTH TP + 3-LEVEL TRAILING + MFE        |
 //+------------------------------------------------------------------+
 void ManageAllPositions()
 {
     SyncTradesArray();
 
-    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
 
     for(int i = tradesCount - 1; i >= 0; i--)
@@ -822,18 +828,17 @@ void ManageAllPositions()
         double high = iHigh(_Symbol, PERIOD_CURRENT, 0);
         double low = iLow(_Symbol, PERIOD_CURRENT, 0);
 
-        //=== 1. DELAYED SL PLACEMENT (Stealth) ===
-        if(!trades[i].slPlaced && trades[i].intendedSL != 0)
+        double profitPips = GetProfitPips(ticket, trades[i].entryPrice, trades[i].direction);
+
+        // Update MFE
+        if(profitPips > trades[i].maxProfitPips)
+            trades[i].maxProfitPips = profitPips;
+
+        //=== 1. EARLY FAILURE EXIT ===
+        if(profitPips <= -EarlyFailurePips)
         {
-            if(TimeCurrent() >= trades[i].openTime + trades[i].slDelaySeconds)
-            {
-                double sl = NormalizeDouble(trades[i].intendedSL, digits);
-                if(trade.PositionModify(ticket, sl, 0))
-                {
-                    trades[i].slPlaced = true;
-                    Print("VIKAS STEALTH [", ticket, "]: SL postavljen na ", sl, " (delay ", trades[i].slDelaySeconds, "s)");
-                }
-            }
+            ClosePosition(ticket, "EARLY FAILURE @ " + DoubleToString(-profitPips, 0) + " pips loss");
+            continue;
         }
 
         //=== 2. CHECK STEALTH TP (Target3 or main TP) ===
@@ -852,44 +857,132 @@ void ManageAllPositions()
             }
         }
 
-        //=== 3. HUMAN-LIKE TRAILING (500 pips -> BE + random 38-43) ===
-        if(trades[i].slPlaced && trades[i].trailLevel == 0)
+        //=== 3. 3-LEVEL TRAILING ===
+        // Level 3 (1200+ pips - trail distance)
+        if(trades[i].trailLevel < 3 && profitPips >= TrailL3_Pips)
         {
-            double profitPips = GetProfitPips(ticket, trades[i].entryPrice, trades[i].direction);
-
-            if(profitPips >= TrailActivatePips)
+            double newSL;
+            if(trades[i].direction == 1)
             {
-                double newSL;
-                if(trades[i].direction == 1)  // LONG
+                newSL = currentPrice - TrailL3_Distance * pipValue;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL > currentSL)
                 {
-                    newSL = trades[i].entryPrice + trades[i].randomBEPips * point;
-                    newSL = NormalizeDouble(newSL, digits);
-                    if(newSL > currentSL)
+                    if(trade.PositionModify(ticket, newSL, 0))
                     {
-                        if(trade.PositionModify(ticket, newSL, 0))
-                        {
-                            trades[i].trailLevel = 1;
-                            Print("VIKAS TRAIL [", ticket, "]: BE+", trades[i].randomBEPips, " pips (SL=", newSL, ")");
-                        }
+                        trades[i].trailLevel = 3;
+                        Print("VIKAS L3 [", ticket, "]: Trail ", TrailL3_Distance, " pips (SL=", newSL, ")");
                     }
                 }
-                else  // SHORT
+            }
+            else
+            {
+                newSL = currentPrice + TrailL3_Distance * pipValue;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL < currentSL)
                 {
-                    newSL = trades[i].entryPrice - trades[i].randomBEPips * point;
-                    newSL = NormalizeDouble(newSL, digits);
-                    if(newSL < currentSL || currentSL == 0)
+                    if(trade.PositionModify(ticket, newSL, 0))
                     {
-                        if(trade.PositionModify(ticket, newSL, 0))
-                        {
-                            trades[i].trailLevel = 1;
-                            Print("VIKAS TRAIL [", ticket, "]: BE+", trades[i].randomBEPips, " pips (SL=", newSL, ")");
-                        }
+                        trades[i].trailLevel = 3;
+                        Print("VIKAS L3 [", ticket, "]: Trail ", TrailL3_Distance, " pips (SL=", newSL, ")");
+                    }
+                }
+            }
+        }
+        // Level 2 (800+ pips - lock profit)
+        else if(trades[i].trailLevel < 2 && profitPips >= TrailL2_Pips)
+        {
+            double newSL;
+            if(trades[i].direction == 1)
+            {
+                newSL = trades[i].entryPrice + TrailL2_Lock * pipValue;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL > currentSL)
+                {
+                    if(trade.PositionModify(ticket, newSL, 0))
+                    {
+                        trades[i].trailLevel = 2;
+                        Print("VIKAS L2 [", ticket, "]: Lock ", TrailL2_Lock, " pips (SL=", newSL, ")");
+                    }
+                }
+            }
+            else
+            {
+                newSL = trades[i].entryPrice - TrailL2_Lock * pipValue;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL < currentSL)
+                {
+                    if(trade.PositionModify(ticket, newSL, 0))
+                    {
+                        trades[i].trailLevel = 2;
+                        Print("VIKAS L2 [", ticket, "]: Lock ", TrailL2_Lock, " pips (SL=", newSL, ")");
+                    }
+                }
+            }
+        }
+        // Level 1 (500+ pips - BE + buffer)
+        else if(trades[i].trailLevel < 1 && profitPips >= TrailL1_Pips)
+        {
+            double newSL;
+            if(trades[i].direction == 1)
+            {
+                newSL = trades[i].entryPrice + TrailL1_BE * pipValue;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL > currentSL)
+                {
+                    if(trade.PositionModify(ticket, newSL, 0))
+                    {
+                        trades[i].trailLevel = 1;
+                        Print("VIKAS L1 [", ticket, "]: BE+", TrailL1_BE, " pips (SL=", newSL, ")");
+                    }
+                }
+            }
+            else
+            {
+                newSL = trades[i].entryPrice - TrailL1_BE * pipValue;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL < currentSL)
+                {
+                    if(trade.PositionModify(ticket, newSL, 0))
+                    {
+                        trades[i].trailLevel = 1;
+                        Print("VIKAS L1 [", ticket, "]: BE+", TrailL1_BE, " pips (SL=", newSL, ")");
                     }
                 }
             }
         }
 
-        //=== 4. CHECK TARGET1 ===
+        //=== 4. MFE TRAILING (after MFE_Activate pips reached) ===
+        if(trades[i].maxProfitPips >= MFE_Activate && trades[i].trailLevel >= 3)
+        {
+            double mfeSL;
+            if(trades[i].direction == 1)
+            {
+                mfeSL = currentPrice - MFE_Distance * pipValue;
+                mfeSL = NormalizeDouble(mfeSL, digits);
+                if(mfeSL > currentSL)
+                {
+                    if(trade.PositionModify(ticket, mfeSL, 0))
+                    {
+                        Print("VIKAS MFE [", ticket, "]: Trail ", MFE_Distance, " pips (SL=", mfeSL, ")");
+                    }
+                }
+            }
+            else
+            {
+                mfeSL = currentPrice + MFE_Distance * pipValue;
+                mfeSL = NormalizeDouble(mfeSL, digits);
+                if(mfeSL < currentSL)
+                {
+                    if(trade.PositionModify(ticket, mfeSL, 0))
+                    {
+                        Print("VIKAS MFE [", ticket, "]: Trail ", MFE_Distance, " pips (SL=", mfeSL, ")");
+                    }
+                }
+            }
+        }
+
+        //=== 5. CHECK TARGET1 ===
         if(!trades[i].target1Hit)
         {
             bool t1Hit = false;
@@ -905,11 +998,11 @@ void ManageAllPositions()
                 trades[i].remainingQty = 2;
 
                 PartialClose(ticket, 0.33, "TARGET1 HIT @ " + DoubleToString(trades[i].target1, digits));
-                Print("✓ TARGET1 HIT! TSL1 = ", DoubleToString(trades[i].tsl1Level, digits));
+                Print("TARGET1 HIT! TSL1 = ", DoubleToString(trades[i].tsl1Level, digits));
             }
         }
 
-        //=== 5. CHECK TARGET2 ===
+        //=== 6. CHECK TARGET2 ===
         if(trades[i].target1Hit && !trades[i].target2Hit)
         {
             bool t2Hit = false;
@@ -925,11 +1018,11 @@ void ManageAllPositions()
                 trades[i].remainingQty = 1;
 
                 PartialClose(ticket, 0.5, "TARGET2 HIT @ " + DoubleToString(trades[i].target2, digits));
-                Print("✓ TARGET2 HIT! TSL2 = ", DoubleToString(trades[i].tsl2Level, digits));
+                Print("TARGET2 HIT! TSL2 = ", DoubleToString(trades[i].tsl2Level, digits));
             }
         }
 
-        //=== 6. CHECK TARGET3 ===
+        //=== 7. CHECK TARGET3 ===
         if(trades[i].target2Hit && !trades[i].target3Hit)
         {
             bool t3Hit = false;
@@ -947,7 +1040,7 @@ void ManageAllPositions()
             }
         }
 
-        //=== 7. CHECK TSL HITS (if UseTSL) ===
+        //=== 8. CHECK TSL HITS (if UseTSL) ===
         if(UseTSL)
         {
             // TSL2 check (after TARGET2)
@@ -981,22 +1074,6 @@ void ManageAllPositions()
                 }
             }
         }
-
-        //=== 8. CHECK SL (internal, before broker SL is placed) ===
-        if(!trades[i].target1Hit && !trades[i].slPlaced)
-        {
-            bool slHit = false;
-            if(trades[i].direction == 1 && low <= trades[i].intendedSL)
-                slHit = true;
-            else if(trades[i].direction == -1 && high >= trades[i].intendedSL)
-                slHit = true;
-
-            if(slHit)
-            {
-                ClosePosition(ticket, "STEALTH SL HIT @ " + DoubleToString(trades[i].intendedSL, digits));
-                continue;
-            }
-        }
     }
 }
 
@@ -1008,9 +1085,22 @@ void CheckTimeExits()
     for(int i = tradesCount - 1; i >= 0; i--)
     {
         trades[i].barsInTrade++;
+
+        // Max bars exit
         if(trades[i].barsInTrade >= MaxBarsInTrade)
         {
             ClosePosition(trades[i].ticket, "TIME EXIT - " + IntegerToString(trades[i].barsInTrade) + " bars");
+            continue;
+        }
+
+        // Time failure exit (3+ bars with < 20 pips profit)
+        if(trades[i].barsInTrade >= TimeFailureBars)
+        {
+            double profitPips = GetProfitPips(trades[i].ticket, trades[i].entryPrice, trades[i].direction);
+            if(profitPips < TimeFailurePips && profitPips > -TimeFailurePips)
+            {
+                ClosePosition(trades[i].ticket, "TIME FAILURE - " + IntegerToString(trades[i].barsInTrade) + " bars, " + DoubleToString(profitPips, 0) + " pips");
+            }
         }
     }
 }
@@ -1052,23 +1142,19 @@ void OpenBuy()
     t3 = NormalizeDouble(t3, digits);
     stealthTP = NormalizeDouble(stealthTP, digits);
 
-    // Generate random values for this trade
-    int slDelay = RandomRange(SLDelayMin, SLDelayMax);
-    int bePips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
-
-    // Open BEZ SL i TP (stealth mode)
-    if(trade.Buy(lots, _Symbol, price, 0, 0, "VIKAS BUY"))
+    // SL ODMAH na ulasku, TP=0 (stealth)
+    if(trade.Buy(lots, _Symbol, price, sl, 0, "VIKAS BUY"))
     {
         ulong ticket = trade.ResultOrder();
-        AddTrade(ticket, price, sl, stealthTP, t1, t2, t3, 1, slDelay, bePips);
+        AddTrade(ticket, price, stealthTP, t1, t2, t3, 1);
 
         Print("╔════════════════════════════════════════════════╗");
-        Print("║ ✓ VIKAS STEALTH BUY                            ║");
+        Print("║ VIKAS BUY - SL ODMAH                           ║");
         Print("╠════════════════════════════════════════════════╣");
         Print("║ Entry: ", price, " | Lots: ", lots);
-        Print("║ SL: ", sl, " (delay ", slDelay, "s)");
+        Print("║ SL: ", sl, " (ODMAH)");
         Print("║ T1: ", t1, " | T2: ", t2, " | T3: ", t3);
-        Print("║ Trail: BE+", bePips, " pips @ ", TrailActivatePips, " pips profit");
+        Print("║ Trail: L1@", TrailL1_Pips, " L2@", TrailL2_Pips, " L3@", TrailL3_Pips);
         Print("╚════════════════════════════════════════════════╝");
 
         totalBuys++;
@@ -1113,23 +1199,19 @@ void OpenSell()
     t3 = NormalizeDouble(t3, digits);
     stealthTP = NormalizeDouble(stealthTP, digits);
 
-    // Generate random values for this trade
-    int slDelay = RandomRange(SLDelayMin, SLDelayMax);
-    int bePips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
-
-    // Open BEZ SL i TP (stealth mode)
-    if(trade.Sell(lots, _Symbol, price, 0, 0, "VIKAS SELL"))
+    // SL ODMAH na ulasku, TP=0 (stealth)
+    if(trade.Sell(lots, _Symbol, price, sl, 0, "VIKAS SELL"))
     {
         ulong ticket = trade.ResultOrder();
-        AddTrade(ticket, price, sl, stealthTP, t1, t2, t3, -1, slDelay, bePips);
+        AddTrade(ticket, price, stealthTP, t1, t2, t3, -1);
 
         Print("╔════════════════════════════════════════════════╗");
-        Print("║ ✓ VIKAS STEALTH SELL                           ║");
+        Print("║ VIKAS SELL - SL ODMAH                          ║");
         Print("╠════════════════════════════════════════════════╣");
         Print("║ Entry: ", price, " | Lots: ", lots);
-        Print("║ SL: ", sl, " (delay ", slDelay, "s)");
+        Print("║ SL: ", sl, " (ODMAH)");
         Print("║ T1: ", t1, " | T2: ", t2, " | T3: ", t3);
-        Print("║ Trail: BE+", bePips, " pips @ ", TrailActivatePips, " pips profit");
+        Print("║ Trail: L1@", TrailL1_Pips, " L2@", TrailL2_Pips, " L3@", TrailL3_Pips);
         Print("╚════════════════════════════════════════════════╝");
 
         totalSells++;
