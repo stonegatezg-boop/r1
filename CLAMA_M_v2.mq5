@@ -46,7 +46,7 @@ input double   CompressionATR   = 1.5;      // Compression Filter (< 1.5x ATR)
 input int      CompressionBars  = 5;        // Broj barova za kompresiju
 
 input group "=== EARLY/TIME FAILURE ==="
-input int      EarlyFailurePips = 80;       // Early failure exit (pips against)
+input int      EarlyFailurePips = 800;      // Early failure exit (pips against)
 input int      TimeFailureBars  = 3;        // Time failure check (3 bars = 15 min)
 input int      TimeFailureMinProfit = 20;   // Min profit za time check (pips)
 
