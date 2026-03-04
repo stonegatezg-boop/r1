@@ -1,14 +1,15 @@
 //+------------------------------------------------------------------+
 //|                                                   CLAMA_M_v2.mq5 |
-//|                        *** CLAMA M v2.0 ***                      |
+//|                        *** CLAMA M v2.1 ***                      |
 //|                   MACD + Hull MA Trend-Continuation Strategy     |
 //|                   + Market Structure + Compression Filter        |
-//|                   + Inside Candle + Early/Time Failure Exits     |
-//|                   + 3-Level Trailing System                      |
+//|                   + Inside Candle (Optional) + Impulse Filter    |
+//|                   + MFE Trailing + Early/Time Failure Exits      |
 //|                   Created: 04.03.2026 (Zagreb)                   |
+//|                   Updated: 04.03.2026 23:00 (Zagreb) - MFE Trail |
 //+------------------------------------------------------------------+
-#property copyright "CLAMA M v2.0 - Trend Continuation (2026-03-04)"
-#property version   "2.00"
+#property copyright "CLAMA M v2.1 - MFE Trailing Edition (2026-03-04)"
+#property version   "2.10"
 #property strict
 #include <Trade\Trade.mqh>
 
@@ -44,8 +45,11 @@ input int      MaxOpenTrades    = 5;        // Max otvorenih tradeova
 
 input group "=== ENTRY FILTERS ==="
 input double   LargeCandleATR   = 3.0;      // Large Candle Filter (> 3x ATR)
-input double   CompressionATR   = 1.5;      // Compression Filter (< 1.5x ATR)
+input double   CompressionATR   = 2.0;      // Compression Filter (< 2.0x ATR)
 input int      CompressionBars  = 5;        // Broj barova za kompresiju
+input double   ImpulseATR       = 2.5;      // Impulse Filter (> 2.5x ATR skip)
+input int      ImpulseBars      = 3;        // Broj barova za impulse check
+input bool     RequireBothFilters = false;  // Require BOTH compression AND inside (false=OR)
 
 input group "=== EARLY/TIME FAILURE ==="
 input int      EarlyFailurePips = 800;      // Early failure exit (pips against)
@@ -59,6 +63,11 @@ input int      Level2_ActivatePips = 800;   // L2: Aktivacija (pips profit)
 input int      Level2_LockPips     = 150;   // L2: Lock profit (pips)
 input int      Level3_ActivatePips = 1200;  // L3: Aktivacija (pips profit)
 input int      Level3_TrailPips    = 200;   // L3: Trail distance (pips)
+
+input group "=== MFE TRAILING ==="
+input bool     UseMFETrailing      = true;  // Koristi MFE Trailing
+input int      MFE_ActivatePips    = 800;   // MFE aktivacija (maxProfit pips)
+input int      MFE_TrailDistance   = 300;   // MFE trail distance (pips od maxProfit)
 
 input group "=== MAX DURATION ==="
 input int      MaxBarsInTrade   = 48;       // Max barova u tradeu (~4 sata)
@@ -102,6 +111,7 @@ int            spreadBlockedCount = 0;
 int            structureBlockedCount = 0;
 int            compressionBlockedCount = 0;
 int            insideCandleBlockedCount = 0;
+int            impulseBlockedCount = 0;
 
 // 1 pip XAUUSD = 0.01 = 1 point (za XAUUSD digits=2)
 double         pipValue;
@@ -133,13 +143,14 @@ int OnInit()
     pipValue = 0.01;
 
     Print("======================================================");
-    Print("     CLAMA M v2.0 - TREND CONTINUATION EDITION        ");
+    Print("     CLAMA M v2.1 - MFE TRAILING EDITION              ");
     Print("======================================================");
     Print("MACD(", FastEMA, ",", SlowEMA, ",", SignalSMA, ") + Hull(", HullPeriod, ")");
     Print("SL: ", SLMultiplier, "x ATR (ODMAH na entry)");
-    Print("Filters: Structure + Compression + Inside Candle");
+    Print("Filters: Structure + Compression(", CompressionATR, "x) ", RequireBothFilters ? "AND" : "OR", " Inside + Impulse(<", ImpulseATR, "x)");
     Print("Exit: Early(-", EarlyFailurePips, " pips), Time(", TimeFailureBars, " bars/<", TimeFailureMinProfit, " pips)");
     Print("Trail: L1(+", Level1_ActivatePips, "->BE+", Level1_BEPips, "), L2(+", Level2_ActivatePips, "->+", Level2_LockPips, "), L3(+", Level3_ActivatePips, "->trail ", Level3_TrailPips, ")");
+    Print("MFE Trail: ", UseMFETrailing ? "ON" : "OFF", " (activate@+", MFE_ActivatePips, ", distance=", MFE_TrailDistance, ")");
     Print("NEWS: ", UseNewsFilter ? "ON" : "OFF", " | SPREAD: ", UseSpreadFilter ? "ON" : "OFF", " (", MaxSpreadPoints, "pt)");
     Print("Max Trades: ", MaxOpenTrades);
     Print("======================================================");
@@ -155,12 +166,13 @@ void OnDeinit(const int reason)
     if(macdHandle != INVALID_HANDLE) IndicatorRelease(macdHandle);
     if(atrHandle != INVALID_HANDLE) IndicatorRelease(atrHandle);
 
-    Print("=== CLAMA M v2 STATISTIKA ===");
+    Print("=== CLAMA M v2.1 STATISTIKA ===");
     Print("Blokirano NEWS: ", newsBlockedCount);
     Print("Blokirano SPREAD: ", spreadBlockedCount);
     Print("Blokirano STRUCTURE: ", structureBlockedCount);
     Print("Blokirano COMPRESSION: ", compressionBlockedCount);
     Print("Blokirano INSIDE CANDLE: ", insideCandleBlockedCount);
+    Print("Blokirano IMPULSE: ", impulseBlockedCount);
 }
 
 //+------------------------------------------------------------------+
@@ -443,6 +455,29 @@ bool IsInsideCandle()
 }
 
 //+------------------------------------------------------------------+
+//| IMPULSE FILTER - skip if last N candles made big move             |
+//+------------------------------------------------------------------+
+bool IsImpulseMove()
+{
+    double high[], low[];
+    ArraySetAsSeries(high, true);
+    ArraySetAsSeries(low, true);
+
+    if(CopyHigh(_Symbol, PERIOD_CURRENT, 1, ImpulseBars, high) < ImpulseBars) return false;
+    if(CopyLow(_Symbol, PERIOD_CURRENT, 1, ImpulseBars, low) < ImpulseBars) return false;
+
+    double highest = high[ArrayMaximum(high, 0, ImpulseBars)];
+    double lowest = low[ArrayMinimum(low, 0, ImpulseBars)];
+    double range = highest - lowest;
+
+    double atr = GetATR();
+    if(atr <= 0) return false;
+
+    // Impulse: zadnje N svijeća napravile > ImpulseATR * ATR pomak
+    return (range > ImpulseATR * atr);
+}
+
+//+------------------------------------------------------------------+
 //| DIRECTION CANDLE FILTER                                           |
 //+------------------------------------------------------------------+
 bool IsBullishCandle()
@@ -587,7 +622,7 @@ void ClosePosition(ulong ticket, string reason)
 {
     if(trade.PositionClose(ticket))
     {
-        Print("CLAMA M v2 CLOSE [", ticket, "]: ", reason);
+        Print("CLAMA M v2.1 CLOSE [", ticket, "]: ", reason);
     }
 }
 
@@ -664,6 +699,47 @@ void ManageAllPositions()
             continue;
         }
 
+        //=== 1.5 MFE TRAILING: koristi maxProfitPips za trailing ===
+        if(UseMFETrailing && trades[i].maxProfitPips >= MFE_ActivatePips)
+        {
+            // MFE trailing: SL = entry + (maxProfit - trailDistance)
+            double mfeLockPips = trades[i].maxProfitPips - MFE_TrailDistance;
+            if(mfeLockPips > 0)  // samo ako zaključavamo profit
+            {
+                double newSL;
+                if(posType == POSITION_TYPE_BUY)
+                {
+                    newSL = trades[i].entryPrice + mfeLockPips * pipValue;
+                    newSL = NormalizeDouble(newSL, digits);
+                    if(newSL > currentSL)
+                    {
+                        if(trade.PositionModify(ticket, newSL, 0))
+                        {
+                            Print("CLAMA M v2.1 [", ticket, "] MFE TRAIL: SL -> ", newSL,
+                                  " (maxProfit: ", DoubleToString(trades[i].maxProfitPips, 1),
+                                  ", lock: ", DoubleToString(mfeLockPips, 1), " pips)");
+                        }
+                    }
+                }
+                else
+                {
+                    newSL = trades[i].entryPrice - mfeLockPips * pipValue;
+                    newSL = NormalizeDouble(newSL, digits);
+                    if(newSL < currentSL || currentSL == 0)
+                    {
+                        if(trade.PositionModify(ticket, newSL, 0))
+                        {
+                            Print("CLAMA M v2.1 [", ticket, "] MFE TRAIL: SL -> ", newSL,
+                                  " (maxProfit: ", DoubleToString(trades[i].maxProfitPips, 1),
+                                  ", lock: ", DoubleToString(mfeLockPips, 1), " pips)");
+                        }
+                    }
+                }
+            }
+            // MFE trailing aktiviran, preskoči standardni trailing
+            continue;
+        }
+
         //=== 2. LEVEL 3 TRAILING: >= 1200 pips, trail at 200 pips ===
         if(trades[i].trailLevel >= 2 && profitPips >= Level3_ActivatePips)
         {
@@ -681,7 +757,7 @@ void ManageAllPositions()
                     if(trade.PositionModify(ticket, trailSL, 0))
                     {
                         trades[i].trailLevel = 3;
-                        Print("CLAMA M v2 [", ticket, "] L3 TRAIL: SL -> ", trailSL, " (profit: ", DoubleToString(profitPips, 1), " pips)");
+                        Print("CLAMA M v2.1 [", ticket, "] L3 TRAIL: SL -> ", trailSL, " (profit: ", DoubleToString(profitPips, 1), " pips)");
                     }
                 }
             }
@@ -694,7 +770,7 @@ void ManageAllPositions()
                     if(trade.PositionModify(ticket, trailSL, 0))
                     {
                         trades[i].trailLevel = 3;
-                        Print("CLAMA M v2 [", ticket, "] L3 TRAIL: SL -> ", trailSL, " (profit: ", DoubleToString(profitPips, 1), " pips)");
+                        Print("CLAMA M v2.1 [", ticket, "] L3 TRAIL: SL -> ", trailSL, " (profit: ", DoubleToString(profitPips, 1), " pips)");
                     }
                 }
             }
@@ -714,7 +790,7 @@ void ManageAllPositions()
                     if(trade.PositionModify(ticket, newSL, 0))
                     {
                         trades[i].trailLevel = 2;
-                        Print("CLAMA M v2 [", ticket, "] L2: Lock +", Level2_LockPips, " pips (profit: ", DoubleToString(profitPips, 1), " pips)");
+                        Print("CLAMA M v2.1 [", ticket, "] L2: Lock +", Level2_LockPips, " pips (profit: ", DoubleToString(profitPips, 1), " pips)");
                     }
                 }
             }
@@ -727,7 +803,7 @@ void ManageAllPositions()
                     if(trade.PositionModify(ticket, newSL, 0))
                     {
                         trades[i].trailLevel = 2;
-                        Print("CLAMA M v2 [", ticket, "] L2: Lock +", Level2_LockPips, " pips (profit: ", DoubleToString(profitPips, 1), " pips)");
+                        Print("CLAMA M v2.1 [", ticket, "] L2: Lock +", Level2_LockPips, " pips (profit: ", DoubleToString(profitPips, 1), " pips)");
                     }
                 }
             }
@@ -747,7 +823,7 @@ void ManageAllPositions()
                     if(trade.PositionModify(ticket, newSL, 0))
                     {
                         trades[i].trailLevel = 1;
-                        Print("CLAMA M v2 [", ticket, "] L1: BE+", Level1_BEPips, " pips (profit: ", DoubleToString(profitPips, 1), " pips)");
+                        Print("CLAMA M v2.1 [", ticket, "] L1: BE+", Level1_BEPips, " pips (profit: ", DoubleToString(profitPips, 1), " pips)");
                     }
                 }
             }
@@ -760,7 +836,7 @@ void ManageAllPositions()
                     if(trade.PositionModify(ticket, newSL, 0))
                     {
                         trades[i].trailLevel = 1;
-                        Print("CLAMA M v2 [", ticket, "] L1: BE+", Level1_BEPips, " pips (profit: ", DoubleToString(profitPips, 1), " pips)");
+                        Print("CLAMA M v2.1 [", ticket, "] L1: BE+", Level1_BEPips, " pips (profit: ", DoubleToString(profitPips, 1), " pips)");
                     }
                 }
             }
@@ -820,7 +896,7 @@ void OpenBuy()
     {
         ulong ticket = trade.ResultOrder();
         AddTrade(ticket, price, stealthTP);
-        Print("CLAMA M v2 BUY [", ticket, "]: ", lots, " @ ", price, " SL=", sl, " StealthTP=", stealthTP);
+        Print("CLAMA M v2.1 BUY [", ticket, "]: ", lots, " @ ", price, " SL=", sl, " StealthTP=", stealthTP);
         barsSinceLastTrade = 0;
     }
 }
@@ -851,7 +927,7 @@ void OpenSell()
     {
         ulong ticket = trade.ResultOrder();
         AddTrade(ticket, price, stealthTP);
-        Print("CLAMA M v2 SELL [", ticket, "]: ", lots, " @ ", price, " SL=", sl, " StealthTP=", stealthTP);
+        Print("CLAMA M v2.1 SELL [", ticket, "]: ", lots, " @ ", price, " SL=", sl, " StealthTP=", stealthTP);
         barsSinceLastTrade = 0;
     }
 }
@@ -895,18 +971,41 @@ void OnTick()
         return;
     }
 
-    // COMPRESSION FILTER - mora biti kompresija
-    if(!IsCompressed())
+    // IMPULSE FILTER - preskoči ako je već bio veliki pomak
+    if(IsImpulseMove())
     {
-        compressionBlockedCount++;
+        impulseBlockedCount++;
         return;
     }
 
-    // INSIDE CANDLE FILTER - prethodna svijeca mora biti inside
-    if(!IsInsideCandle())
+    // COMPRESSION / INSIDE CANDLE FILTER
+    // RequireBothFilters=true: mora biti I kompresija I inside candle
+    // RequireBothFilters=false: mora biti ILI kompresija ILI inside candle
+    bool compressed = IsCompressed();
+    bool inside = IsInsideCandle();
+
+    if(RequireBothFilters)
     {
-        insideCandleBlockedCount++;
-        return;
+        // Mora biti OBA
+        if(!compressed)
+        {
+            compressionBlockedCount++;
+            return;
+        }
+        if(!inside)
+        {
+            insideCandleBlockedCount++;
+            return;
+        }
+    }
+    else
+    {
+        // Mora biti BAREM JEDAN
+        if(!compressed && !inside)
+        {
+            compressionBlockedCount++;
+            return;
+        }
     }
 
     // Update swing points za market structure
@@ -933,7 +1032,7 @@ void OnTick()
         // Direction candle = bullish
         if(!IsBullishCandle()) return;
 
-        Print("CLAMA M v2 BUY SIGNAL (Hull=", hullDir, ", Structure=BULL, Compressed, Inside)");
+        Print("CLAMA M v2.1 BUY SIGNAL (Hull=", hullDir, ", Structure=BULL, Comp=", compressed, ", Inside=", inside, ")");
         OpenBuy();
     }
     else if(sellSignal)
@@ -951,7 +1050,7 @@ void OnTick()
         // Direction candle = bearish
         if(!IsBearishCandle()) return;
 
-        Print("CLAMA M v2 SELL SIGNAL (Hull=", hullDir, ", Structure=BEAR, Compressed, Inside)");
+        Print("CLAMA M v2.1 SELL SIGNAL (Hull=", hullDir, ", Structure=BEAR, Comp=", compressed, ", Inside=", inside, ")");
         OpenSell();
     }
 }
