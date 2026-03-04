@@ -51,9 +51,9 @@ input int      TimeFailureBars  = 3;        // Time failure check (3 bars = 15 m
 input int      TimeFailureMinProfit = 20;   // Min profit za time check (pips)
 
 input group "=== TRAILING STOP ==="
-input int      Level1_ActivatePips = 300;   // L1: Aktivacija (pips profit)
-input int      Level1_BEPips       = 20;    // L1: BE + pips
-input int      Level2_ActivatePips = 700;   // L2: Aktivacija (pips profit)
+input int      Level1_ActivatePips = 500;   // L1: Aktivacija (pips profit)
+input int      Level1_BEPips       = 40;    // L1: BE + pips
+input int      Level2_ActivatePips = 800;   // L2: Aktivacija (pips profit)
 input int      Level2_LockPips     = 150;   // L2: Lock profit (pips)
 input int      Level3_ActivatePips = 1200;  // L3: Aktivacija (pips profit)
 input int      Level3_TrailPips    = 200;   // L3: Trail distance (pips)
