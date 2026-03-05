@@ -2,10 +2,10 @@
 //|                                            XAUUSD_MultiTF_Cla.mq5 |
 //|                        Multi-Timeframe EA - H4 Trend + H1 + M5    |
 //|                   Created: 02.03.2026 14:30 (Zagreb)              |
-//|                   Fixed: 04.03.2026 (Zagreb) - pip calc fix      |
+//|                   Fixed: 05.03.2026 (Zagreb) - SL ODMAH + 3-level|
 //+------------------------------------------------------------------+
-#property copyright "XAUUSD MultiTF Cla v1.0"
-#property version   "1.00"
+#property copyright "XAUUSD MultiTF Cla v2.2"
+#property version   "2.20"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -25,14 +25,19 @@ input int      Target1_Pips = 300;            // Target 1 - zatvori 33%
 input int      Target2_Pips = 500;            // Target 2 - zatvori 50%
 input int      Target3_Pips = 800;            // Target 3 - zatvori ostatak
 
-// === TRAILING STOP ===
+// === TRAILING STOP (3-LEVEL + MFE) ===
 input string   INFO3 = "=== TRAILING STOP ===";
-input int      TrailingStart1 = 500;          // Pips za pomak na BE
-input int      BEOffset_Min = 38;             // BE offset min pips
-input int      BEOffset_Max = 43;             // BE offset max pips
-input int      TrailingStart2 = 800;          // Pips za lock profit
-input int      LockProfit_Min = 150;          // Lock profit min pips
-input int      LockProfit_Max = 200;          // Lock profit max pips
+input int      TrailingStart1 = 500;          // L1: Pips za pomak na BE
+input int      BEOffset_Min = 38;             // L1: BE offset min pips
+input int      BEOffset_Max = 43;             // L1: BE offset max pips
+input int      TrailingStart2 = 800;          // L2: Pips za lock profit
+input int      LockProfit_Min = 150;          // L2: Lock profit min pips
+input int      LockProfit_Max = 200;          // L2: Lock profit max pips
+input int      TrailingStart3 = 1200;         // L3: Pips za lock profit
+input int      Lock3_Min = 180;               // L3: Lock profit min pips
+input int      Lock3_Max = 220;               // L3: Lock profit max pips
+input int      MFE_Pips = 1500;               // MFE: Trail aktivacija (pips)
+input int      MFE_TrailDist = 500;           // MFE: Trail distance (pips)
 
 // === STEALTH POSTAVKE ===
 input string   INFO4 = "=== STEALTH ===";
@@ -103,6 +108,11 @@ int      slDelaySeconds = 0;
 // Trailing
 bool     trailingLevel1Done = false;
 bool     trailingLevel2Done = false;
+bool     trailingLevel3Done = false;
+double   maxProfitPips = 0;
+int      randomBE = 0;
+int      randomL2 = 0;
+int      randomL3 = 0;
 
 // Points conversion
 double   pipValue;
@@ -387,9 +397,10 @@ void OpenBuy()
 {
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
 
-   // STEALTH: Ne salji TP brokeru!
-   double sl = 0;  // SL cemo poslati s odgodom
-   double tp = 0;  // TP nikad ne saljemo
+   // SL ODMAH - postavlja se odmah pri otvaranju trejda
+   double sl = ask - InitialSL_Pips * pipValue;
+   sl = NormalizeDouble(sl, _Digits);
+   double tp = 0;  // TP nikad ne saljemo (STEALTH)
 
    if(trade.Buy(LotSize, _Symbol, ask, sl, tp, "MultiTF BUY"))
    {
@@ -403,15 +414,19 @@ void OpenBuy()
       // Reset flags
       target1Hit = false;
       target2Hit = false;
-      slSentToBroker = false;
+      slSentToBroker = true;  // SL vec postavljen ODMAH
       trailingLevel1Done = false;
       trailingLevel2Done = false;
+      trailingLevel3Done = false;
+      maxProfitPips = 0;
 
-      // Postavi vrijeme za slanje SL-a (s odgodom 7-13 sekundi)
-      slDelaySeconds = StealthSL_DelayMin + MathRand() % (StealthSL_DelayMax - StealthSL_DelayMin + 1);
-      slSendTime = TimeCurrent() + slDelaySeconds;
+      // Random trailing offsets
+      randomBE = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
+      randomL2 = LockProfit_Min + MathRand() % (LockProfit_Max - LockProfit_Min + 1);
+      randomL3 = Lock3_Min + MathRand() % (Lock3_Max - Lock3_Min + 1);
 
-      Print("BUY opened at ", ask, ". SL will be sent in ", slDelaySeconds, " seconds");
+      Print("BUY opened at ", ask, ". SL: ", sl, " (ODMAH!)");
+      Print("Trail: L1=BE+", randomBE, " | L2=+", randomL2, " | L3=+", randomL3);
    }
    else
    {
@@ -426,9 +441,10 @@ void OpenSell()
 {
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
 
-   // STEALTH: Ne salji TP brokeru!
-   double sl = 0;
-   double tp = 0;
+   // SL ODMAH - postavlja se odmah pri otvaranju trejda
+   double sl = bid + InitialSL_Pips * pipValue;
+   sl = NormalizeDouble(sl, _Digits);
+   double tp = 0;  // TP nikad ne saljemo (STEALTH)
 
    if(trade.Sell(LotSize, _Symbol, bid, sl, tp, "MultiTF SELL"))
    {
@@ -442,15 +458,19 @@ void OpenSell()
       // Reset flags
       target1Hit = false;
       target2Hit = false;
-      slSentToBroker = false;
+      slSentToBroker = true;  // SL vec postavljen ODMAH
       trailingLevel1Done = false;
       trailingLevel2Done = false;
+      trailingLevel3Done = false;
+      maxProfitPips = 0;
 
-      // Postavi vrijeme za slanje SL-a
-      slDelaySeconds = StealthSL_DelayMin + MathRand() % (StealthSL_DelayMax - StealthSL_DelayMin + 1);
-      slSendTime = TimeCurrent() + slDelaySeconds;
+      // Random trailing offsets
+      randomBE = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
+      randomL2 = LockProfit_Min + MathRand() % (LockProfit_Max - LockProfit_Min + 1);
+      randomL3 = Lock3_Min + MathRand() % (Lock3_Max - Lock3_Min + 1);
 
-      Print("SELL opened at ", bid, ". SL will be sent in ", slDelaySeconds, " seconds");
+      Print("SELL opened at ", bid, ". SL: ", sl, " (ODMAH!)");
+      Print("Trail: L1=BE+", randomBE, " | L2=+", randomL2, " | L3=+", randomL3);
    }
    else
    {
@@ -567,7 +587,7 @@ void CheckTargets(double profitPips, double currentPrice)
 }
 
 //+------------------------------------------------------------------+
-//| MANAGE TRAILING STOP (2-LEVEL)                                    |
+//| MANAGE TRAILING STOP (3-LEVEL + MFE)                              |
 //+------------------------------------------------------------------+
 void ManageTrailing(double profitPips)
 {
@@ -576,41 +596,72 @@ void ManageTrailing(double profitPips)
    double currentSL = PositionGetDouble(POSITION_SL);
    double newSL = currentSL;
 
-   // Level 1: Na 500 pips, pomakni na BE + 38-43 pips (random)
-   if(!trailingLevel1Done && profitPips >= TrailingStart1)
-   {
-      int offset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
+   // Update MFE
+   if(profitPips > maxProfitPips)
+      maxProfitPips = profitPips;
 
+   // MFE TRAILING - ako profit >= MFE_Pips, trail MFE_TrailDist iza max
+   if(trailingLevel3Done && profitPips >= MFE_Pips)
+   {
       if(positionType == 0)  // BUY
-         newSL = entryPrice + offset * pipValue;
+         newSL = entryPrice + (maxProfitPips - MFE_TrailDist) * pipValue;
       else  // SELL
-         newSL = entryPrice - offset * pipValue;
+         newSL = entryPrice - (maxProfitPips - MFE_TrailDist) * pipValue;
+
+      newSL = NormalizeDouble(newSL, _Digits);
+
+      bool shouldMod = (positionType == 0 && newSL > currentSL) ||
+                       (positionType == 1 && (newSL < currentSL || currentSL == 0));
+
+      if(shouldMod && trade.PositionModify(currentTicket, newSL, 0))
+         Print("MFE TRAIL: SL @ ", newSL, " | Max: +", (int)maxProfitPips, " pips");
+   }
+   // Level 3: Na 1200 pips, zakljucaj 180-220 pips profita
+   else if(!trailingLevel3Done && trailingLevel2Done && profitPips >= TrailingStart3)
+   {
+      if(positionType == 0)  // BUY
+         newSL = entryPrice + randomL3 * pipValue;
+      else  // SELL
+         newSL = entryPrice - randomL3 * pipValue;
 
       newSL = NormalizeDouble(newSL, _Digits);
 
       if(trade.PositionModify(currentTicket, newSL, 0))
       {
-         trailingLevel1Done = true;
-         Print("TRAILING L1: SL moved to BE + ", offset, " pips (", newSL, ")");
+         trailingLevel3Done = true;
+         Print("TRAILING L3: Locked ", randomL3, " pips profit (SL at ", newSL, ")");
       }
    }
-
-   // Level 2: Na 800 pips, zakljucaj 150-200 pips profita (random)
-   if(!trailingLevel2Done && trailingLevel1Done && profitPips >= TrailingStart2)
+   // Level 2: Na 800 pips, zakljucaj 150-200 pips profita
+   else if(!trailingLevel2Done && trailingLevel1Done && profitPips >= TrailingStart2)
    {
-      int lockPips = LockProfit_Min + MathRand() % (LockProfit_Max - LockProfit_Min + 1);
-
       if(positionType == 0)  // BUY
-         newSL = entryPrice + lockPips * pipValue;
+         newSL = entryPrice + randomL2 * pipValue;
       else  // SELL
-         newSL = entryPrice - lockPips * pipValue;
+         newSL = entryPrice - randomL2 * pipValue;
 
       newSL = NormalizeDouble(newSL, _Digits);
 
       if(trade.PositionModify(currentTicket, newSL, 0))
       {
          trailingLevel2Done = true;
-         Print("TRAILING L2: Locked ", lockPips, " pips profit (SL at ", newSL, ")");
+         Print("TRAILING L2: Locked ", randomL2, " pips profit (SL at ", newSL, ")");
+      }
+   }
+   // Level 1: Na 500 pips, pomakni na BE + 38-43 pips
+   else if(!trailingLevel1Done && profitPips >= TrailingStart1)
+   {
+      if(positionType == 0)  // BUY
+         newSL = entryPrice + randomBE * pipValue;
+      else  // SELL
+         newSL = entryPrice - randomBE * pipValue;
+
+      newSL = NormalizeDouble(newSL, _Digits);
+
+      if(trade.PositionModify(currentTicket, newSL, 0))
+      {
+         trailingLevel1Done = true;
+         Print("TRAILING L1: SL moved to BE + ", randomBE, " pips (", newSL, ")");
       }
    }
 }
@@ -634,6 +685,12 @@ void CheckExistingPosition()
             hasOpenPosition = true;
             originalLots = PositionGetDouble(POSITION_VOLUME);
             slSentToBroker = (PositionGetDouble(POSITION_SL) != 0);
+
+            // Setup trailing offsets for existing position
+            randomBE = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
+            randomL2 = LockProfit_Min + MathRand() % (LockProfit_Max - LockProfit_Min + 1);
+            randomL3 = Lock3_Min + MathRand() % (Lock3_Max - Lock3_Min + 1);
+            maxProfitPips = 0;
 
             Print("Existing position found. Ticket: ", ticket);
             break;

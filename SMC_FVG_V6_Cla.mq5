@@ -1,6 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                              SMC_FVG_V6_Cla.mq5 |
-//|                   *** SMC FVG V6 - IMPROVED EDITION ***          |
+//|                   *** SMC FVG V6.2 - IMPROVED EDITION ***        |
+//|         Fixed: 05.03.2026 (Zagreb) - SL ODMAH + 3-level + MFE   |
 //|         Fair Value Gap Strategy with Full Confirmation          |
 //|                   + REJECTION CANDLE CONFIRMATION                |
 //|                   + EMA TREND FILTER                             |
@@ -10,8 +11,8 @@
 //|                   + NEWS & SPREAD FILTER                         |
 //|                   Date: 2026-02-24                               |
 //+------------------------------------------------------------------+
-#property copyright "SMC FVG V6 Cla (2026-02-24)"
-#property version   "6.00"
+#property copyright "SMC FVG V6.2 Cla (2026-03-05)"
+#property version   "6.20"
 #property strict
 #include <Trade\Trade.mqh>
 
@@ -39,8 +40,12 @@ struct TradeData
     int      slDelaySeconds;
     int      trailLevel;
     int      randomBEPips;
+    int      randomL2Pips;
+    int      randomL3Pips;
+    double   maxProfit;
     bool     slPlaced;
     int      barsInTrade;
+    int      direction;
 };
 
 //--- Input parameters
@@ -76,10 +81,18 @@ input group "=== STEALTH EXECUTION ==="
 input int      SLDelayMin       = 7;        // Min delay za SL (sekunde)
 input int      SLDelayMax       = 13;       // Max delay za SL (sekunde)
 
-input group "=== TRAILING STOP ==="
-input int      TrailActivatePips = 500;     // Aktivacija trailing-a (pips profit)
-input int      TrailBEPipsMin    = 38;      // BE + min pips
-input int      TrailBEPipsMax    = 43;      // BE + max pips
+input group "=== TRAILING STOP (3-LEVEL + MFE) ==="
+input int      Trail1_Pips       = 500;     // L1: Aktivacija BE (pips)
+input int      Trail1_BEMin      = 38;      // L1: BE + min pips
+input int      Trail1_BEMax      = 43;      // L1: BE + max pips
+input int      Trail2_Pips       = 800;     // L2: Lock profit aktivacija (pips)
+input int      Trail2_LockMin    = 150;     // L2: Lock min pips
+input int      Trail2_LockMax    = 200;     // L2: Lock max pips
+input int      Trail3_Pips       = 1200;    // L3: Lock profit aktivacija (pips)
+input int      Trail3_LockMin    = 180;     // L3: Lock min pips
+input int      Trail3_LockMax    = 220;     // L3: Lock max pips
+input int      MFE_Pips          = 1500;    // MFE: Trail aktivacija (pips)
+input int      MFE_TrailDist     = 500;     // MFE: Trail distance (pips)
 
 input group "=== LARGE CANDLE FILTER ==="
 input double   LargeCandleATR   = 3.0;      // Filter svijeća > X * ATR
@@ -658,7 +671,7 @@ void SyncTradesArray()
 //+------------------------------------------------------------------+
 //| Add Trade to tracking                                             |
 //+------------------------------------------------------------------+
-void AddTrade(ulong ticket, double entry, double sl, double tp, int slDelay, int bePips)
+void AddTrade(ulong ticket, double entry, double sl, double tp, int bePips, int l2Pips, int l3Pips, int dir)
 {
     ArrayResize(trades, tradesCount + 1);
     trades[tradesCount].ticket = ticket;
@@ -666,11 +679,15 @@ void AddTrade(ulong ticket, double entry, double sl, double tp, int slDelay, int
     trades[tradesCount].intendedSL = sl;
     trades[tradesCount].stealthTP = tp;
     trades[tradesCount].openTime = TimeCurrent();
-    trades[tradesCount].slDelaySeconds = slDelay;
+    trades[tradesCount].slDelaySeconds = 0;
     trades[tradesCount].trailLevel = 0;
     trades[tradesCount].randomBEPips = bePips;
-    trades[tradesCount].slPlaced = false;
+    trades[tradesCount].randomL2Pips = l2Pips;
+    trades[tradesCount].randomL3Pips = l3Pips;
+    trades[tradesCount].maxProfit = 0;
+    trades[tradesCount].slPlaced = true;  // SL ODMAH postavljen
     trades[tradesCount].barsInTrade = 0;
+    trades[tradesCount].direction = dir;
     tradesCount++;
 }
 
@@ -726,23 +743,24 @@ void ExecuteBuy(double slPrice, double zoneTop, double zoneBottom)
     slPrice = NormalizeDouble(slPrice, digits);
     tp = NormalizeDouble(tp, digits);
 
-    int slDelay = RandomRange(SLDelayMin, SLDelayMax);
-    int bePips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
+    int bePips = RandomRange(Trail1_BEMin, Trail1_BEMax);
+    int l2Pips = RandomRange(Trail2_LockMin, Trail2_LockMax);
+    int l3Pips = RandomRange(Trail3_LockMin, Trail3_LockMax);
 
-    // Stealth entry (no SL/TP)
-    if(trade.Buy(lots, _Symbol, price, 0, 0, "FVG V6 BUY"))
+    // SL ODMAH - postavlja se odmah pri otvaranju trejda
+    if(trade.Buy(lots, _Symbol, price, slPrice, 0, "FVG V6 BUY"))
     {
         ulong ticket = trade.ResultOrder();
-        AddTrade(ticket, price, slPrice, tp, slDelay, bePips);
+        AddTrade(ticket, price, slPrice, tp, bePips, l2Pips, l3Pips, 1);
 
         Print("╔════════════════════════════════════════════════╗");
-        Print("║ ✓ FVG V6 STEALTH BUY                           ║");
+        Print("║ ✓ FVG V6 BUY (SL ODMAH)                        ║");
         Print("╠════════════════════════════════════════════════╣");
         Print("║ Entry: ", price, " | Lots: ", lots);
         Print("║ FVG Zone: ", zoneBottom, " - ", zoneTop);
-        Print("║ SL: ", slPrice, " (delay ", slDelay, "s)");
-        Print("║ TP: ", tp, " (R:R 1:", RiskReward, ")");
-        Print("║ Trail: BE+", bePips, " pips @ ", TrailActivatePips, " pips");
+        Print("║ SL: ", slPrice, " (ODMAH!)");
+        Print("║ TP: ", tp, " (R:R 1:", RiskReward, ") STEALTH");
+        Print("║ Trail: L1=BE+", bePips, " | L2=+", l2Pips, " | L3=+", l3Pips);
         Print("╚════════════════════════════════════════════════╝");
 
         totalBuys++;
@@ -768,23 +786,24 @@ void ExecuteSell(double slPrice, double zoneTop, double zoneBottom)
     slPrice = NormalizeDouble(slPrice, digits);
     tp = NormalizeDouble(tp, digits);
 
-    int slDelay = RandomRange(SLDelayMin, SLDelayMax);
-    int bePips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
+    int bePips = RandomRange(Trail1_BEMin, Trail1_BEMax);
+    int l2Pips = RandomRange(Trail2_LockMin, Trail2_LockMax);
+    int l3Pips = RandomRange(Trail3_LockMin, Trail3_LockMax);
 
-    // Stealth entry (no SL/TP)
-    if(trade.Sell(lots, _Symbol, price, 0, 0, "FVG V6 SELL"))
+    // SL ODMAH - postavlja se odmah pri otvaranju trejda
+    if(trade.Sell(lots, _Symbol, price, slPrice, 0, "FVG V6 SELL"))
     {
         ulong ticket = trade.ResultOrder();
-        AddTrade(ticket, price, slPrice, tp, slDelay, bePips);
+        AddTrade(ticket, price, slPrice, tp, bePips, l2Pips, l3Pips, -1);
 
         Print("╔════════════════════════════════════════════════╗");
-        Print("║ ✓ FVG V6 STEALTH SELL                          ║");
+        Print("║ ✓ FVG V6 SELL (SL ODMAH)                       ║");
         Print("╠════════════════════════════════════════════════╣");
         Print("║ Entry: ", price, " | Lots: ", lots);
         Print("║ FVG Zone: ", zoneBottom, " - ", zoneTop);
-        Print("║ SL: ", slPrice, " (delay ", slDelay, "s)");
-        Print("║ TP: ", tp, " (R:R 1:", RiskReward, ")");
-        Print("║ Trail: BE+", bePips, " pips @ ", TrailActivatePips, " pips");
+        Print("║ SL: ", slPrice, " (ODMAH!)");
+        Print("║ TP: ", tp, " (R:R 1:", RiskReward, ") STEALTH");
+        Print("║ Trail: L1=BE+", bePips, " | L2=+", l2Pips, " | L3=+", l3Pips);
         Print("╚════════════════════════════════════════════════╝");
 
         totalSells++;
@@ -817,17 +836,14 @@ void ManageStealthPositions()
 
         int dir = (posType == POSITION_TYPE_BUY) ? 1 : -1;
 
-        //=== 1. DELAYED SL PLACEMENT ===
+        //=== 1. BACKUP SL CHECK (ako SL nije postavljen) ===
         if(!trades[i].slPlaced && trades[i].intendedSL != 0)
         {
-            if(TimeCurrent() >= trades[i].openTime + trades[i].slDelaySeconds)
+            double sl = NormalizeDouble(trades[i].intendedSL, digits);
+            if(trade.PositionModify(ticket, sl, 0))
             {
-                double sl = NormalizeDouble(trades[i].intendedSL, digits);
-                if(trade.PositionModify(ticket, sl, 0))
-                {
-                    trades[i].slPlaced = true;
-                    Print("FVG STEALTH [", ticket, "]: SL postavljen na ", sl);
-                }
+                trades[i].slPlaced = true;
+                Print("FVG BACKUP [", ticket, "]: SL postavljen na ", sl);
             }
         }
 
@@ -847,39 +863,104 @@ void ManageStealthPositions()
             }
         }
 
-        //=== 3. TRAILING STOP ===
-        if(trades[i].slPlaced && trades[i].trailLevel == 0)
-        {
-            double profitPips = GetProfitPips(ticket, trades[i].entryPrice, dir);
+        //=== 3. 3-LEVEL TRAILING + MFE ===
+        double profitPips = GetProfitPips(ticket, trades[i].entryPrice, trades[i].direction);
 
-            if(profitPips >= TrailActivatePips * 10)  // Convert to points
+        // Update MFE
+        if(profitPips > trades[i].maxProfit)
+            trades[i].maxProfit = profitPips;
+
+        // MFE TRAILING - ako profit >= MFE_Pips, trail MFE_TrailDist iza max
+        if(trades[i].trailLevel >= 3 && profitPips >= MFE_Pips * 10)  // Convert to points
+        {
+            double mfeSL;
+            if(trades[i].direction == 1)
             {
-                double newSL;
-                if(dir == 1)
+                mfeSL = trades[i].entryPrice + (trades[i].maxProfit - MFE_TrailDist * 10) * point;
+                mfeSL = NormalizeDouble(mfeSL, digits);
+                if(mfeSL > currentSL && trade.PositionModify(ticket, mfeSL, 0))
+                    Print("FVG MFE [", ticket, "]: Trail @ ", mfeSL);
+            }
+            else
+            {
+                mfeSL = trades[i].entryPrice - (trades[i].maxProfit - MFE_TrailDist * 10) * point;
+                mfeSL = NormalizeDouble(mfeSL, digits);
+                if((mfeSL < currentSL || currentSL == 0) && trade.PositionModify(ticket, mfeSL, 0))
+                    Print("FVG MFE [", ticket, "]: Trail @ ", mfeSL);
+            }
+        }
+        // L3: Lock 180-220 pips @ 1200 pips profit
+        else if(trades[i].trailLevel == 2 && profitPips >= Trail3_Pips * 10)
+        {
+            double newSL;
+            if(trades[i].direction == 1)
+            {
+                newSL = trades[i].entryPrice + trades[i].randomL3Pips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL > currentSL && trade.PositionModify(ticket, newSL, 0))
                 {
-                    newSL = trades[i].entryPrice + trades[i].randomBEPips * point;
-                    newSL = NormalizeDouble(newSL, digits);
-                    if(newSL > currentSL)
-                    {
-                        if(trade.PositionModify(ticket, newSL, 0))
-                        {
-                            trades[i].trailLevel = 1;
-                            Print("FVG TRAIL [", ticket, "]: BE+", trades[i].randomBEPips, " pips");
-                        }
-                    }
+                    trades[i].trailLevel = 3;
+                    Print("FVG L3 [", ticket, "]: Lock +", trades[i].randomL3Pips);
                 }
-                else
+            }
+            else
+            {
+                newSL = trades[i].entryPrice - trades[i].randomL3Pips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if((newSL < currentSL || currentSL == 0) && trade.PositionModify(ticket, newSL, 0))
                 {
-                    newSL = trades[i].entryPrice - trades[i].randomBEPips * point;
-                    newSL = NormalizeDouble(newSL, digits);
-                    if(newSL < currentSL || currentSL == 0)
-                    {
-                        if(trade.PositionModify(ticket, newSL, 0))
-                        {
-                            trades[i].trailLevel = 1;
-                            Print("FVG TRAIL [", ticket, "]: BE+", trades[i].randomBEPips, " pips");
-                        }
-                    }
+                    trades[i].trailLevel = 3;
+                    Print("FVG L3 [", ticket, "]: Lock +", trades[i].randomL3Pips);
+                }
+            }
+        }
+        // L2: Lock 150-200 pips @ 800 pips profit
+        else if(trades[i].trailLevel == 1 && profitPips >= Trail2_Pips * 10)
+        {
+            double newSL;
+            if(trades[i].direction == 1)
+            {
+                newSL = trades[i].entryPrice + trades[i].randomL2Pips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL > currentSL && trade.PositionModify(ticket, newSL, 0))
+                {
+                    trades[i].trailLevel = 2;
+                    Print("FVG L2 [", ticket, "]: Lock +", trades[i].randomL2Pips);
+                }
+            }
+            else
+            {
+                newSL = trades[i].entryPrice - trades[i].randomL2Pips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if((newSL < currentSL || currentSL == 0) && trade.PositionModify(ticket, newSL, 0))
+                {
+                    trades[i].trailLevel = 2;
+                    Print("FVG L2 [", ticket, "]: Lock +", trades[i].randomL2Pips);
+                }
+            }
+        }
+        // L1: BE + 38-43 pips @ 500 pips profit
+        else if(trades[i].trailLevel == 0 && profitPips >= Trail1_Pips * 10)
+        {
+            double newSL;
+            if(trades[i].direction == 1)
+            {
+                newSL = trades[i].entryPrice + trades[i].randomBEPips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL > currentSL && trade.PositionModify(ticket, newSL, 0))
+                {
+                    trades[i].trailLevel = 1;
+                    Print("FVG L1 [", ticket, "]: BE+", trades[i].randomBEPips);
+                }
+            }
+            else
+            {
+                newSL = trades[i].entryPrice - trades[i].randomBEPips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if((newSL < currentSL || currentSL == 0) && trade.PositionModify(ticket, newSL, 0))
+                {
+                    trades[i].trailLevel = 1;
+                    Print("FVG L1 [", ticket, "]: BE+", trades[i].randomBEPips);
                 }
             }
         }

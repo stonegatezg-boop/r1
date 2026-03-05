@@ -4,7 +4,7 @@
 //|   Timeframe: M5 entry  |  H1 bias  |  H4 structure               |
 //|   Instrument: XAUUSD (Gold vs USD)                               |
 //|   Created: 02.03.2026 15:30 (Zagreb)                             |
-//|   Fixed: 02.03.2026 16:30 (Zagreb) - Smart trailing, no KZ      |
+//|   Fixed: 05.03.2026 (Zagreb) - SL ODMAH + 3-level trail + MFE   |
 //|                                                                  |
 //|  IMPROVEMENTS over V3:                                           |
 //|  - Relaxed sweep detection (displacement-based)                  |
@@ -17,8 +17,8 @@
 //|  - 3-target partial close system                                 |
 //|  - SMART TRAILING (continues trailing after L2, never gives back)|
 //+------------------------------------------------------------------+
-#property copyright   "XAUUSD Ghost EA v4.0 Cla"
-#property version     "4.00"
+#property copyright   "XAUUSD Ghost EA v4.2 Cla"
+#property version     "4.20"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -70,13 +70,18 @@ input int     Target1_Pips      = 200;      // Target 1 - zatvori 33%
 input int     Target2_Pips      = 350;      // Target 2 - zatvori 50% preostalog
 input int     Target3_Pips      = 600;      // Target 3 - zatvori ostatak
 
-input group "═══ SMART TRAILING ═══"
-input int     TrailingStart1    = 300;      // L1: Pips za BE move
-input int     BE_LockPips       = 40;       // L1: Lock pips na BE
-input int     TrailingStart2    = 500;      // L2: Pips za profit lock
-input int     ProfitLockPips    = 150;      // L2: Lock profit pips
-input int     TrailingStart3    = 800;      // L3: Smart trail aktivacija
-input int     TrailDistance     = 250;      // L3: Koliko pips iza cijene (SMART)
+input group "═══ TRAILING (3-LEVEL + MFE) ═══"
+input int     TrailingStart1    = 500;      // L1: Pips za BE move
+input int     BE_LockMin        = 38;       // L1: BE + min pips
+input int     BE_LockMax        = 43;       // L1: BE + max pips
+input int     TrailingStart2    = 800;      // L2: Pips za profit lock
+input int     ProfitLockMin     = 150;      // L2: Lock min pips
+input int     ProfitLockMax     = 200;      // L2: Lock max pips
+input int     TrailingStart3    = 1200;     // L3: Lock profit aktivacija
+input int     Lock3Min          = 180;      // L3: Lock min pips
+input int     Lock3Max          = 220;      // L3: Lock max pips
+input int     MFE_Pips          = 1500;     // MFE: Trail aktivacija (pips)
+input int     MFE_TrailDist     = 500;      // MFE: Trail distance (pips)
 
 input group "═══ STEALTH & TIMING ═══"
 input int     SL_DelayMin       = 7;        // Min delay za SL (sekunde)
@@ -139,6 +144,11 @@ struct PartialTrack {
    double   originalLot;
    double   entryPrice;
    int      direction;     // +1 buy, -1 sell
+   int      trailLevel;    // 0=none, 1=BE, 2=lock, 3=lock200
+   int      randomBE;      // Random BE offset
+   int      randomL2;      // Random L2 lock
+   int      randomL3;      // Random L3 lock
+   double   maxProfit;     // MFE tracking
 };
 PartialTrack g_partials[];
 
@@ -511,22 +521,19 @@ void TryEntry(MqlDateTime &dt)
             double tp = UseStealthTP ? 0 : NormalizeDouble(ask + tp_pts, g_digits);
             double lot = CalcLot(sl_pts);
 
-            // Stealth: send without TP, we'll close manually
-            if(trade.Buy(lot, _Symbol, ask, 0, tp, StringFormat("GHOST_BUY_%d", i)))
+            // SL ODMAH - postavlja se odmah pri otvaranju trejda
+            if(trade.Buy(lot, _Symbol, ask, sl, tp, StringFormat("GHOST_BUY_%d", i)))
             {
                ulong ticket = trade.ResultOrder();
                Print("[GHOST V4] ══════════════════════════════════════");
-               Print("[GHOST V4] ✓ BUY ULAZAN @ ", ask);
-               Print("[GHOST V4]   SL (delayed): ", sl, " | TP (stealth): ", ask + tp_pts);
+               Print("[GHOST V4] ✓ BUY ULAZAN @ ", ask, " (SL ODMAH!)");
+               Print("[GHOST V4]   SL: ", sl, " (ODMAH!) | TP (stealth): ", ask + tp_pts);
                Print("[GHOST V4]   Lot: ", lot, " | R:R: ", DoubleToString(tp_pts / sl_pts, 2));
                Print("[GHOST V4]   FVG zona: ", g_fvg[i].bottom, " - ", g_fvg[i].top);
                Print("[GHOST V4]   ENTRY HOUR (GMT): ", dt.hour, ":00 - za analizu performansi");
                Print("[GHOST V4] ══════════════════════════════════════");
 
-               // Queue delayed SL
-               AddPendingSL(ticket, sl);
-
-               // Track for partial closes
+               // Track for partial closes (SL vec postavljen)
                AddPartialTrack(ticket, lot, ask, +1);
 
                g_fvg[i].active = false;
@@ -547,18 +554,19 @@ void TryEntry(MqlDateTime &dt)
             double tp = UseStealthTP ? 0 : NormalizeDouble(bid - tp_pts, g_digits);
             double lot = CalcLot(sl_pts);
 
-            if(trade.Sell(lot, _Symbol, bid, 0, tp, StringFormat("GHOST_SELL_%d", i)))
+            // SL ODMAH - postavlja se odmah pri otvaranju trejda
+            if(trade.Sell(lot, _Symbol, bid, sl, tp, StringFormat("GHOST_SELL_%d", i)))
             {
                ulong ticket = trade.ResultOrder();
                Print("[GHOST V4] ══════════════════════════════════════");
-               Print("[GHOST V4] ✓ SELL ULAZAN @ ", bid);
-               Print("[GHOST V4]   SL (delayed): ", sl, " | TP (stealth): ", bid - tp_pts);
+               Print("[GHOST V4] ✓ SELL ULAZAN @ ", bid, " (SL ODMAH!)");
+               Print("[GHOST V4]   SL: ", sl, " (ODMAH!) | TP (stealth): ", bid - tp_pts);
                Print("[GHOST V4]   Lot: ", lot, " | R:R: ", DoubleToString(tp_pts / sl_pts, 2));
                Print("[GHOST V4]   FVG zona: ", g_fvg[i].bottom, " - ", g_fvg[i].top);
                Print("[GHOST V4]   ENTRY HOUR (GMT): ", dt.hour, ":00 - za analizu performansi");
                Print("[GHOST V4] ══════════════════════════════════════");
 
-               AddPendingSL(ticket, sl);
+               // Track for partial closes (SL vec postavljen)
                AddPartialTrack(ticket, lot, bid, -1);
 
                g_fvg[i].active = false;
@@ -636,38 +644,58 @@ void ManageOpenTrades()
             }
          }
 
-         // === SMART TRAILING ===
-         // Level 1: Move to BE + lock pips
-         if(profitPips >= TrailingStart1 && profitPips < TrailingStart2)
+         // === 3-LEVEL TRAILING + MFE ===
+         // Update MFE
+         if(pIdx >= 0 && profitPips > g_partials[pIdx].maxProfit)
+            g_partials[pIdx].maxProfit = profitPips;
+
+         // MFE TRAILING - ako profit >= MFE_Pips, trail MFE_TrailDist iza max
+         if(pIdx >= 0 && g_partials[pIdx].trailLevel >= 3 && profitPips >= MFE_Pips)
          {
-            double newSL = NormalizeDouble(open + BE_LockPips * pipValue, g_digits);
-            if(curSL < newSL)
+            double mfeSL = NormalizeDouble(open + (g_partials[pIdx].maxProfit - MFE_TrailDist) * pipValue, g_digits);
+            if(mfeSL > curSL)
             {
-               trade.PositionModify(ticket, newSL, curTP);
-               Print("[GHOST V4] TRAILING L1: SL moved to BE+", BE_LockPips, " @ ", newSL);
+               trade.PositionModify(ticket, mfeSL, curTP);
+               Print("[GHOST V4] MFE TRAIL: SL @ ", mfeSL, " | Max: +", (int)g_partials[pIdx].maxProfit, " pips");
             }
          }
-
-         // Level 2: Lock more profit
-         if(profitPips >= TrailingStart2 && profitPips < TrailingStart3)
+         // L3: Lock 180-220 pips @ 1200 pips profit
+         else if(pIdx >= 0 && g_partials[pIdx].trailLevel == 2 && profitPips >= TrailingStart3)
          {
-            double newSL = NormalizeDouble(open + ProfitLockPips * pipValue, g_digits);
-            if(curSL < newSL)
-            {
-               trade.PositionModify(ticket, newSL, curTP);
-               Print("[GHOST V4] TRAILING L2: Locked ", ProfitLockPips, " pips @ ", newSL);
-            }
-         }
-
-         // Level 3: SMART TRAIL - continues following price!
-         // SL stays TrailDistance pips behind current price
-         if(profitPips >= TrailingStart3)
-         {
-            double newSL = NormalizeDouble(bid - TrailDistance * pipValue, g_digits);
+            double newSL = NormalizeDouble(open + g_partials[pIdx].randomL3 * pipValue, g_digits);
             if(newSL > curSL)
             {
-               trade.PositionModify(ticket, newSL, curTP);
-               Print("[GHOST V4] SMART TRAIL: SL @ ", newSL, " | Profit: +", (int)profitPips, " pips | Locked: +", (int)((newSL - open) / pipValue), " pips");
+               if(trade.PositionModify(ticket, newSL, curTP))
+               {
+                  g_partials[pIdx].trailLevel = 3;
+                  Print("[GHOST V4] L3: Lock +", g_partials[pIdx].randomL3, " @ ", newSL);
+               }
+            }
+         }
+         // L2: Lock 150-200 pips @ 800 pips profit
+         else if(pIdx >= 0 && g_partials[pIdx].trailLevel == 1 && profitPips >= TrailingStart2)
+         {
+            double newSL = NormalizeDouble(open + g_partials[pIdx].randomL2 * pipValue, g_digits);
+            if(newSL > curSL)
+            {
+               if(trade.PositionModify(ticket, newSL, curTP))
+               {
+                  g_partials[pIdx].trailLevel = 2;
+                  Print("[GHOST V4] L2: Lock +", g_partials[pIdx].randomL2, " @ ", newSL);
+               }
+            }
+         }
+         // L1: BE + 38-43 pips @ 500 pips profit
+         else if(pIdx >= 0 && g_partials[pIdx].trailLevel == 0 && profitPips >= TrailingStart1)
+         {
+            double newSL = NormalizeDouble(open + g_partials[pIdx].randomBE * pipValue, g_digits);
+            if(newSL > curSL)
+            {
+               if(trade.PositionModify(ticket, newSL, curTP))
+               {
+                  g_partials[pIdx].trailLevel = 1;
+                  Print("[GHOST V4] L1: BE+", g_partials[pIdx].randomBE, " @ ", newSL);
+               }
             }
          }
       }
@@ -713,35 +741,58 @@ void ManageOpenTrades()
             }
          }
 
-         // === SMART TRAILING ===
-         if(profitPips >= TrailingStart1 && profitPips < TrailingStart2)
+         // === 3-LEVEL TRAILING + MFE ===
+         // Update MFE
+         if(pIdx >= 0 && profitPips > g_partials[pIdx].maxProfit)
+            g_partials[pIdx].maxProfit = profitPips;
+
+         // MFE TRAILING - ako profit >= MFE_Pips, trail MFE_TrailDist iza max
+         if(pIdx >= 0 && g_partials[pIdx].trailLevel >= 3 && profitPips >= MFE_Pips)
          {
-            double newSL = NormalizeDouble(open - BE_LockPips * pipValue, g_digits);
-            if(curSL > newSL || curSL == 0)
+            double mfeSL = NormalizeDouble(open - (g_partials[pIdx].maxProfit - MFE_TrailDist) * pipValue, g_digits);
+            if(mfeSL < curSL || curSL == 0)
             {
-               trade.PositionModify(ticket, newSL, curTP);
-               Print("[GHOST V4] TRAILING L1: SL moved to BE+", BE_LockPips, " @ ", newSL);
+               trade.PositionModify(ticket, mfeSL, curTP);
+               Print("[GHOST V4] MFE TRAIL: SL @ ", mfeSL, " | Max: +", (int)g_partials[pIdx].maxProfit, " pips");
             }
          }
-
-         if(profitPips >= TrailingStart2 && profitPips < TrailingStart3)
+         // L3: Lock 180-220 pips @ 1200 pips profit
+         else if(pIdx >= 0 && g_partials[pIdx].trailLevel == 2 && profitPips >= TrailingStart3)
          {
-            double newSL = NormalizeDouble(open - ProfitLockPips * pipValue, g_digits);
-            if(curSL > newSL || curSL == 0)
-            {
-               trade.PositionModify(ticket, newSL, curTP);
-               Print("[GHOST V4] TRAILING L2: Locked ", ProfitLockPips, " pips @ ", newSL);
-            }
-         }
-
-         // Level 3: SMART TRAIL - continues following price!
-         if(profitPips >= TrailingStart3)
-         {
-            double newSL = NormalizeDouble(ask + TrailDistance * pipValue, g_digits);
+            double newSL = NormalizeDouble(open - g_partials[pIdx].randomL3 * pipValue, g_digits);
             if(newSL < curSL || curSL == 0)
             {
-               trade.PositionModify(ticket, newSL, curTP);
-               Print("[GHOST V4] SMART TRAIL: SL @ ", newSL, " | Profit: +", (int)profitPips, " pips | Locked: +", (int)((open - newSL) / pipValue), " pips");
+               if(trade.PositionModify(ticket, newSL, curTP))
+               {
+                  g_partials[pIdx].trailLevel = 3;
+                  Print("[GHOST V4] L3: Lock +", g_partials[pIdx].randomL3, " @ ", newSL);
+               }
+            }
+         }
+         // L2: Lock 150-200 pips @ 800 pips profit
+         else if(pIdx >= 0 && g_partials[pIdx].trailLevel == 1 && profitPips >= TrailingStart2)
+         {
+            double newSL = NormalizeDouble(open - g_partials[pIdx].randomL2 * pipValue, g_digits);
+            if(newSL < curSL || curSL == 0)
+            {
+               if(trade.PositionModify(ticket, newSL, curTP))
+               {
+                  g_partials[pIdx].trailLevel = 2;
+                  Print("[GHOST V4] L2: Lock +", g_partials[pIdx].randomL2, " @ ", newSL);
+               }
+            }
+         }
+         // L1: BE + 38-43 pips @ 500 pips profit
+         else if(pIdx >= 0 && g_partials[pIdx].trailLevel == 0 && profitPips >= TrailingStart1)
+         {
+            double newSL = NormalizeDouble(open - g_partials[pIdx].randomBE * pipValue, g_digits);
+            if(newSL < curSL || curSL == 0)
+            {
+               if(trade.PositionModify(ticket, newSL, curTP))
+               {
+                  g_partials[pIdx].trailLevel = 1;
+                  Print("[GHOST V4] L1: BE+", g_partials[pIdx].randomBE, " @ ", newSL);
+               }
             }
          }
       }
@@ -812,6 +863,11 @@ void AddPartialTrack(ulong ticket, double lot, double entry, int dir)
    g_partials[size].originalLot = lot;
    g_partials[size].entryPrice  = entry;
    g_partials[size].direction   = dir;
+   g_partials[size].trailLevel  = 0;
+   g_partials[size].randomBE    = BE_LockMin + MathRand() % (BE_LockMax - BE_LockMin + 1);
+   g_partials[size].randomL2    = ProfitLockMin + MathRand() % (ProfitLockMax - ProfitLockMin + 1);
+   g_partials[size].randomL3    = Lock3Min + MathRand() % (Lock3Max - Lock3Min + 1);
+   g_partials[size].maxProfit   = 0;
 }
 
 int FindPartialTrack(ulong ticket)

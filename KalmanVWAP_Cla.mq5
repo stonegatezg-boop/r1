@@ -1,6 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                              KalmanVWAP_Cla.mq5 |
-//|                   *** Kalman VWAP Cla v1.0 ***                   |
+//|                   *** Kalman VWAP Cla v2.2 ***                   |
+//|         Fixed: 05.03.2026 (Zagreb) - SL ODMAH + 3-level trail   |
 //|         Kalman Filter + VWAP Fusion Strategy                    |
 //|                   + STEALTH EXECUTION (TP/SL)                   |
 //|                   + NEWS FILTER & SPREAD FILTER                 |
@@ -9,7 +10,7 @@
 //|                   Optimized for XAUUSD                          |
 //|                   Date: 2026-02-24                              |
 //+------------------------------------------------------------------+
-#property copyright "KalmanVWAP Cla v1.0 (2026-02-24)"
+#property copyright "KalmanVWAP Cla v2.2 (2026-03-05)"
 #property version   "1.00"
 #property strict
 #include <Trade\Trade.mqh>
@@ -28,8 +29,11 @@ struct TradeData
     int      barsInTrade;
 
     // Trailing varijable (per-trade)
-    int      trailLevel;          // 0=none, 1=BE activated
+    int      trailLevel;          // 0=none, 1=BE, 2=lock, 3=lock200
     int      randomBEPips;        // Random 38-43 (generira se jednom)
+    int      randomL2Pips;        // Random 150-200 (lock profit)
+    int      randomL3Pips;        // Random 180-220 (lock profit L3)
+    double   maxProfit;           // MFE tracking
 };
 
 //--- Input parameters
@@ -62,10 +66,18 @@ input group "=== LARGE CANDLE FILTER ==="
 input double   LargeCandleATR    = 3.0;     // Filter svijeća > X * ATR
 input int      ATR_Period        = 14;      // ATR Period
 
-input group "=== TRAILING STOP (HUMAN-LIKE) ==="
-input int      TrailActivatePips = 500;     // Aktivacija trailing-a (pips profit)
-input int      TrailBEPipsMin    = 38;      // BE + min pips
-input int      TrailBEPipsMax    = 43;      // BE + max pips
+input group "=== TRAILING STOP (3-LEVEL + MFE) ==="
+input int      Trail1_Pips       = 500;     // L1: Aktivacija BE (pips)
+input int      Trail1_BEMin      = 38;      // L1: BE + min pips
+input int      Trail1_BEMax      = 43;      // L1: BE + max pips
+input int      Trail2_Pips       = 800;     // L2: Lock profit aktivacija (pips)
+input int      Trail2_LockMin    = 150;     // L2: Lock min pips
+input int      Trail2_LockMax    = 200;     // L2: Lock max pips
+input int      Trail3_Pips       = 1200;    // L3: Lock profit aktivacija (pips)
+input int      Trail3_LockMin    = 180;     // L3: Lock min pips
+input int      Trail3_LockMax    = 220;     // L3: Lock max pips
+input int      MFE_Pips          = 1500;    // MFE: Trail aktivacija (pips)
+input int      MFE_TrailDist     = 500;     // MFE: Trail distance (pips)
 
 input group "=== NEWS FILTER ==="
 input bool     UseNewsFilter     = true;    // Koristi News Filter
@@ -618,7 +630,7 @@ void SyncTradesArray()
 //+------------------------------------------------------------------+
 //| Add Trade to tracking                                             |
 //+------------------------------------------------------------------+
-void AddTrade(ulong ticket, double entry, double sl, double tp, int dir, int slDelay, int bePips)
+void AddTrade(ulong ticket, double entry, double sl, double tp, int dir, int bePips, int l2Pips, int l3Pips)
 {
     ArrayResize(trades, tradesCount + 1);
     trades[tradesCount].ticket = ticket;
@@ -626,12 +638,15 @@ void AddTrade(ulong ticket, double entry, double sl, double tp, int dir, int slD
     trades[tradesCount].intendedSL = sl;
     trades[tradesCount].stealthTP = tp;
     trades[tradesCount].openTime = TimeCurrent();
-    trades[tradesCount].slDelaySeconds = slDelay;
+    trades[tradesCount].slDelaySeconds = 0;
     trades[tradesCount].direction = dir;
-    trades[tradesCount].slPlaced = false;
+    trades[tradesCount].slPlaced = true;  // SL ODMAH postavljen
     trades[tradesCount].barsInTrade = 0;
     trades[tradesCount].trailLevel = 0;
     trades[tradesCount].randomBEPips = bePips;
+    trades[tradesCount].randomL2Pips = l2Pips;
+    trades[tradesCount].randomL3Pips = l3Pips;
+    trades[tradesCount].maxProfit = 0;
     tradesCount++;
 }
 
@@ -691,17 +706,14 @@ void ManageAllPositions()
         else
             currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
 
-        //=== 1. DELAYED SL PLACEMENT (Stealth) ===
+        //=== 1. BACKUP SL CHECK (ako SL nije postavljen) ===
         if(!trades[i].slPlaced && trades[i].intendedSL != 0)
         {
-            if(TimeCurrent() >= trades[i].openTime + trades[i].slDelaySeconds)
+            double sl = NormalizeDouble(trades[i].intendedSL, digits);
+            if(trade.PositionModify(ticket, sl, 0))
             {
-                double sl = NormalizeDouble(trades[i].intendedSL, digits);
-                if(trade.PositionModify(ticket, sl, 0))
-                {
-                    trades[i].slPlaced = true;
-                    Print("KVWAP STEALTH [", ticket, "]: SL postavljen na ", sl, " (delay ", trades[i].slDelaySeconds, "s)");
-                }
+                trades[i].slPlaced = true;
+                Print("KVWAP BACKUP [", ticket, "]: SL postavljen na ", sl);
             }
         }
 
@@ -721,38 +733,127 @@ void ManageAllPositions()
             }
         }
 
-        //=== 3. HUMAN-LIKE TRAILING ===
-        if(trades[i].slPlaced && trades[i].trailLevel == 0)
-        {
-            double profitPips = GetProfitPips(ticket, trades[i].entryPrice, trades[i].direction);
+        //=== 3. 3-LEVEL TRAILING + MFE ===
+        double profitPips = GetProfitPips(ticket, trades[i].entryPrice, trades[i].direction);
 
-            if(profitPips >= TrailActivatePips)
+        // Update MFE
+        if(profitPips > trades[i].maxProfit)
+            trades[i].maxProfit = profitPips;
+
+        // MFE TRAILING (Level 4) - ako profit >= MFE_Pips, trail MFE_TrailDist iza max
+        if(trades[i].trailLevel >= 3 && profitPips >= MFE_Pips)
+        {
+            double mfeSL;
+            if(trades[i].direction == 1)
             {
-                double newSL;
-                if(trades[i].direction == 1)
+                mfeSL = trades[i].entryPrice + (trades[i].maxProfit - MFE_TrailDist) * point;
+                mfeSL = NormalizeDouble(mfeSL, digits);
+                if(mfeSL > currentSL)
                 {
-                    newSL = trades[i].entryPrice + trades[i].randomBEPips * point;
-                    newSL = NormalizeDouble(newSL, digits);
-                    if(newSL > currentSL)
+                    if(trade.PositionModify(ticket, mfeSL, 0))
+                        Print("KVWAP MFE [", ticket, "]: Trail @ ", mfeSL, " (max profit: ", (int)trades[i].maxProfit, " pips)");
+                }
+            }
+            else
+            {
+                mfeSL = trades[i].entryPrice - (trades[i].maxProfit - MFE_TrailDist) * point;
+                mfeSL = NormalizeDouble(mfeSL, digits);
+                if(mfeSL < currentSL || currentSL == 0)
+                {
+                    if(trade.PositionModify(ticket, mfeSL, 0))
+                        Print("KVWAP MFE [", ticket, "]: Trail @ ", mfeSL, " (max profit: ", (int)trades[i].maxProfit, " pips)");
+                }
+            }
+        }
+        // L3: Lock 180-220 pips @ 1200 pips profit
+        else if(trades[i].trailLevel == 2 && profitPips >= Trail3_Pips)
+        {
+            double newSL;
+            if(trades[i].direction == 1)
+            {
+                newSL = trades[i].entryPrice + trades[i].randomL3Pips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL > currentSL)
+                {
+                    if(trade.PositionModify(ticket, newSL, 0))
                     {
-                        if(trade.PositionModify(ticket, newSL, 0))
-                        {
-                            trades[i].trailLevel = 1;
-                            Print("KVWAP TRAIL [", ticket, "]: BE+", trades[i].randomBEPips, " pips");
-                        }
+                        trades[i].trailLevel = 3;
+                        Print("KVWAP L3 [", ticket, "]: Lock +", trades[i].randomL3Pips, " pips");
                     }
                 }
-                else
+            }
+            else
+            {
+                newSL = trades[i].entryPrice - trades[i].randomL3Pips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL < currentSL || currentSL == 0)
                 {
-                    newSL = trades[i].entryPrice - trades[i].randomBEPips * point;
-                    newSL = NormalizeDouble(newSL, digits);
-                    if(newSL < currentSL || currentSL == 0)
+                    if(trade.PositionModify(ticket, newSL, 0))
                     {
-                        if(trade.PositionModify(ticket, newSL, 0))
-                        {
-                            trades[i].trailLevel = 1;
-                            Print("KVWAP TRAIL [", ticket, "]: BE+", trades[i].randomBEPips, " pips");
-                        }
+                        trades[i].trailLevel = 3;
+                        Print("KVWAP L3 [", ticket, "]: Lock +", trades[i].randomL3Pips, " pips");
+                    }
+                }
+            }
+        }
+        // L2: Lock 150-200 pips @ 800 pips profit
+        else if(trades[i].trailLevel == 1 && profitPips >= Trail2_Pips)
+        {
+            double newSL;
+            if(trades[i].direction == 1)
+            {
+                newSL = trades[i].entryPrice + trades[i].randomL2Pips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL > currentSL)
+                {
+                    if(trade.PositionModify(ticket, newSL, 0))
+                    {
+                        trades[i].trailLevel = 2;
+                        Print("KVWAP L2 [", ticket, "]: Lock +", trades[i].randomL2Pips, " pips");
+                    }
+                }
+            }
+            else
+            {
+                newSL = trades[i].entryPrice - trades[i].randomL2Pips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL < currentSL || currentSL == 0)
+                {
+                    if(trade.PositionModify(ticket, newSL, 0))
+                    {
+                        trades[i].trailLevel = 2;
+                        Print("KVWAP L2 [", ticket, "]: Lock +", trades[i].randomL2Pips, " pips");
+                    }
+                }
+            }
+        }
+        // L1: BE + 38-43 pips @ 500 pips profit
+        else if(trades[i].trailLevel == 0 && profitPips >= Trail1_Pips)
+        {
+            double newSL;
+            if(trades[i].direction == 1)
+            {
+                newSL = trades[i].entryPrice + trades[i].randomBEPips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL > currentSL)
+                {
+                    if(trade.PositionModify(ticket, newSL, 0))
+                    {
+                        trades[i].trailLevel = 1;
+                        Print("KVWAP L1 [", ticket, "]: BE+", trades[i].randomBEPips, " pips");
+                    }
+                }
+            }
+            else
+            {
+                newSL = trades[i].entryPrice - trades[i].randomBEPips * point;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL < currentSL || currentSL == 0)
+                {
+                    if(trade.PositionModify(ticket, newSL, 0))
+                    {
+                        trades[i].trailLevel = 1;
+                        Print("KVWAP L1 [", ticket, "]: BE+", trades[i].randomBEPips, " pips");
                     }
                 }
             }
@@ -823,22 +924,24 @@ void OpenBuy(double kalmanLevel)
     sl = NormalizeDouble(sl, digits);
     stealthTP = NormalizeDouble(stealthTP, digits);
 
-    int slDelay = RandomRange(SLDelayMin, SLDelayMax);
-    int bePips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
+    int bePips = RandomRange(Trail1_BEMin, Trail1_BEMax);
+    int l2Pips = RandomRange(Trail2_LockMin, Trail2_LockMax);
+    int l3Pips = RandomRange(Trail3_LockMin, Trail3_LockMax);
 
-    if(trade.Buy(lots, _Symbol, price, 0, 0, "KVWAP BUY"))
+    // SL ODMAH - postavlja se odmah pri otvaranju trejda
+    if(trade.Buy(lots, _Symbol, price, sl, 0, "KVWAP BUY"))
     {
         ulong ticket = trade.ResultOrder();
-        AddTrade(ticket, price, sl, stealthTP, 1, slDelay, bePips);
+        AddTrade(ticket, price, sl, stealthTP, 1, bePips, l2Pips, l3Pips);
 
         Print("╔════════════════════════════════════════════════╗");
-        Print("║ ✓ KALMAN VWAP STEALTH BUY                      ║");
+        Print("║ ✓ KALMAN VWAP BUY (SL ODMAH)                   ║");
         Print("╠════════════════════════════════════════════════╣");
         Print("║ Entry: ", price, " | Lots: ", lots);
         Print("║ Kalman VWAP: ", DoubleToString(kalmanLevel, digits));
-        Print("║ SL: ", sl, " (delay ", slDelay, "s)");
-        Print("║ TP: ", stealthTP, " (R:R 1:", RiskRewardRatio, ")");
-        Print("║ Trail: BE+", bePips, " pips @ ", TrailActivatePips, " pips");
+        Print("║ SL: ", sl, " (ODMAH!)");
+        Print("║ TP: ", stealthTP, " (R:R 1:", RiskRewardRatio, ") STEALTH");
+        Print("║ Trail: L1=BE+", bePips, " | L2=+", l2Pips, " | L3=+", l3Pips);
         Print("╚════════════════════════════════════════════════╝");
 
         totalBuys++;
@@ -875,22 +978,24 @@ void OpenSell(double kalmanLevel)
     sl = NormalizeDouble(sl, digits);
     stealthTP = NormalizeDouble(stealthTP, digits);
 
-    int slDelay = RandomRange(SLDelayMin, SLDelayMax);
-    int bePips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
+    int bePips = RandomRange(Trail1_BEMin, Trail1_BEMax);
+    int l2Pips = RandomRange(Trail2_LockMin, Trail2_LockMax);
+    int l3Pips = RandomRange(Trail3_LockMin, Trail3_LockMax);
 
-    if(trade.Sell(lots, _Symbol, price, 0, 0, "KVWAP SELL"))
+    // SL ODMAH - postavlja se odmah pri otvaranju trejda
+    if(trade.Sell(lots, _Symbol, price, sl, 0, "KVWAP SELL"))
     {
         ulong ticket = trade.ResultOrder();
-        AddTrade(ticket, price, sl, stealthTP, -1, slDelay, bePips);
+        AddTrade(ticket, price, sl, stealthTP, -1, bePips, l2Pips, l3Pips);
 
         Print("╔════════════════════════════════════════════════╗");
-        Print("║ ✓ KALMAN VWAP STEALTH SELL                     ║");
+        Print("║ ✓ KALMAN VWAP SELL (SL ODMAH)                  ║");
         Print("╠════════════════════════════════════════════════╣");
         Print("║ Entry: ", price, " | Lots: ", lots);
         Print("║ Kalman VWAP: ", DoubleToString(kalmanLevel, digits));
-        Print("║ SL: ", sl, " (delay ", slDelay, "s)");
-        Print("║ TP: ", stealthTP, " (R:R 1:", RiskRewardRatio, ")");
-        Print("║ Trail: BE+", bePips, " pips @ ", TrailActivatePips, " pips");
+        Print("║ SL: ", sl, " (ODMAH!)");
+        Print("║ TP: ", stealthTP, " (R:R 1:", RiskRewardRatio, ") STEALTH");
+        Print("║ Trail: L1=BE+", bePips, " | L2=+", l2Pips, " | L3=+", l3Pips);
         Print("╚════════════════════════════════════════════════╝");
 
         totalSells++;
