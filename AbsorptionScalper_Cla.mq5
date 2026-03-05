@@ -1,8 +1,9 @@
 //+------------------------------------------------------------------+
 //|                                         AbsorptionScalper_Cla.mq5|
 //|      *** Absorption Bubbles + PRO Scalper Combined Strategy ***  |
-//|                   + Stealth Mode v2.1 (Novi Prompt Aligned)      |
-//|                   Version 1.0 - 2026-02-25                       |
+//|                   + Stealth Mode v2.2                            |
+//|                   Version 2.2 - Fixed: 04.03.2026 (Zagreb)       |
+//|                   SL ODMAH + 3-level trailing + MFE              |
 //+------------------------------------------------------------------+
 //| Strategy: 83% Win Rate Concept                                   |
 //| - Absorption Bubbles: Detect volume absorption at key levels     |
@@ -10,8 +11,8 @@
 //| - BUY: Buy signal + recent bullish absorption (red bubble)       |
 //| - SELL: Sell signal + recent bearish absorption (green bubble)   |
 //+------------------------------------------------------------------+
-#property copyright "AbsorptionScalper_Cla - Combined Strategy (2026-02-25)"
-#property version   "1.00"
+#property copyright "AbsorptionScalper_Cla v2.2 (2026-03-04)"
+#property version   "2.22"
 #property strict
 
 #include <Trade\\Trade.mqh>
@@ -215,7 +216,7 @@ int OnInit()
 
     ResetSessionVWAP();
 
-    Print("=== AbsorptionScalper_Cla v1.0 INITIALIZED ===");
+    Print("=== AbsorptionScalper_Cla v2.2 INITIALIZED ===");
     Print("Strategy: Absorption Bubbles + PRO Scalper (83% WR Concept)");
     Print("Stealth Mode: ", UseStealthMode ? "ENABLED" : "DISABLED");
 
@@ -854,10 +855,10 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
 
     if(UseStealthMode)
     {
-        // Stealth: No SL/TP to broker
+        // Stealth v2.2: SL ODMAH, TP nikad na broker
         ok = (type == ORDER_TYPE_BUY) ?
-             trade.Buy(lot, _Symbol, price, 0, 0, "AbsScalp") :
-             trade.Sell(lot, _Symbol, price, 0, 0, "AbsScalp");
+             trade.Buy(lot, _Symbol, price, sl, 0, "AbsScalp") :
+             trade.Sell(lot, _Symbol, price, sl, 0, "AbsScalp");
     }
     else
     {
