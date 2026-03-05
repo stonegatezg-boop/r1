@@ -8,9 +8,10 @@
 //|              OPTIMIZED FOR XAUUSD M15 TIMEFRAME                 |
 //|                   Created: 2026-02-25                           |
 //|                   Fixed: 04.03.2026 - SL ODMAH, 3-level trail   |
+//|                   Fixed: 05.03.2026 - MAX SL CAP 800 pips       |
 //+------------------------------------------------------------------+
-#property copyright "Vikas SQZMOM 15 Cla v1.1 (04.03.2026)"
-#property version   "1.10"
+#property copyright "Vikas SQZMOM 15 Cla v1.2 (05.03.2026)"
+#property version   "1.20"
 #property strict
 #include <Trade\Trade.mqh>
 //--- Struktura za praćenje tradea s više targeta + stealth
@@ -1104,6 +1105,14 @@ void OpenBuy()
         return;
     }
 
+    // MAX SL CAP: 800 pips (KRITIČNO!)
+    double maxSL = price - 800 * pipValue;
+    if(sl < maxSL)
+    {
+        Print("BUY: SL capped from ", sl, " to ", maxSL, " (800 pips max)");
+        sl = maxSL;
+    }
+
     double range_val = MathAbs(price - sl);
 
     // Calculate targets
@@ -1159,6 +1168,14 @@ void OpenSell()
     {
         Print("SELL cancelled: Invalid SL (", sl, ")");
         return;
+    }
+
+    // MAX SL CAP: 800 pips (KRITIČNO!)
+    double maxSL = price + 800 * pipValue;
+    if(sl > maxSL)
+    {
+        Print("SELL: SL capped from ", sl, " to ", maxSL, " (800 pips max)");
+        sl = maxSL;
     }
 
     double range_val = MathAbs(sl - price);

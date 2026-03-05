@@ -8,9 +8,10 @@
 //|                   Based on TradingView Strategy                 |
 //|                   Created: 2026-02-24                           |
 //|                   Fixed: 04.03.2026 - SL ODMAH, 3-level trail   |
+//|                   Fixed: 05.03.2026 - MAX SL CAP 800 pips       |
 //+------------------------------------------------------------------+
-#property copyright "Vikas SQZMOM Cla v1.2 (04.03.2026)"
-#property version   "1.20"
+#property copyright "Vikas SQZMOM Cla v1.3 (05.03.2026)"
+#property version   "1.30"
 #property strict
 #include <Trade\Trade.mqh>
 
@@ -1119,6 +1120,14 @@ void OpenBuy()
         return;
     }
 
+    // MAX SL CAP: 800 pips (KRITIČNO!)
+    double maxSL = price - 800 * pipValue;
+    if(sl < maxSL)
+    {
+        Print("BUY: SL capped from ", sl, " to ", maxSL, " (800 pips max)");
+        sl = maxSL;
+    }
+
     double range_val = MathAbs(price - sl);
 
     // Calculate targets
@@ -1174,6 +1183,14 @@ void OpenSell()
     {
         Print("SELL cancelled: Invalid SL (", sl, ")");
         return;
+    }
+
+    // MAX SL CAP: 800 pips (KRITIČNO!)
+    double maxSL = price + 800 * pipValue;
+    if(sl > maxSL)
+    {
+        Print("SELL: SL capped from ", sl, " to ", maxSL, " (800 pips max)");
+        sl = maxSL;
     }
 
     double range_val = MathAbs(sl - price);
