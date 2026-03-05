@@ -155,7 +155,7 @@ int OnInit()
     Print("║ Filter Order: ", FilterOrder, " | VWAP Length: ", VWAP_Length);
     Print("║ VWAP Weight: ", VWAP_Weight, " | R:R = 1:", RiskRewardRatio);
     Print("║ STEALTH: SL delay ", SLDelayMin, "-", SLDelayMax, "s | TP hidden");
-    Print("║ TRAILING: ", TrailActivatePips, " pips -> BE+", TrailBEPipsMin, "-", TrailBEPipsMax);
+    Print("║ TRAILING: ", Trail1_Pips, " pips -> BE+", Trail1_BEMin, "-", Trail1_BEMax);
     Print("║ NEWS FILTER: ", UseNewsFilter ? "ON" : "OFF");
     Print("║ SPREAD FILTER: ", UseSpreadFilter ? "ON" : "OFF", " (Max ", MaxSpreadPoints, ")");
     Print("║ Trading: Sunday 00:01 - Friday 11:30 (Server Time)");
