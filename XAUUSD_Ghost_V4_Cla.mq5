@@ -187,7 +187,7 @@ int OnInit()
    }
    Print("[GHOST V4] H1 Bias: ", UseH1Bias ? "UKLJUČEN" : "ISKLJUČEN");
    Print("[GHOST V4] Stealth TP: ", UseStealthTP ? "DA" : "NE");
-   Print("[GHOST V4] Smart Trail: L3 aktivacija @ ", TrailingStart3, " pips, distance ", TrailDistance, " pips");
+   Print("[GHOST V4] Smart Trail: L3 aktivacija @ ", TrailingStart3, " pips, distance ", MFE_TrailDist, " pips");
    Print("[GHOST V4] ══════════════════════════════════════");
 
    return INIT_SUCCEEDED;
