@@ -1,18 +1,18 @@
 //+------------------------------------------------------------------+
-//|                                        XAUUSD_M5_Scalper_v3.mq5 |
-//|                                  Copyright 2026, Manus AI Agent |
-//|                                             https://manus.im    |
-//|   Created: 05.03.2026 (Zagreb)                                  |
-//|   Fixed: 05.03.2026 (Zagreb) - CLAUDE.md standard compliance    |
+//|                                           Manu_Keltner_Cla.mq5  |
+//|   Strategy: Keltner Channel Mean-Reversion + MTF EMA Filter     |
+//|   Timeframe: M5 entry | H1 trend                                 |
+//|   Instrument: XAUUSD (Gold vs USD)                               |
+//|   Created: 05.03.2026 (Zagreb)                                   |
 //|   - SL ODMAH pri otvaranju                                       |
 //|   - 3-target partial close system                                |
 //|   - 2-level trailing (BE + profit lock)                          |
 //|   - Stealth TP (ne salje brokeru)                                |
 //|   - Weekend filter                                               |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2026, Manus AI Agent"
+#property copyright "Manu Keltner EA v1.0 Cla"
 #property link      "https://manus.im"
-#property version   "3.10"
+#property version   "1.00"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -97,7 +97,7 @@ int OnInit()
    if(handle_ema_m5 == INVALID_HANDLE || handle_ema_h1 == INVALID_HANDLE ||
       handle_atr == INVALID_HANDLE || handle_ema_keltner == INVALID_HANDLE)
    {
-      Print("[SCALPER V3] Error initializing indicators");
+      Print("[MANU_KELTNER] Error initializing indicators");
       return(INIT_FAILED);
    }
 
@@ -107,14 +107,14 @@ int OnInit()
    g_pipValue = 0.01;  // XAUUSD: 1 pip = 0.01
    g_digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
 
-   Print("[SCALPER V3] ══════════════════════════════════════");
-   Print("[SCALPER V3] Inicijalizacija uspjesna");
-   Print("[SCALPER V3] Symbol: ", _Symbol, " | Pip: ", g_pipValue);
-   Print("[SCALPER V3] SL: ", InpStopLossPips, " pips ODMAH");
-   Print("[SCALPER V3] Targets: ", InpTarget1_Pips, "/", InpTarget2_Pips, "/", InpTarget3_Pips, " pips (stealth)");
-   Print("[SCALPER V3] Trail L1: BE+", InpBE_LockMin, "-", InpBE_LockMax, " @ ", InpTrailingStart1, " pips");
-   Print("[SCALPER V3] Trail L2: Lock ", InpProfitLockMin, "-", InpProfitLockMax, " @ ", InpTrailingStart2, " pips");
-   Print("[SCALPER V3] ══════════════════════════════════════");
+   Print("[MANU_KELTNER] ══════════════════════════════════════");
+   Print("[MANU_KELTNER] Inicijalizacija uspjesna");
+   Print("[MANU_KELTNER] Symbol: ", _Symbol, " | Pip: ", g_pipValue);
+   Print("[MANU_KELTNER] SL: ", InpStopLossPips, " pips ODMAH");
+   Print("[MANU_KELTNER] Targets: ", InpTarget1_Pips, "/", InpTarget2_Pips, "/", InpTarget3_Pips, " pips (stealth)");
+   Print("[MANU_KELTNER] Trail L1: BE+", InpBE_LockMin, "-", InpBE_LockMax, " @ ", InpTrailingStart1, " pips");
+   Print("[MANU_KELTNER] Trail L2: Lock ", InpProfitLockMin, "-", InpProfitLockMax, " @ ", InpTrailingStart2, " pips");
+   Print("[MANU_KELTNER] ══════════════════════════════════════");
 
    return(INIT_SUCCEEDED);
 }
@@ -184,10 +184,10 @@ void OnTick()
             double sl = NormalizeDouble(ask - (InpStopLossPips * g_pipValue), g_digits);
 
             // SL ODMAH - no TP (stealth)
-            if(trade.Buy(InpLots, _Symbol, ask, sl, 0, "SCALPER_BUY"))
+            if(trade.Buy(InpLots, _Symbol, ask, sl, 0, "MANU_BUY"))
             {
                ulong ticket = trade.ResultOrder();
-               Print("[SCALPER V3] BUY @ ", ask, " | SL: ", sl, " (ODMAH!)");
+               Print("[MANU_KELTNER] BUY @ ", ask, " | SL: ", sl, " (ODMAH!)");
                AddPartialTrack(ticket, InpLots, ask, +1);
             }
          }
@@ -205,10 +205,10 @@ void OnTick()
             double sl = NormalizeDouble(bid + (InpStopLossPips * g_pipValue), g_digits);
 
             // SL ODMAH - no TP (stealth)
-            if(trade.Sell(InpLots, _Symbol, bid, sl, 0, "SCALPER_SELL"))
+            if(trade.Sell(InpLots, _Symbol, bid, sl, 0, "MANU_SELL"))
             {
                ulong ticket = trade.ResultOrder();
-               Print("[SCALPER V3] SELL @ ", bid, " | SL: ", sl, " (ODMAH!)");
+               Print("[MANU_KELTNER] SELL @ ", bid, " | SL: ", sl, " (ODMAH!)");
                AddPartialTrack(ticket, InpLots, bid, -1);
             }
          }
@@ -248,7 +248,7 @@ void ManagePositions()
             if(trade.PositionClosePartial(ticket, closeLot))
             {
                g_partials[pIdx].t1_closed = true;
-               Print("[SCALPER V3] TARGET 1 (33%) @ ", bid, " | +", (int)profitPips, " pips");
+               Print("[MANU_KELTNER] TARGET 1 (33%) @ ", bid, " | +", (int)profitPips, " pips");
             }
          }
 
@@ -261,7 +261,7 @@ void ManagePositions()
             if(trade.PositionClosePartial(ticket, closeLot))
             {
                g_partials[pIdx].t2_closed = true;
-               Print("[SCALPER V3] TARGET 2 (50%) @ ", bid, " | +", (int)profitPips, " pips");
+               Print("[MANU_KELTNER] TARGET 2 (50%) @ ", bid, " | +", (int)profitPips, " pips");
             }
          }
 
@@ -270,7 +270,7 @@ void ManagePositions()
          {
             if(trade.PositionClose(ticket))
             {
-               Print("[SCALPER V3] TARGET 3 (100%) @ ", bid, " | +", (int)profitPips, " pips");
+               Print("[MANU_KELTNER] TARGET 3 (100%) @ ", bid, " | +", (int)profitPips, " pips");
                RemovePartialTrack(ticket);
             }
             continue;
@@ -286,7 +286,7 @@ void ManagePositions()
                if(trade.PositionModify(ticket, newSL, curTP))
                {
                   g_partials[pIdx].trailLevel = 2;
-                  Print("[SCALPER V3] L2: Lock +", g_partials[pIdx].randomL2, " pips @ ", newSL);
+                  Print("[MANU_KELTNER] L2: Lock +", g_partials[pIdx].randomL2, " pips @ ", newSL);
                }
             }
          }
@@ -299,7 +299,7 @@ void ManagePositions()
                if(trade.PositionModify(ticket, newSL, curTP))
                {
                   g_partials[pIdx].trailLevel = 1;
-                  Print("[SCALPER V3] L1: BE+", g_partials[pIdx].randomBE, " pips @ ", newSL);
+                  Print("[MANU_KELTNER] L1: BE+", g_partials[pIdx].randomBE, " pips @ ", newSL);
                }
             }
          }
@@ -318,7 +318,7 @@ void ManagePositions()
             if(trade.PositionClosePartial(ticket, closeLot))
             {
                g_partials[pIdx].t1_closed = true;
-               Print("[SCALPER V3] TARGET 1 (33%) @ ", ask, " | +", (int)profitPips, " pips");
+               Print("[MANU_KELTNER] TARGET 1 (33%) @ ", ask, " | +", (int)profitPips, " pips");
             }
          }
 
@@ -331,7 +331,7 @@ void ManagePositions()
             if(trade.PositionClosePartial(ticket, closeLot))
             {
                g_partials[pIdx].t2_closed = true;
-               Print("[SCALPER V3] TARGET 2 (50%) @ ", ask, " | +", (int)profitPips, " pips");
+               Print("[MANU_KELTNER] TARGET 2 (50%) @ ", ask, " | +", (int)profitPips, " pips");
             }
          }
 
@@ -340,7 +340,7 @@ void ManagePositions()
          {
             if(trade.PositionClose(ticket))
             {
-               Print("[SCALPER V3] TARGET 3 (100%) @ ", ask, " | +", (int)profitPips, " pips");
+               Print("[MANU_KELTNER] TARGET 3 (100%) @ ", ask, " | +", (int)profitPips, " pips");
                RemovePartialTrack(ticket);
             }
             continue;
@@ -356,7 +356,7 @@ void ManagePositions()
                if(trade.PositionModify(ticket, newSL, curTP))
                {
                   g_partials[pIdx].trailLevel = 2;
-                  Print("[SCALPER V3] L2: Lock +", g_partials[pIdx].randomL2, " pips @ ", newSL);
+                  Print("[MANU_KELTNER] L2: Lock +", g_partials[pIdx].randomL2, " pips @ ", newSL);
                }
             }
          }
@@ -369,7 +369,7 @@ void ManagePositions()
                if(trade.PositionModify(ticket, newSL, curTP))
                {
                   g_partials[pIdx].trailLevel = 1;
-                  Print("[SCALPER V3] L1: BE+", g_partials[pIdx].randomBE, " pips @ ", newSL);
+                  Print("[MANU_KELTNER] L1: BE+", g_partials[pIdx].randomBE, " pips @ ", newSL);
                }
             }
          }
