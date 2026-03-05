@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                              KalmanVWAP_Cla.mq5 |
-//|                   *** Kalman VWAP Cla v2.2 ***                   |
-//|         Fixed: 05.03.2026 (Zagreb) - SL ODMAH + 3-level trail   |
+//|                   *** Kalman VWAP Cla v2.3 ***                   |
+//|         Fixed: 05.03.2026 (Zagreb) - MaxSL 800 pips dodano      |
 //|         Kalman Filter + VWAP Fusion Strategy                    |
 //|                   + STEALTH EXECUTION (TP/SL)                   |
 //|                   + NEWS FILTER & SPREAD FILTER                 |
@@ -10,7 +10,7 @@
 //|                   Optimized for XAUUSD                          |
 //|                   Date: 2026-02-24                              |
 //+------------------------------------------------------------------+
-#property copyright "KalmanVWAP Cla v2.2 (2026-03-05)"
+#property copyright "KalmanVWAP Cla v2.3 (2026-03-05)"
 #property version   "1.00"
 #property strict
 #include <Trade\Trade.mqh>
@@ -57,6 +57,7 @@ input double   RiskRewardRatio   = 1.5;     // Risk:Reward Ratio
 input double   RiskPercent       = 1.0;     // Risk % od Balance-a
 input int      MaxOpenTrades     = 3;       // Max otvorenih pozicija
 input int      MaxBarsInTrade    = 100;     // Max barova u tradeu
+input int      MaxSL_Pips        = 800;     // Max SL u pipsima (0=bez limita)
 
 input group "=== STEALTH EXECUTION ==="
 input int      SLDelayMin        = 7;       // Min delay za SL (sekunde)
@@ -901,6 +902,7 @@ void CheckTimeExits()
 void OpenBuy(double kalmanLevel)
 {
     double price = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
 
     // SL just below Kalman VWAP line
     double atr = GetATR(1);
@@ -913,6 +915,18 @@ void OpenBuy(double kalmanLevel)
 
     double slDistance = price - sl;
     if(slDistance <= 0) return;
+
+    // MAX SL LIMIT (800 pips = 8.00 za XAUUSD)
+    if(MaxSL_Pips > 0)
+    {
+        double maxSlDistance = MaxSL_Pips * point;
+        if(slDistance > maxSlDistance)
+        {
+            slDistance = maxSlDistance;
+            sl = price - slDistance;
+            Print("BUY SL capped to ", MaxSL_Pips, " pips (", DoubleToString(slDistance, 2), ")");
+        }
+    }
 
     // TP based on R:R ratio
     double stealthTP = price + slDistance * RiskRewardRatio;
@@ -955,6 +969,7 @@ void OpenBuy(double kalmanLevel)
 void OpenSell(double kalmanLevel)
 {
     double price = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
 
     // SL just above Kalman VWAP line
     double atr = GetATR(1);
@@ -967,6 +982,18 @@ void OpenSell(double kalmanLevel)
 
     double slDistance = sl - price;
     if(slDistance <= 0) return;
+
+    // MAX SL LIMIT (800 pips = 8.00 za XAUUSD)
+    if(MaxSL_Pips > 0)
+    {
+        double maxSlDistance = MaxSL_Pips * point;
+        if(slDistance > maxSlDistance)
+        {
+            slDistance = maxSlDistance;
+            sl = price + slDistance;
+            Print("SELL SL capped to ", MaxSL_Pips, " pips (", DoubleToString(slDistance, 2), ")");
+        }
+    }
 
     // TP based on R:R ratio
     double stealthTP = price - slDistance * RiskRewardRatio;
