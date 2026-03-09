@@ -38,11 +38,14 @@ input string   INFO3 = "=== TARGETS (PIPS) ===";
 input int      Target1_Pips = 300;          // Target 1 - zatvori 33%
 input int      Target2_Pips = 500;          // Target 2 - zatvori 50%
 input int      Target3_Pips = 800;          // Target 3 - zatvori ostatak
-input int      InitialSL_Pips = 1000;       // PRAVI SL ODMAH (1000 pips)
+input int      InitialSL_Min = 988;         // SL min pips (random)
+input int      InitialSL_Max = 1054;        // SL max pips (random)
 
 // === TRAILING STOP ===
 input string   INFO4 = "=== TRAILING STOP ===";
-input int      TrailingStartBE = 1000;      // Pips profita za pomak na BE
+input int      TrailingStartBE = 1000;      // Pips profita za pomak na BE+
+input int      BEOffset_Min = 41;           // BE+ offset min pips
+input int      BEOffset_Max = 46;           // BE+ offset max pips
 input int      TrailingDistance = 1000;     // Trailing udaljenost (pips)
 
 // === FILTERI ===
@@ -343,8 +346,9 @@ void OpenBuy()
 {
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
 
-   // PRAVI SL ODMAH - 1000 pipsa
-   double sl = NormalizeDouble(ask - InitialSL_Pips * pipValue, _Digits);
+   // PRAVI SL ODMAH - random između 988-1054 pipsa
+   int slPips = InitialSL_Min + MathRand() % (InitialSL_Max - InitialSL_Min + 1);
+   double sl = NormalizeDouble(ask - slPips * pipValue, _Digits);
    double tp = 0;  // Stealth TP - ne šaljemo brokeru
 
    if(trade.Buy(LotSize, _Symbol, ask, sl, tp, "ClaEU"))
@@ -362,7 +366,7 @@ void OpenBuy()
       breakEvenDone = false;
       highestProfit = 0;
 
-      Print("BUY opened at ", ask, " | SL: ", sl, " (", InitialSL_Pips, " pips)");
+      Print("BUY opened at ", ask, " | SL: ", sl, " (", slPips, " pips)");
    }
    else
    {
@@ -377,8 +381,9 @@ void OpenSell()
 {
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
 
-   // PRAVI SL ODMAH - 1000 pipsa
-   double sl = NormalizeDouble(bid + InitialSL_Pips * pipValue, _Digits);
+   // PRAVI SL ODMAH - random između 988-1054 pipsa
+   int slPips = InitialSL_Min + MathRand() % (InitialSL_Max - InitialSL_Min + 1);
+   double sl = NormalizeDouble(bid + slPips * pipValue, _Digits);
    double tp = 0;  // Stealth TP - ne šaljemo brokeru
 
    if(trade.Sell(LotSize, _Symbol, bid, sl, tp, "ClaEU"))
@@ -396,7 +401,7 @@ void OpenSell()
       breakEvenDone = false;
       highestProfit = 0;
 
-      Print("SELL opened at ", bid, " | SL: ", sl, " (", InitialSL_Pips, " pips)");
+      Print("SELL opened at ", bid, " | SL: ", sl, " (", slPips, " pips)");
    }
    else
    {
@@ -501,12 +506,20 @@ void ManageTrailing(double profitPips)
    double currentSL = PositionGetDouble(POSITION_SL);
    double newSL = currentSL;
 
-   // 1. Break Even: Na 1000 pips profita, pomakni SL na entry
+   // 1. Break Even+: Na 1000 pips profita, pomakni SL na BE + 41-46 pips
    if(!breakEvenDone && profitPips >= TrailingStartBE)
    {
-      newSL = NormalizeDouble(entryPrice, _Digits);
+      // Random BE offset između 41-46 pips
+      int beOffset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
 
-      // Provjeri da je BE bolji od trenutnog SL
+      if(positionType == 0)  // BUY
+         newSL = entryPrice + beOffset * pipValue;
+      else  // SELL
+         newSL = entryPrice - beOffset * pipValue;
+
+      newSL = NormalizeDouble(newSL, _Digits);
+
+      // Provjeri da je BE+ bolji od trenutnog SL
       bool isBetter = false;
       if(positionType == 0 && newSL > currentSL) isBetter = true;
       if(positionType == 1 && newSL < currentSL) isBetter = true;
@@ -515,11 +528,11 @@ void ManageTrailing(double profitPips)
       {
          breakEvenDone = true;
          highestProfit = profitPips;
-         Print("Break Even: SL moved to entry (", newSL, ") at +", DoubleToString(profitPips, 1), " pips");
+         Print("BE+: SL moved to entry + ", beOffset, " pips (", newSL, ") at +", DoubleToString(profitPips, 1), " pips profit");
       }
    }
 
-   // 2. Trailing Stop: Nakon BE, prati profit na udaljenosti TrailingDistance
+   // 2. Trailing Stop: Nakon BE+, prati profit na udaljenosti TrailingDistance
    if(breakEvenDone && profitPips > highestProfit)
    {
       highestProfit = profitPips;

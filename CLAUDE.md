@@ -37,19 +37,32 @@ trade.Buy(lot, _Symbol, price, 0, 0, "EA_NAME");   // SL=0, postavlja se kasnije
 - **Target 2**: Zatvori 50% preostalog
 - **Target 3**: Zatvori ostatak (trailing ili fiksni)
 
-## 2-Level Trailing Stop
-- **Level 1**: Na 500 pips profita → pomakni SL na BE + 38-43 pips
-- **Level 2**: Na 800 pips profita → zaključaj 150-200 pips profita
+## Trailing Stop System (STANDARDNO)
+- **SL**: Random između 988-1054 pips (svaki trejd drugačije)
+- **BE+**: Na 1000 pips profita → pomakni SL na BE + 41-46 pips (random)
+- **Trailing**: Nakon BE+, prati profit na udaljenosti 1000 pips
+
+```cpp
+// SL - random pri otvaranju
+int slPips = InitialSL_Min + MathRand() % (InitialSL_Max - InitialSL_Min + 1);
+
+// BE+ - random offset na 1000 pips profita
+int beOffset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
+
+// Trailing - prati na 1000 pips udaljenosti
+double trailPips = highestProfit - TrailingDistance;
+```
 
 ## Filteri (standardni)
 - **Spread Filter**: MaxSpread input (tipično 50-80 za XAUUSD)
 - **News Filter**: Izbjegavaj trading oko vijesti
 - **Large Candle Filter**: Preskoči ako je candle prevelik (ATR multiple)
 
-## Trading Window
-- **Start**: Nedjelja 00:01 (server time)
-- **End**: Petak 11:30 (server time)
-- **Intraday**: NEMA restrikcija (trejdaj cijeli dan)
+## Trading Window (Zagreb Time)
+- **Start**: 08:00 (Zagreb)
+- **End**: 22:00 (Zagreb)
+- **Petak close**: 20:00 (Zagreb)
+- **Vikend**: Ne trejdaj subota/nedjelja do 00:01
 
 ## Magic Numbers (aktivni EA)
 | EA | Magic | Timeframe | Instrument |
@@ -63,6 +76,7 @@ trade.Buy(lot, _Symbol, price, 0, 0, "EA_NAME");   // SL=0, postavlja se kasnije
 | SupplyDemand_GMACD_Cla | 556677 | M5 | XAUUSD |
 | SwingFree_MACDL_Cla | 667788 | M5 | XAUUSD |
 | TopBottom_KHRSI_Cla | 778800 | M5 | XAUUSD |
+| ClaEU | 556688 | M5 | EURUSD |
 
 ## Standardni Inputi
 ```cpp
@@ -75,9 +89,20 @@ input int Target1_Pips = 300;
 input int Target2_Pips = 500;
 input int Target3_Pips = 800;
 
+// SL (random)
+input int InitialSL_Min = 988;   // SL min pips
+input int InitialSL_Max = 1054;  // SL max pips
+
 // Trailing
-input int TrailingStart1 = 500;  // pips za BE
-input int TrailingStart2 = 800;  // pips za lock profit
+input int TrailingStartBE = 1000;  // pips za BE+
+input int BEOffset_Min = 41;       // BE+ offset min
+input int BEOffset_Max = 46;       // BE+ offset max
+input int TrailingDistance = 1000; // trailing udaljenost
+
+// Radno vrijeme (Zagreb)
+input int ZagrebStartHour = 8;
+input int ZagrebEndHour = 22;
+input int FridayCloseHour = 20;
 ```
 
 ## Verzioniranje (OBAVEZNO)
