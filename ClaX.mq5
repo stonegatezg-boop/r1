@@ -227,9 +227,9 @@ int DetectVelocityShift()
     double acceleration = velocity1 - velocity2;
 
     // Detektuj shift
-    if(velocity2 < 0 && velocity1 > 0 && acceleration > PVI_VALUE * PVI_Threshold)
+    if(velocity2 < 0 && velocity1 > 0 && acceleration > PIP_VALUE * PVI_Threshold)
         return 1;   // Shift u bullish
-    if(velocity2 > 0 && velocity1 < 0 && acceleration < -PVI_VALUE * PVI_Threshold)
+    if(velocity2 > 0 && velocity1 < 0 && acceleration < -PIP_VALUE * PVI_Threshold)
         return -1;  // Shift u bearish
 
     return 0;  // Nema shifta
