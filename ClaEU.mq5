@@ -1,6 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                                        ClaEU.mq5  |
 //|                         Created: 09.03.2026 (Zagreb)              |
+//|                   Fixed: 09.03.2026 (Zagreb) - Trailing na 1000   |
 //|     Strategy: EMA Crossover + RSI Momentum + MACD Confirmation    |
 //|     Timeframe: M5 | Instrument: EURUSD                            |
 //+------------------------------------------------------------------+
@@ -41,12 +42,8 @@ input int      InitialSL_Pips = 1000;       // PRAVI SL ODMAH (1000 pips)
 
 // === TRAILING STOP ===
 input string   INFO4 = "=== TRAILING STOP ===";
-input int      TrailingStart1 = 500;        // Pips za pomak na BE
-input int      BEOffset_Min = 38;           // BE offset min pips
-input int      BEOffset_Max = 43;           // BE offset max pips
-input int      TrailingStart2 = 1000;       // Pips za lock profit (1000 pips)
-input int      LockProfit_Min = 150;        // Lock profit min pips
-input int      LockProfit_Max = 200;        // Lock profit max pips
+input int      TrailingStartBE = 1000;      // Pips profita za pomak na BE
+input int      TrailingDistance = 1000;     // Trailing udaljenost (pips)
 
 // === FILTERI ===
 input string   INFO5 = "=== FILTERI ===";
@@ -80,8 +77,8 @@ bool     target2Hit = false;
 double   originalLots = 0;
 
 // Trailing
-bool     trailingLevel1Done = false;
-bool     trailingLevel2Done = false;
+bool     breakEvenDone = false;
+double   highestProfit = 0;  // Za trailing tracking
 
 // Points conversion
 double   pipValue;
@@ -362,8 +359,8 @@ void OpenBuy()
       // Reset flags
       target1Hit = false;
       target2Hit = false;
-      trailingLevel1Done = false;
-      trailingLevel2Done = false;
+      breakEvenDone = false;
+      highestProfit = 0;
 
       Print("BUY opened at ", ask, " | SL: ", sl, " (", InitialSL_Pips, " pips)");
    }
@@ -396,8 +393,8 @@ void OpenSell()
       // Reset flags
       target1Hit = false;
       target2Hit = false;
-      trailingLevel1Done = false;
-      trailingLevel2Done = false;
+      breakEvenDone = false;
+      highestProfit = 0;
 
       Print("SELL opened at ", bid, " | SL: ", sl, " (", InitialSL_Pips, " pips)");
    }
@@ -504,46 +501,50 @@ void ManageTrailing(double profitPips)
    double currentSL = PositionGetDouble(POSITION_SL);
    double newSL = currentSL;
 
-   // Level 1: Na 500 pips, pomakni na BE + offset
-   if(!trailingLevel1Done && profitPips >= TrailingStart1)
+   // 1. Break Even: Na 1000 pips profita, pomakni SL na entry
+   if(!breakEvenDone && profitPips >= TrailingStartBE)
    {
-      int offset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
+      newSL = NormalizeDouble(entryPrice, _Digits);
 
-      if(positionType == 0)  // BUY
-         newSL = entryPrice + offset * pipValue;
-      else  // SELL
-         newSL = entryPrice - offset * pipValue;
-
-      newSL = NormalizeDouble(newSL, _Digits);
-
-      // Provjeri da je novi SL bolji od trenutnog
+      // Provjeri da je BE bolji od trenutnog SL
       bool isBetter = false;
       if(positionType == 0 && newSL > currentSL) isBetter = true;
       if(positionType == 1 && newSL < currentSL) isBetter = true;
 
       if(isBetter && trade.PositionModify(currentTicket, newSL, 0))
       {
-         trailingLevel1Done = true;
-         Print("Trailing Level 1: SL moved to BE + ", offset, " pips (", newSL, ")");
+         breakEvenDone = true;
+         highestProfit = profitPips;
+         Print("Break Even: SL moved to entry (", newSL, ") at +", DoubleToString(profitPips, 1), " pips");
       }
    }
 
-   // Level 2: Na 1000 pips, zaključaj profit
-   if(!trailingLevel2Done && trailingLevel1Done && profitPips >= TrailingStart2)
+   // 2. Trailing Stop: Nakon BE, prati profit na udaljenosti TrailingDistance
+   if(breakEvenDone && profitPips > highestProfit)
    {
-      int lockPips = LockProfit_Min + MathRand() % (LockProfit_Max - LockProfit_Min + 1);
+      highestProfit = profitPips;
 
-      if(positionType == 0)  // BUY
-         newSL = entryPrice + lockPips * pipValue;
-      else  // SELL
-         newSL = entryPrice - lockPips * pipValue;
+      // Izračunaj novi SL (trenutni profit - trailing distance)
+      double trailPips = highestProfit - TrailingDistance;
 
-      newSL = NormalizeDouble(newSL, _Digits);
-
-      if(trade.PositionModify(currentTicket, newSL, 0))
+      if(trailPips > 0)  // Samo ako bi SL bio u profitu
       {
-         trailingLevel2Done = true;
-         Print("Trailing Level 2: Locked ", lockPips, " pips profit (SL: ", newSL, ")");
+         if(positionType == 0)  // BUY
+            newSL = entryPrice + trailPips * pipValue;
+         else  // SELL
+            newSL = entryPrice - trailPips * pipValue;
+
+         newSL = NormalizeDouble(newSL, _Digits);
+
+         // Provjeri da je novi SL bolji od trenutnog
+         bool isBetter = false;
+         if(positionType == 0 && newSL > currentSL) isBetter = true;
+         if(positionType == 1 && newSL < currentSL) isBetter = true;
+
+         if(isBetter && trade.PositionModify(currentTicket, newSL, 0))
+         {
+            Print("Trailing SL: moved to +", DoubleToString(trailPips, 1), " pips (", newSL, ")");
+         }
       }
    }
 }
