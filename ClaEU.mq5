@@ -132,7 +132,7 @@ int OnInit()
    // Provjeri postojeće pozicije
    CheckExistingPosition();
 
-   Print("ClaEU initialized. Pip value: ", pipValue, " | SL: ", InitialSL_Pips, " pips | Trailing: ", TrailingStart2, " pips");
+   Print("ClaEU initialized. Pip value: ", pipValue, " | SL: ", InitialSL_Min, "-", InitialSL_Max, " pips | BE+: ", TrailingStartBE, " pips");
    return(INIT_SUCCEEDED);
 }
 
@@ -267,7 +267,7 @@ bool CanTrade()
    // Spread filter
    if(UseSpreadFilter)
    {
-      double spreadPoints = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
+      double spreadPoints = (double)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
       double spreadPips = spreadPoints * SymbolInfoDouble(_Symbol, SYMBOL_POINT) / pipValue;
       if(spreadPips > MaxSpread)
       {
