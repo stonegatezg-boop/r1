@@ -74,10 +74,10 @@ input group "=== FILTERI ==="
 input double   MaxSpread          = 50;      // Max spread (points)
 input bool     UseNewsFilter      = false;   // News filter
 
-input group "=== RADNO VRIJEME (ZAGREB) ==="
-input int      ZagrebStartHour    = 8;       // Početak tradinga
-input int      ZagrebEndHour      = 22;      // Kraj tradinga
-input int      FridayCloseHour    = 20;      // Petak zatvaranje
+input group "=== RADNO VRIJEME ==="
+input int      StartHour          = 8;       // Početak tradinga
+input int      EndHour            = 22;      // Kraj tradinga
+input int      FridayCloseHour    = 11;      // Petak stop novih trejdova
 
 input group "=== OPĆE ==="
 input ulong    MagicNumber        = 261450;  // Magic broj
@@ -270,7 +270,7 @@ double GetDIMinus(int shift = 1)
 }
 
 //+------------------------------------------------------------------+
-//| TRADING WINDOW (Zagreb Time)                                      |
+//| TRADING WINDOW                                                    |
 //+------------------------------------------------------------------+
 bool IsTradingWindow()
 {
@@ -285,14 +285,14 @@ bool IsTradingWindow()
     if(dt.day_of_week == 6)
         return false;
 
-    // Petak - završi ranije
+    // Petak - stop novih trejdova ranije (default 11:00)
     if(dt.day_of_week == 5)
     {
         if(dt.hour >= FridayCloseHour) return false;
     }
 
     // Pon-Pet: Trading window
-    if(dt.hour < ZagrebStartHour || dt.hour >= ZagrebEndHour)
+    if(dt.hour < StartHour || dt.hour >= EndHour)
         return false;
 
     return true;
