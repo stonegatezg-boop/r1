@@ -38,13 +38,13 @@ trade.Buy(lot, _Symbol, price, 0, 0, "EA_NAME");   // SL=0, postavlja se kasnije
 - **Target 3**: Zatvori ostatak (trailing ili fiksni)
 
 ## Trailing Stop System (STANDARDNO)
-- **SL**: Fiksni 1000 pips
+- **SL**: Random između 988-1054 pips (svaki trejd drugačije)
 - **BE+**: Na 1000 pips profita → pomakni SL na BE + 41-46 pips (random)
 - **Trailing**: Nakon BE+, prati profit na udaljenosti 1000 pips
 
 ```cpp
-// SL - fiksni 1000 pips
-int slPips = InitialSL_Pips;  // 1000 pips
+// SL - random pri otvaranju
+int slPips = InitialSL_Min + MathRand() % (InitialSL_Max - InitialSL_Min + 1);
 
 // BE+ - random offset na 1000 pips profita
 int beOffset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
@@ -88,8 +88,9 @@ input int Target1_Pips = 300;
 input int Target2_Pips = 500;
 input int Target3_Pips = 800;
 
-// SL (fiksni)
-input int InitialSL_Pips = 1000;  // SL fiksni pips
+// SL (random)
+input int InitialSL_Min = 988;   // SL min pips
+input int InitialSL_Max = 1054;  // SL max pips
 
 // Trailing
 input int TrailingStartBE = 1000;  // pips za BE+
