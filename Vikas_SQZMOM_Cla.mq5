@@ -9,9 +9,10 @@
 //|                   Created: 2026-02-24                           |
 //|                   Fixed: 04.03.2026 - SL ODMAH, 3-level trail   |
 //|                   Fixed: 05.03.2026 - MAX SL CAP 800 pips       |
+//|                   Fixed: 10.03.2026 - Removed Time/Early Failure|
 //+------------------------------------------------------------------+
-#property copyright "Vikas SQZMOM Cla v1.3 (05.03.2026)"
-#property version   "1.30"
+#property copyright "Vikas SQZMOM Cla v1.4 (10.03.2026)"
+#property version   "1.40"
 #property strict
 #include <Trade\Trade.mqh>
 
@@ -65,7 +66,6 @@ input bool     UseGannLevels    = true;     // Koristi Gann Square of 9
 input group "=== TRADE MANAGEMENT ==="
 input double   RiskPercent      = 1.0;      // Risk % od Balance-a
 input int      MaxOpenTrades    = 3;        // Max otvorenih pozicija
-input int      MaxBarsInTrade   = 100;      // Max barova u tradeu
 
 input group "=== LARGE CANDLE FILTER ==="
 input double   LargeCandleATR   = 3.0;      // Filter svijeća > X * ATR
@@ -81,11 +81,6 @@ input int      TrailL3_Distance = 200;      // L3: Trail distance pips
 input group "=== MFE TRAILING ==="
 input int      MFE_Activate     = 1500;     // MFE aktivacija (pips)
 input int      MFE_Distance     = 500;      // MFE trail distance (pips)
-
-input group "=== EARLY & TIME FAILURE ==="
-input int      EarlyFailurePips = 800;      // Early failure exit (- pips)
-input int      TimeFailureBars  = 3;        // Barova za time failure
-input int      TimeFailurePips  = 20;       // Min profit za time failure
 
 input group "=== TSL SUSTAV (TARGET BASED) ==="
 input bool     UseTSL           = true;     // Koristi TSL sustav
@@ -179,7 +174,6 @@ int OnInit()
     Print("║ TRAILING L2: ", TrailL2_Pips, " pips -> Lock ", TrailL2_Lock);
     Print("║ TRAILING L3: ", TrailL3_Pips, " pips -> Trail ", TrailL3_Distance);
     Print("║ MFE: ", MFE_Activate, " pips -> Trail ", MFE_Distance);
-    Print("║ EARLY FAILURE: -", EarlyFailurePips, " pips");
     Print("║ Large Candle Filter: > ", LargeCandleATR, "x ATR");
     Print("║ NEWS FILTER: ", UseNewsFilter ? "ON" : "OFF");
     Print("║ SPREAD FILTER: ", UseSpreadFilter ? "ON" : "OFF", " (Max ", MaxSpreadPoints, ")");
@@ -835,14 +829,7 @@ void ManageAllPositions()
         if(profitPips > trades[i].maxProfitPips)
             trades[i].maxProfitPips = profitPips;
 
-        //=== 1. EARLY FAILURE EXIT ===
-        if(profitPips <= -EarlyFailurePips)
-        {
-            ClosePosition(ticket, "EARLY FAILURE @ " + DoubleToString(-profitPips, 0) + " pips loss");
-            continue;
-        }
-
-        //=== 2. CHECK STEALTH TP (Target3 or main TP) ===
+        //=== 1. CHECK STEALTH TP (Target3 or main TP) ===
         if(trades[i].stealthTP > 0)
         {
             bool tpHit = false;
@@ -1083,26 +1070,11 @@ void ManageAllPositions()
 //+------------------------------------------------------------------+
 void CheckTimeExits()
 {
+    // Time/Early Failure removed (CLAUDE.md ZABRANJENO)
+    // SL na brokeru štiti poziciju
     for(int i = tradesCount - 1; i >= 0; i--)
     {
         trades[i].barsInTrade++;
-
-        // Max bars exit
-        if(trades[i].barsInTrade >= MaxBarsInTrade)
-        {
-            ClosePosition(trades[i].ticket, "TIME EXIT - " + IntegerToString(trades[i].barsInTrade) + " bars");
-            continue;
-        }
-
-        // Time failure exit (3+ bars with < 20 pips profit)
-        if(trades[i].barsInTrade >= TimeFailureBars)
-        {
-            double profitPips = GetProfitPips(trades[i].ticket, trades[i].entryPrice, trades[i].direction);
-            if(profitPips < TimeFailurePips && profitPips > -TimeFailurePips)
-            {
-                ClosePosition(trades[i].ticket, "TIME FAILURE - " + IntegerToString(trades[i].barsInTrade) + " bars, " + DoubleToString(profitPips, 0) + " pips");
-            }
-        }
     }
 }
 
