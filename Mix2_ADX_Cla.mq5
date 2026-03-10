@@ -9,12 +9,11 @@
 //|   - Pullback detection before entry                              |
 //|   - Stronger ADX requirements                                    |
 //|   - Random SL 988-1054 pips                                      |
-//|   - Better Time Failure parameters                               |
 //|   - SL ODMAH (immediate)                                         |
 //|   - BE+ @1000 pips, Trailing 1000 pips                           |
 //|                                                                  |
 //|   Created: 05.03.2026 (Zagreb)                                   |
-//|   Fixed: 10.03.2026 (Zagreb) - Random SL, BE+@1000, Trail 1000   |
+//|   Fixed: 10.03.2026 (Zagreb) - Removed Time Failure (forbidden)  |
 //+------------------------------------------------------------------+
 #property copyright "Mix2_ADX_Cla v1.1 (10.03.2026)"
 #property version   "1.10"
@@ -149,7 +148,6 @@ int OnInit()
    Print("Targets: ", Target1_ATR, "x / ", Target2_ATR, "x / ", Target3_ATR, "x ATR");
    Print("BE+: @", TrailingStartBE, " pips -> entry+", BEOffset_Min, "-", BEOffset_Max);
    Print("Trailing: ", TrailingDistance, " pips distance");
-   Print("Time Exit: ", TimeFailureBars, " bars, ", TimeFailurePips, " pips");
    Print("=====================================================");
 
    return INIT_SUCCEEDED;
