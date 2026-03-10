@@ -60,10 +60,6 @@ input int      BEOffset_Min       = 41;       // BE+ offset min pips
 input int      BEOffset_Max       = 46;       // BE+ offset max pips
 input int      TrailingDistance   = 1000;     // Trailing udaljenost (pips)
 
-input group "=== FAILURE EXITS ==="
-input int      EarlyFailurePips   = 800;
-input int      TimeFailureBars    = 8;        // Povecano s 3
-input int      TimeFailurePips    = 80;       // Povecano s 20
 
 input group "=== FILTERI ==="
 input double   MaxSpread          = 50;
@@ -633,14 +629,7 @@ void ManagePositions()
       if(profitPips > g_pos[i].maxProfitPips)
          g_pos[i].maxProfitPips = profitPips;
 
-      //=== EARLY FAILURE ===
-      if(profitPips <= -EarlyFailurePips)
-      {
-         trade.PositionClose(ticket);
-         g_pos[i].active = false;
-         Print("MIX2: EARLY FAILURE @ ", DoubleToString(-profitPips, 0), " pips");
-         continue;
-      }
+      // Nema Early Failure - SL na brokeru štiti poziciju
 
       //=== TARGET 1 ===
       if(g_pos[i].targetHit < 1)
@@ -749,43 +738,6 @@ void ManagePositions()
    CleanupPositions();
 }
 
-//+------------------------------------------------------------------+
-//| TIME FAILURE CHECK                                                |
-//+------------------------------------------------------------------+
-void CheckTimeFailure()
-{
-   for(int i = g_posCount - 1; i >= 0; i--)
-   {
-      if(!g_pos[i].active) continue;
-
-      g_pos[i].barsInTrade++;
-
-      if(g_pos[i].barsInTrade >= TimeFailureBars)
-      {
-         ulong ticket = g_pos[i].ticket;
-         if(!PositionSelectByTicket(ticket)) continue;
-
-         ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
-         double currentPrice = (posType == POSITION_TYPE_BUY) ?
-                              SymbolInfoDouble(_Symbol, SYMBOL_BID) :
-                              SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-
-         double profitPips;
-         if(posType == POSITION_TYPE_BUY)
-            profitPips = (currentPrice - g_pos[i].entryPrice) / pipValue;
-         else
-            profitPips = (g_pos[i].entryPrice - currentPrice) / pipValue;
-
-         // Exit if not enough profit and not too much loss
-         if(profitPips < TimeFailurePips && profitPips > -TimeFailurePips * 2)
-         {
-            trade.PositionClose(ticket);
-            g_pos[i].active = false;
-            Print("MIX2: TIME FAILURE after ", g_pos[i].barsInTrade, " bars, ", DoubleToString(profitPips, 0), " pips");
-         }
-      }
-   }
-}
 
 //+------------------------------------------------------------------+
 void CleanupPositions()
@@ -812,8 +764,6 @@ void OnTick()
    ManagePositions();
 
    if(!IsNewBar()) return;
-
-   CheckTimeFailure();
 
    if(HasOpenPosition()) return;
    if(!IsTradingWindow()) return;

@@ -65,10 +65,6 @@ input int      BEOffset_Min       = 41;      // BE+ offset min pips
 input int      BEOffset_Max       = 46;      // BE+ offset max pips
 input int      TrailingDistance   = 1000;    // Trailing udaljenost (pips)
 
-input group "=== EARLY & TIME FAILURE ==="
-input int      EarlyFailurePips   = 800;     // Early failure exit (- pips)
-input int      TimeFailureBars    = 3;       // Barova za time failure
-input int      TimeFailurePips    = 20;      // Min profit za time failure
 
 input group "=== FILTERI ==="
 input double   MaxSpread          = 50;      // Max spread (points)
@@ -190,7 +186,7 @@ int OnInit()
     Print("║ TP: STEALTH (hidden)");
     Print("║ BE+: @", TrailingStartBE, " pips -> entry+", BEOffset_Min, "-", BEOffset_Max);
     Print("║ TRAILING: ", TrailingDistance, " pips distance");
-    Print("║ EARLY FAILURE: -", EarlyFailurePips, " pips");
+    Print("║ EARLY FAILURE: OFF (SL handles)");
     Print("║ pipValue: ", pipValue);
     Print("╚═══════════════════════════════════════════════════════════════╝");
 
@@ -649,16 +645,9 @@ void ManageStealthPositions()
         if(profitPips > g_positions[i].maxProfitPips)
             g_positions[i].maxProfitPips = profitPips;
 
-        //=== 1. EARLY FAILURE EXIT ===
-        if(profitPips <= -EarlyFailurePips)
-        {
-            trade.PositionClose(ticket);
-            g_positions[i].active = false;
-            Print("Mix1_ADX: EARLY FAILURE @ ", DoubleToString(-profitPips, 0), " pips loss");
-            continue;
-        }
+        // Nema Early Failure - SL na brokeru štiti poziciju
 
-        //=== 2. Target 1 ===
+        //=== 1. Target 1 ===
         if(g_positions[i].targetHit < 1)
         {
             bool t1Hit = (posType == POSITION_TYPE_BUY && currentPrice >= g_positions[i].stealthTP1) ||
@@ -780,43 +769,6 @@ void ManageStealthPositions()
     CleanupPositions();
 }
 
-//+------------------------------------------------------------------+
-//| Check Time Exits                                                  |
-//+------------------------------------------------------------------+
-void CheckTimeExits()
-{
-    for(int i = g_posCount - 1; i >= 0; i--)
-    {
-        if(!g_positions[i].active) continue;
-
-        g_positions[i].barsInTrade++;
-
-        // Time failure exit (3+ bars with < 20 pips profit)
-        if(g_positions[i].barsInTrade >= TimeFailureBars)
-        {
-            ulong ticket = g_positions[i].ticket;
-            if(!PositionSelectByTicket(ticket)) continue;
-
-            ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
-            double currentPrice = (posType == POSITION_TYPE_BUY) ?
-                                 SymbolInfoDouble(_Symbol, SYMBOL_BID) :
-                                 SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-
-            double profitPips = 0;
-            if(posType == POSITION_TYPE_BUY)
-                profitPips = (currentPrice - g_positions[i].entryPrice) / pipValue;
-            else
-                profitPips = (g_positions[i].entryPrice - currentPrice) / pipValue;
-
-            if(profitPips < TimeFailurePips && profitPips > -TimeFailurePips)
-            {
-                trade.PositionClose(ticket);
-                g_positions[i].active = false;
-                Print("Mix1_ADX: TIME FAILURE - ", g_positions[i].barsInTrade, " bars, ", DoubleToString(profitPips, 0), " pips");
-            }
-        }
-    }
-}
 
 void CleanupPositions()
 {
@@ -848,9 +800,6 @@ void OnTick()
 
     // Only check for new signals on new bar
     if(!IsNewBar()) return;
-
-    // Time exit check
-    CheckTimeExits();
 
     // Check filters
     if(HasOpenPosition()) return;
