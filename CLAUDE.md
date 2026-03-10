@@ -65,7 +65,9 @@ double trailPips = highestProfit - TrailingDistance;
 
 ## Trading Window
 - **Radno vrijeme**: 00:00 - 24:00 (cijeli dan)
-- **Petak close**: 11:00 (stop novih trejdova - izbjegavanje vikend gapa)
+- **Petak**: Od 11:00 STOP otvaranja novih trejdova (izbjegavanje vikend gapa)
+  - Trejdovi se NE OTVARAJU iza 11:00 u petak
+  - Trejdovi se MOGU ZATVORITI iza 11:00 u petak (TP, SL, trailing - sve radi normalno)
 - **Vikend**: Ne trejdaj subota/nedjelja do 00:01
 
 ## Magic Numbers (aktivni EA)
