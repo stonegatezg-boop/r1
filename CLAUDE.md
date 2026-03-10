@@ -39,17 +39,17 @@ trade.Buy(lot, _Symbol, price, 0, 0, "EA_NAME");   // SL=0, postavlja se kasnije
 
 ## Trailing Stop System (STANDARDNO)
 - **SL**: Random između 988-1054 pips (svaki trejd drugačije)
-- **BE+**: Na 1500 pips profita → pomakni SL na BE + 41-46 pips (random)
-- **Trailing**: Nakon BE+, prati profit na udaljenosti 500 pips
+- **BE+**: Na 1000 pips profita → pomakni SL na BE + 41-46 pips (random)
+- **Trailing**: Nakon BE+, prati profit na udaljenosti 1000 pips
 
 ```cpp
 // SL - random pri otvaranju
 int slPips = InitialSL_Min + MathRand() % (InitialSL_Max - InitialSL_Min + 1);
 
-// BE+ - random offset na 1500 pips profita
+// BE+ - random offset na 1000 pips profita
 int beOffset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
 
-// Trailing - prati na 500 pips udaljenosti
+// Trailing - prati na 1000 pips udaljenosti
 double trailPips = highestProfit - TrailingDistance;
 ```
 
@@ -58,10 +58,10 @@ double trailPips = highestProfit - TrailingDistance;
 - **News Filter**: Izbjegavaj trading oko vijesti
 - **Large Candle Filter**: Preskoči ako je candle prevelik (ATR multiple)
 
-## Trading Window (Zagreb Time)
-- **Start**: 08:00 (Zagreb)
-- **End**: 22:00 (Zagreb)
-- **Petak close**: 20:00 (Zagreb)
+## Trading Window
+- **Start**: 08:00
+- **End**: 22:00
+- **Petak close**: 11:00 (stop novih trejdova - izbjegavanje vikend gapa)
 - **Vikend**: Ne trejdaj subota/nedjelja do 00:01
 
 ## Magic Numbers (aktivni EA)
@@ -94,15 +94,15 @@ input int InitialSL_Min = 988;   // SL min pips
 input int InitialSL_Max = 1054;  // SL max pips
 
 // Trailing
-input int TrailingStartBE = 1500;  // pips za BE+
+input int TrailingStartBE = 1000;  // pips za BE+
 input int BEOffset_Min = 41;       // BE+ offset min
 input int BEOffset_Max = 46;       // BE+ offset max
-input int TrailingDistance = 500;  // trailing udaljenost
+input int TrailingDistance = 1000; // trailing udaljenost
 
-// Radno vrijeme (Zagreb)
-input int ZagrebStartHour = 8;
-input int ZagrebEndHour = 22;
-input int FridayCloseHour = 20;
+// Radno vrijeme
+input int StartHour = 8;
+input int EndHour = 22;
+input int FridayCloseHour = 11;    // stop novih trejdova
 ```
 
 ## Verzioniranje (OBAVEZNO)
