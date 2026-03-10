@@ -1,20 +1,20 @@
 //+------------------------------------------------------------------+
 //|                                            TopBottom_New_Cla.mq5 |
-//|                   EMA Pullback + Kalman Hull RSI v3.0            |
-//|                   XAUUSD M5 - IMPROVED VERSION                   |
+//|                   EMA Pullback + Kalman Hull RSI v3.1            |
+//|                   XAUUSD M5 - CLAUDE.md STANDARD                 |
 //|                                                                  |
-//|   IMPROVEMENTS:                                                  |
-//|   - Fixed Kalman filter for multi-symbol                         |
-//|   - Fixed VWAP calculation (session-based)                       |
-//|   - Increased Time Failure tolerance                             |
-//|   - Added Aggressive Mode option                                 |
-//|   - Dynamic SL based on swing                                    |
-//|   - SL ODMAH (immediate SL placement)                            |
+//|   FEATURES:                                                      |
+//|   - Stealth TP (TP=0, close manually)                            |
+//|   - REAL SL ODMAH (988-1054 pips random)                         |
+//|   - BE+ at 1000 pips (offset 41-46 random)                       |
+//|   - Trailing 1000 pips after BE+                                 |
+//|   - Trading window 0-24h, Friday 11h                             |
 //|                                                                  |
 //|   Created: 05.03.2026 (Zagreb)                                   |
+//|   Fixed: 10.03.2026 (Zagreb) - CLAUDE.md standard settings       |
 //+------------------------------------------------------------------+
-#property copyright "TopBottom_New_Cla v3.0 (2026-03-05)"
-#property version   "3.00"
+#property copyright "TopBottom_New_Cla v3.1 (2026-03-10)"
+#property version   "3.10"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -49,21 +49,15 @@ input int      Target1_Pips = 300;
 input int      Target2_Pips = 500;
 input int      Target3_Pips = 800;
 
-input group "=== SL POSTAVKE ==="
-input int      SL_Pips = 300;
-input bool     UseDynamicSL = true;        // SL based on swing
-input int      SwingLookback = 10;
-input int      SL_Buffer_Pips = 30;
+input group "=== SL POSTAVKE (CLAUDE.md STANDARD) ==="
+input int      InitialSL_Min = 988;        // SL min pips
+input int      InitialSL_Max = 1054;       // SL max pips
 
-input group "=== TRAILING (3 LEVEL + MFE) ==="
-input int      TrailLevel1_Pips = 500;
-input int      TrailLevel1_BE = 40;
-input int      TrailLevel2_Pips = 800;
-input int      TrailLevel2_Lock = 150;
-input int      TrailLevel3_Pips = 1200;
-input int      TrailLevel3_Lock = 200;
-input int      MFE_ActivatePips = 1500;
-input int      MFE_TrailDistance = 500;
+input group "=== TRAILING (CLAUDE.md STANDARD) ==="
+input int      TrailingStartBE = 1000;     // BE+ aktivacija (pips profit)
+input int      BEOffset_Min = 41;          // BE+ offset min pips
+input int      BEOffset_Max = 46;          // BE+ offset max pips
+input int      TrailingDistance = 1000;    // Trailing udaljenost (pips)
 
 input group "=== FAILURE EXIT ==="
 input int      EarlyFailurePips = 800;
@@ -76,10 +70,10 @@ input bool     UseLargeCandleFilter = true;
 input double   LargeCandleATR = 3.0;
 input bool     UseVWAPFilter = true;
 
-input group "=== TRADING WINDOW ==="
-input bool     UseTradingWindow = true;
-input int      FridayCloseHour = 11;
-input int      FridayCloseMinute = 30;
+input group "=== RADNO VRIJEME (CLAUDE.md STANDARD) ==="
+input int      StartHour = 0;              // Početak tradinga
+input int      EndHour = 24;               // Kraj tradinga
+input int      FridayCloseHour = 11;       // Petak stop novih trejdova
 
 //+------------------------------------------------------------------+
 //| GLOBALNE VARIJABLE                                                |
@@ -96,7 +90,9 @@ bool     target1Hit = false;
 bool     target2Hit = false;
 double   originalLots = 0;
 
-int      trailLevel = 0;
+bool     beActivated = false;
+int      beOffset = 0;           // Random BE offset za ovaj trejd
+int      slPips = 0;             // Random SL za ovaj trejd
 double   maxProfitPips = 0;
 int      barsInTrade = 0;
 datetime lastBarTime = 0;
@@ -136,14 +132,17 @@ int OnInit()
    InitializeKalman();
    CheckExistingPosition();
 
+   MathSrand((uint)TimeCurrent() + (uint)GetTickCount());
+
    Print("===========================================");
-   Print("  TOPBOTTOM NEW v3.0 - XAUUSD M5");
+   Print("  TOPBOTTOM NEW v3.1 - XAUUSD M5");
+   Print("  CLAUDE.md Standard Settings");
    Print("===========================================");
    Print("Mode: ", AggressiveMode ? "AGGRESSIVE" : "NORMAL");
-   Print("Engulf: ", RequireEngulfing ? "ON" : "OFF");
-   Print("KHRSI: ", RequireKHRSI ? "ON" : "OFF");
-   Print("SL: ", SL_Pips, " pips (ODMAH)");
-   Print("Trail: L1=", TrailLevel1_Pips, " L2=", TrailLevel2_Pips, " L3=", TrailLevel3_Pips);
+   Print("SL: ", InitialSL_Min, "-", InitialSL_Max, " pips (random, ODMAH)");
+   Print("BE+: ", TrailingStartBE, " pips (offset ", BEOffset_Min, "-", BEOffset_Max, ")");
+   Print("Trail: ", TrailingDistance, " pips after BE+");
+   Print("Hours: ", StartHour, "-", EndHour, "h (Fri: ", FridayCloseHour, "h)");
    Print("===========================================");
 
    return(INIT_SUCCEEDED);
@@ -430,42 +429,9 @@ int GetSignal()
 }
 
 //+------------------------------------------------------------------+
-double GetDynamicSL(int dir)
-{
-   if(!UseDynamicSL) return SL_Pips * pipValue;
-
-   double swing = 0;
-
-   if(dir == 1)
-   {
-      swing = iLow(_Symbol, PERIOD_CURRENT, 1);
-      for(int i = 2; i <= SwingLookback; i++)
-      {
-         double l = iLow(_Symbol, PERIOD_CURRENT, i);
-         if(l < swing) swing = l;
-      }
-      double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-      double slDist = ask - swing + SL_Buffer_Pips * pipValue;
-      return MathMax(SL_Pips * 0.5 * pipValue, MathMin(SL_Pips * 2.0 * pipValue, slDist));
-   }
-   else
-   {
-      swing = iHigh(_Symbol, PERIOD_CURRENT, 1);
-      for(int i = 2; i <= SwingLookback; i++)
-      {
-         double h = iHigh(_Symbol, PERIOD_CURRENT, i);
-         if(h > swing) swing = h;
-      }
-      double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-      double slDist = swing - bid + SL_Buffer_Pips * pipValue;
-      return MathMax(SL_Pips * 0.5 * pipValue, MathMin(SL_Pips * 2.0 * pipValue, slDist));
-   }
-}
-
-//+------------------------------------------------------------------+
 bool CanTrade()
 {
-   if(UseTradingWindow && !IsTradingTime()) return false;
+   if(!IsTradingTime()) return false;
 
    if(UseSpreadFilter)
    {
@@ -494,9 +460,18 @@ bool IsTradingTime()
    MqlDateTime dt;
    TimeToStruct(TimeCurrent(), dt);
 
-   if(dt.day_of_week == 0 && dt.hour == 0 && dt.min < 1) return false;
-   if(dt.day_of_week == 5 && (dt.hour > FridayCloseHour || (dt.hour == FridayCloseHour && dt.min >= FridayCloseMinute))) return false;
+   // Nedjelja - ne trejdaj do 00:01
+   if(dt.day_of_week == 0)
+      return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1));
+
+   // Subota - ne trejdaj
    if(dt.day_of_week == 6) return false;
+
+   // Petak - stop novih trejdova ranije
+   if(dt.day_of_week == 5 && dt.hour >= FridayCloseHour) return false;
+
+   // Pon-Pet: Trading window
+   if(dt.hour < StartHour || dt.hour >= EndHour) return false;
 
    return true;
 }
@@ -505,10 +480,15 @@ bool IsTradingTime()
 void OpenBuy()
 {
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-   double slDist = GetDynamicSL(1);
-   double sl = NormalizeDouble(ask - slDist, _Digits);
 
-   // SL ODMAH!
+   // Random SL (988-1054 pips)
+   slPips = InitialSL_Min + MathRand() % (InitialSL_Max - InitialSL_Min + 1);
+   double sl = NormalizeDouble(ask - slPips * pipValue, _Digits);
+
+   // Random BE offset za kasnije
+   beOffset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
+
+   // STEALTH: SL ODMAH, TP=0
    if(trade.Buy(LotSize, _Symbol, ask, sl, 0, "TopBottom NEW"))
    {
       currentTicket = trade.ResultOrder();
@@ -519,13 +499,13 @@ void OpenBuy()
       originalLots = LotSize;
       target1Hit = false;
       target2Hit = false;
-      trailLevel = 0;
+      beActivated = false;
       maxProfitPips = 0;
       barsInTrade = 0;
       lastBarTime = 0;
       statBuys++;
 
-      Print("=== BUY #", currentTicket, " @ ", ask, " SL: ", sl, " ===");
+      Print("=== BUY #", currentTicket, " @ ", ask, " SL: ", sl, " (", slPips, " pips) BE+", beOffset, " ===");
    }
 }
 
@@ -533,10 +513,15 @@ void OpenBuy()
 void OpenSell()
 {
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   double slDist = GetDynamicSL(-1);
-   double sl = NormalizeDouble(bid + slDist, _Digits);
 
-   // SL ODMAH!
+   // Random SL (988-1054 pips)
+   slPips = InitialSL_Min + MathRand() % (InitialSL_Max - InitialSL_Min + 1);
+   double sl = NormalizeDouble(bid + slPips * pipValue, _Digits);
+
+   // Random BE offset za kasnije
+   beOffset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
+
+   // STEALTH: SL ODMAH, TP=0
    if(trade.Sell(LotSize, _Symbol, bid, sl, 0, "TopBottom NEW"))
    {
       currentTicket = trade.ResultOrder();
@@ -547,13 +532,13 @@ void OpenSell()
       originalLots = LotSize;
       target1Hit = false;
       target2Hit = false;
-      trailLevel = 0;
+      beActivated = false;
       maxProfitPips = 0;
       barsInTrade = 0;
       lastBarTime = 0;
       statSells++;
 
-      Print("=== SELL #", currentTicket, " @ ", bid, " SL: ", sl, " ===");
+      Print("=== SELL #", currentTicket, " @ ", bid, " SL: ", sl, " (", slPips, " pips) BE+", beOffset, " ===");
    }
 }
 
@@ -649,60 +634,49 @@ void CheckTargets(double profitPips)
 void ManageTrailing(double profitPips)
 {
    double sl = PositionGetDouble(POSITION_SL);
-   if(sl == 0) return;
-
-   double newSL = sl;
-   bool mod = false;
-
-   // L1
-   if(trailLevel < 1 && profitPips >= TrailLevel1_Pips)
+   if(sl == 0)
    {
-      newSL = (positionType == 0) ? entryPrice + TrailLevel1_BE * pipValue : entryPrice - TrailLevel1_BE * pipValue;
+      // Backup: SL mora biti postavljen!
+      double newSL = (positionType == 0) ?
+         entryPrice - slPips * pipValue :
+         entryPrice + slPips * pipValue;
+      trade.PositionModify(currentTicket, NormalizeDouble(newSL, _Digits), 0);
+      Print("BACKUP SL SET: ", newSL);
+      return;
+   }
+
+   // BE+ na 1000 pips profita
+   if(!beActivated && profitPips >= TrailingStartBE)
+   {
+      double newSL = (positionType == 0) ?
+         entryPrice + beOffset * pipValue :
+         entryPrice - beOffset * pipValue;
       newSL = NormalizeDouble(newSL, _Digits);
-      mod = (positionType == 0 && newSL > sl) || (positionType == 1 && newSL < sl);
-      if(mod && trade.PositionModify(currentTicket, newSL, 0))
+
+      bool better = (positionType == 0 && newSL > sl) || (positionType == 1 && newSL < sl);
+      if(better && trade.PositionModify(currentTicket, newSL, 0))
       {
-         trailLevel = 1;
-         Print("TRAIL L1: BE+", TrailLevel1_BE);
+         beActivated = true;
+         Print("BE+ ACTIVATED: +", beOffset, " pips");
       }
    }
 
-   // L2
-   if(trailLevel < 2 && profitPips >= TrailLevel2_Pips)
+   // Trailing nakon BE+ - prati na 1000 pips udaljenosti
+   if(beActivated && maxProfitPips > TrailingStartBE)
    {
-      newSL = (positionType == 0) ? entryPrice + TrailLevel2_Lock * pipValue : entryPrice - TrailLevel2_Lock * pipValue;
-      newSL = NormalizeDouble(newSL, _Digits);
-      mod = (positionType == 0 && newSL > sl) || (positionType == 1 && newSL < sl);
-      if(mod && trade.PositionModify(currentTicket, newSL, 0))
+      double trailPips = maxProfitPips - TrailingDistance;
+      if(trailPips > beOffset)  // Samo ako je bolje od BE+
       {
-         trailLevel = 2;
-         Print("TRAIL L2: Lock+", TrailLevel2_Lock);
-      }
-   }
+         double newSL = (positionType == 0) ?
+            entryPrice + trailPips * pipValue :
+            entryPrice - trailPips * pipValue;
+         newSL = NormalizeDouble(newSL, _Digits);
 
-   // L3
-   if(trailLevel < 3 && profitPips >= TrailLevel3_Pips)
-   {
-      newSL = (positionType == 0) ? entryPrice + TrailLevel3_Lock * pipValue : entryPrice - TrailLevel3_Lock * pipValue;
-      newSL = NormalizeDouble(newSL, _Digits);
-      mod = (positionType == 0 && newSL > sl) || (positionType == 1 && newSL < sl);
-      if(mod && trade.PositionModify(currentTicket, newSL, 0))
-      {
-         trailLevel = 3;
-         Print("TRAIL L3: Lock+", TrailLevel3_Lock);
-      }
-   }
-
-   // MFE
-   if(maxProfitPips >= MFE_ActivatePips)
-   {
-      double mfeLock = maxProfitPips - MFE_TrailDistance;
-      double mfeSL = (positionType == 0) ? entryPrice + mfeLock * pipValue : entryPrice - mfeLock * pipValue;
-      mfeSL = NormalizeDouble(mfeSL, _Digits);
-      mod = (positionType == 0 && mfeSL > sl) || (positionType == 1 && mfeSL < sl);
-      if(mod && trade.PositionModify(currentTicket, mfeSL, 0))
-      {
-         Print("MFE TRAIL: Lock ", DoubleToString(mfeLock, 0));
+         bool better = (positionType == 0 && newSL > sl) || (positionType == 1 && newSL < sl);
+         if(better && trade.PositionModify(currentTicket, newSL, 0))
+         {
+            Print("TRAIL: Lock +", DoubleToString(trailPips, 0), " pips (MFE: ", DoubleToString(maxProfitPips, 0), ")");
+         }
       }
    }
 }
@@ -723,7 +697,12 @@ void CheckExistingPosition()
             entryTime = (datetime)PositionGetInteger(POSITION_TIME);
             hasOpenPosition = true;
             originalLots = PositionGetDouble(POSITION_VOLUME);
-            Print("Found position: ", ticket);
+
+            // Default values za recovery
+            slPips = (InitialSL_Min + InitialSL_Max) / 2;
+            beOffset = (BEOffset_Min + BEOffset_Max) / 2;
+
+            Print("Found position: ", ticket, " | Using default SL/BE values");
             break;
          }
       }

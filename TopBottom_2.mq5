@@ -8,7 +8,7 @@
 //|   - REAL SL ODMAH (988-1054 pips random)                          |
 //|   - BE+ at 1000 pips (offset 41-46 random)                        |
 //|   - Trailing 1000 pips after BE+                                  |
-//|   - Trading window 08-22h Zagreb, Friday 20h                      |
+//|   - Trading window 0-24h, Friday 11h                              |
 //|                                                                   |
 //|   Created: 10.03.2026 (Zagreb)                                    |
 //+------------------------------------------------------------------+
@@ -65,9 +65,9 @@ input double   LargeCandleATR = 3.0;
 input bool     UseVWAPFilter = true;
 
 input group "=== RADNO VRIJEME (ZAGREB) ==="
-input int      ZagrebStartHour = 8;
-input int      ZagrebEndHour = 22;
-input int      FridayCloseHour = 20;
+input int      ZagrebStartHour = 0;
+input int      ZagrebEndHour = 24;
+input int      FridayCloseHour = 11;
 
 //+------------------------------------------------------------------+
 //| GLOBALNE VARIJABLE                                                |
