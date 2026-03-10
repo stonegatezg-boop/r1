@@ -71,8 +71,8 @@ input double   LargeCandleATR     = 2.5;      // Smanjeno s 3.0
 input double   Channel_ATR_Mult   = 0.618;
 
 input group "=== RADNO VRIJEME ==="
-input int      StartHour          = 8;        // Početak tradinga
-input int      EndHour            = 22;       // Kraj tradinga
+input int      StartHour          = 0;        // Početak tradinga
+input int      EndHour            = 24;       // Kraj tradinga
 input int      FridayCloseHour    = 11;       // Petak stop novih trejdova
 
 input group "=== RISK ==="

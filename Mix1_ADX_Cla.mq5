@@ -75,8 +75,8 @@ input double   MaxSpread          = 50;      // Max spread (points)
 input bool     UseNewsFilter      = false;   // News filter
 
 input group "=== RADNO VRIJEME ==="
-input int      StartHour          = 8;       // Početak tradinga
-input int      EndHour            = 22;      // Kraj tradinga
+input int      StartHour          = 0;       // Početak tradinga
+input int      EndHour            = 24;      // Kraj tradinga
 input int      FridayCloseHour    = 11;      // Petak stop novih trejdova
 
 input group "=== OPĆE ==="
