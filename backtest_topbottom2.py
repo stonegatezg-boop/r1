@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-TopBottom_KHRSI_Cla Backtest - Optimized
+TopBottom 2 Backtest
 EMA20 Pullback Engulf + Kalman Hull RSI
 """
 
@@ -202,7 +202,7 @@ def backtest(df):
 
 def main():
     print("=" * 80)
-    print("TOPBOTTOM_KHRSI_CLA BACKTEST")
+    print("TOPBOTTOM 2 BACKTEST")
     print("EMA20 Pullback Engulf + Kalman Hull RSI | XAUUSD M5")
     print("=" * 80)
 
@@ -320,8 +320,8 @@ def main():
 
     # Save all trades
     trades_df = pd.DataFrame(trades)
-    trades_df.to_csv('/home/user/r1/topbottom_backtest_results.csv', index=False)
-    print(f"\nSvi trejdovi spremljeni u: topbottom_backtest_results.csv")
+    trades_df.to_csv('/home/user/r1/topbottom2_backtest_results.csv', index=False)
+    print(f"\nSvi trejdovi spremljeni u: topbottom2_backtest_results.csv")
 
 if __name__ == '__main__':
     main()
