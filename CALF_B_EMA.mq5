@@ -99,7 +99,7 @@ bool IsTradingWindow()
     MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
     if(dt.day_of_week == 0) return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1)); // Nedjelja od 00:01
     if(dt.day_of_week >= 1 && dt.day_of_week <= 4) return true; // Pon-Čet cijeli dan
-    if(dt.day_of_week == 5) return (dt.hour < 11 || (dt.hour == 11 && dt.min <= 30)); // Petak do 11:30
+    if(dt.day_of_week == 5) return (dt.hour < 11); // Petak do 11:00
     return false;
 }
 bool IsLargeCandle()
