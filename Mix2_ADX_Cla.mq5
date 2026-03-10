@@ -8,14 +8,16 @@
 //|   - Distance from EMA filter                                     |
 //|   - Pullback detection before entry                              |
 //|   - Stronger ADX requirements                                    |
-//|   - Fixed SL option (800 pips)                                   |
+//|   - Random SL 988-1054 pips                                      |
 //|   - Better Time Failure parameters                               |
 //|   - SL ODMAH (immediate)                                         |
+//|   - BE+ @1000 pips, Trailing 1000 pips                           |
 //|                                                                  |
 //|   Created: 05.03.2026 (Zagreb)                                   |
+//|   Fixed: 10.03.2026 (Zagreb) - Random SL, BE+@1000, Trail 1000   |
 //+------------------------------------------------------------------+
-#property copyright "Mix2_ADX_Cla v1.0 (05.03.2026)"
-#property version   "1.00"
+#property copyright "Mix2_ADX_Cla v1.1 (10.03.2026)"
+#property version   "1.10"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -41,10 +43,9 @@ input double   MaxDistanceATR     = 2.0;      // Max udaljenost od EMA
 input bool     RequirePullback    = true;     // Cekaj pullback prije ulaza
 input int      PullbackBars       = 3;        // Koliko barova provjeravati
 
-input group "=== SL POSTAVKE ==="
-input bool     UseFixedSL         = true;     // TRUE = fiksni SL
-input int      FixedSL_Pips       = 800;      // Fiksni SL u pips
-input double   DynamicSL_ATR      = 1.5;      // Ako UseFixedSL=false
+input group "=== SL POSTAVKE (RANDOM) ==="
+input int      InitialSL_Min      = 988;      // SL min pips
+input int      InitialSL_Max      = 1054;     // SL max pips
 
 input group "=== TARGETS (ATR MULTIPLE) ==="
 input double   Target1_ATR        = 1.5;
@@ -53,17 +54,11 @@ input double   Target3_ATR        = 4.0;
 input int      ClosePercent1      = 33;
 input int      ClosePercent2      = 50;
 
-input group "=== 3-LEVEL TRAILING ==="
-input int      TrailL1_Pips       = 500;
-input int      TrailL1_BE         = 40;
-input int      TrailL2_Pips       = 800;
-input int      TrailL2_Lock       = 150;
-input int      TrailL3_Pips       = 1200;
-input int      TrailL3_Lock       = 200;
-
-input group "=== MFE TRAILING ==="
-input int      MFE_Activate       = 1500;
-input int      MFE_Distance       = 500;
+input group "=== TRAILING STANDARD ==="
+input int      TrailingStartBE    = 1000;     // BE+ aktivacija (pips profit)
+input int      BEOffset_Min       = 41;       // BE+ offset min pips
+input int      BEOffset_Max       = 46;       // BE+ offset max pips
+input int      TrailingDistance   = 1000;     // Trailing udaljenost (pips)
 
 input group "=== FAILURE EXITS ==="
 input int      EarlyFailurePips   = 800;
@@ -74,6 +69,11 @@ input group "=== FILTERI ==="
 input double   MaxSpread          = 50;
 input double   LargeCandleATR     = 2.5;      // Smanjeno s 3.0
 input double   Channel_ATR_Mult   = 0.618;
+
+input group "=== RADNO VRIJEME (ZAGREB) ==="
+input int      ZagrebStartHour    = 8;        // Početak tradinga
+input int      ZagrebEndHour      = 22;       // Kraj tradinga
+input int      FridayCloseHour    = 20;       // Petak zatvaranje
 
 input group "=== RISK ==="
 input double   RiskPercent        = 1.0;
@@ -91,7 +91,8 @@ struct PositionData
    double   tp1, tp2, tp3;
    double   initialLots;
    int      targetHit;
-   int      trailLevel;
+   bool     beActivated;        // BE+ aktiviran
+   int      beOffset;           // Random BE offset za ovu poziciju
    double   maxProfitPips;
    int      barsInTrade;
    datetime openTime;
@@ -139,16 +140,19 @@ int OnInit()
    ArrayResize(g_pos, 0);
    g_posCount = 0;
 
+   MathSrand((uint)TimeCurrent() + (uint)GetTickCount());
+
    Print("=====================================================");
-   Print("     MIX2_ADX v1.0 - IMPROVED VERSION");
+   Print("     MIX2_ADX v1.1 - IMPROVED VERSION");
    Print("=====================================================");
    Print("EMA: ", EMA_Fast, "/", EMA_Medium, "/", MA_Trend);
    Print("ADX Threshold: ", ADX_Threshold, " (min ", ADX_MinEntry, ")");
    Print("Anti-Late: MaxBars=", MaxBarsInTrend, " MaxDist=", MaxDistanceATR, " ATR");
    Print("Pullback: ", RequirePullback ? "ON" : "OFF");
-   Print("SL: ", UseFixedSL ? IntegerToString(FixedSL_Pips) + " pips (FIXED)" : DoubleToString(DynamicSL_ATR, 1) + "x ATR");
+   Print("SL: RANDOM ", InitialSL_Min, "-", InitialSL_Max, " pips ODMAH");
    Print("Targets: ", Target1_ATR, "x / ", Target2_ATR, "x / ", Target3_ATR, "x ATR");
-   Print("Trail: L1@", TrailL1_Pips, " L2@", TrailL2_Pips, " L3@", TrailL3_Pips);
+   Print("BE+: @", TrailingStartBE, " pips -> entry+", BEOffset_Min, "-", BEOffset_Max);
+   Print("Trailing: ", TrailingDistance, " pips distance");
    Print("Time Exit: ", TimeFailureBars, " bars, ", TimeFailurePips, " pips");
    Print("=====================================================");
 
@@ -233,14 +237,30 @@ double GetDIMinus(int shift = 1)
 }
 
 //+------------------------------------------------------------------+
+//| TRADING WINDOW (Zagreb Time)                                      |
+//+------------------------------------------------------------------+
 bool IsTradingWindow()
 {
    MqlDateTime dt;
    TimeToStruct(TimeCurrent(), dt);
 
-   if(dt.day_of_week == 0 && dt.hour == 0 && dt.min < 1) return false;
-   if(dt.day_of_week == 5 && (dt.hour > 11 || (dt.hour == 11 && dt.min >= 30))) return false;
-   if(dt.day_of_week == 6) return false;
+   // Nedjelja - ne trejdaj do 00:01
+   if(dt.day_of_week == 0)
+      return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1));
+
+   // Subota - ne trejdaj
+   if(dt.day_of_week == 6)
+      return false;
+
+   // Petak - završi ranije
+   if(dt.day_of_week == 5)
+   {
+      if(dt.hour >= FridayCloseHour) return false;
+   }
+
+   // Pon-Pet: Trading window
+   if(dt.hour < ZagrebStartHour || dt.hour >= ZagrebEndHour)
+      return false;
 
    return true;
 }
@@ -484,7 +504,7 @@ double CalculateLotSize(double slDistance)
 }
 
 //+------------------------------------------------------------------+
-//| OPEN TRADE - SL ODMAH                                            |
+//| OPEN TRADE - SL ODMAH (RANDOM)                                    |
 //+------------------------------------------------------------------+
 void OpenTrade(int direction)
 {
@@ -495,12 +515,12 @@ void OpenTrade(int direction)
                   SymbolInfoDouble(_Symbol, SYMBOL_ASK) :
                   SymbolInfoDouble(_Symbol, SYMBOL_BID);
 
-   // Calculate SL
-   double slDistance;
-   if(UseFixedSL)
-      slDistance = FixedSL_Pips * pipValue;
-   else
-      slDistance = DynamicSL_ATR * atr;
+   // Random SL između 988-1054 pips
+   int slPips = InitialSL_Min + MathRand() % (InitialSL_Max - InitialSL_Min + 1);
+   double slDistance = slPips * pipValue;
+
+   // Random BE offset za ovu poziciju (za kasnije)
+   int beOffset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
 
    double sl, tp1, tp2, tp3;
 
@@ -548,7 +568,8 @@ void OpenTrade(int direction)
       g_pos[g_posCount].tp3 = tp3;
       g_pos[g_posCount].initialLots = lots;
       g_pos[g_posCount].targetHit = 0;
-      g_pos[g_posCount].trailLevel = 0;
+      g_pos[g_posCount].beActivated = false;
+      g_pos[g_posCount].beOffset = beOffset;
       g_pos[g_posCount].maxProfitPips = 0;
       g_pos[g_posCount].barsInTrade = 0;
       g_pos[g_posCount].openTime = TimeCurrent();
@@ -560,10 +581,11 @@ void OpenTrade(int direction)
       Print("=====================================================");
       Print("  MIX2 ", (direction == 1 ? "BUY" : "SELL"), " #", ticket);
       Print("  Entry: ", DoubleToString(price, digits));
-      Print("  SL: ", DoubleToString(sl, digits), " (", DoubleToString(slDistance/pipValue, 0), " pips) ODMAH");
+      Print("  SL: ", DoubleToString(sl, digits), " (", slPips, " pips RANDOM) ODMAH");
       Print("  T1: ", DoubleToString(tp1, digits));
       Print("  T2: ", DoubleToString(tp2, digits));
       Print("  T3: ", DoubleToString(tp3, digits));
+      Print("  BE+: @", TrailingStartBE, " pips -> +", beOffset, " | Trail: ", TrailingDistance);
       Print("  BarsInTrend: ", barsInCurrentTrend);
       Print("=====================================================");
    }
@@ -684,14 +706,14 @@ void ManagePositions()
          }
       }
 
-      //=== TRAILING LEVEL 3 ===
-      if(g_pos[i].trailLevel < 3 && profitPips >= TrailL3_Pips)
+      //=== BE+ AKTIVACIJA (na 1000 pips profita) ===
+      if(!g_pos[i].beActivated && profitPips >= TrailingStartBE)
       {
          double newSL;
          if(posType == POSITION_TYPE_BUY)
-            newSL = g_pos[i].entryPrice + TrailL3_Lock * pipValue;
+            newSL = g_pos[i].entryPrice + g_pos[i].beOffset * pipValue;
          else
-            newSL = g_pos[i].entryPrice - TrailL3_Lock * pipValue;
+            newSL = g_pos[i].entryPrice - g_pos[i].beOffset * pipValue;
 
          newSL = NormalizeDouble(newSL, digits);
          bool shouldMod = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
@@ -699,66 +721,27 @@ void ManagePositions()
 
          if(shouldMod && trade.PositionModify(ticket, newSL, 0))
          {
-            g_pos[i].trailLevel = 3;
-            Print("MIX2: TRAIL L3 Lock+", TrailL3_Lock);
-         }
-      }
-      //=== TRAILING LEVEL 2 ===
-      else if(g_pos[i].trailLevel < 2 && profitPips >= TrailL2_Pips)
-      {
-         double newSL;
-         if(posType == POSITION_TYPE_BUY)
-            newSL = g_pos[i].entryPrice + TrailL2_Lock * pipValue;
-         else
-            newSL = g_pos[i].entryPrice - TrailL2_Lock * pipValue;
-
-         newSL = NormalizeDouble(newSL, digits);
-         bool shouldMod = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
-                          (posType == POSITION_TYPE_SELL && newSL < currentSL);
-
-         if(shouldMod && trade.PositionModify(ticket, newSL, 0))
-         {
-            g_pos[i].trailLevel = 2;
-            Print("MIX2: TRAIL L2 Lock+", TrailL2_Lock);
-         }
-      }
-      //=== TRAILING LEVEL 1 ===
-      else if(g_pos[i].trailLevel < 1 && profitPips >= TrailL1_Pips)
-      {
-         double newSL;
-         if(posType == POSITION_TYPE_BUY)
-            newSL = g_pos[i].entryPrice + TrailL1_BE * pipValue;
-         else
-            newSL = g_pos[i].entryPrice - TrailL1_BE * pipValue;
-
-         newSL = NormalizeDouble(newSL, digits);
-         bool shouldMod = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
-                          (posType == POSITION_TYPE_SELL && newSL < currentSL);
-
-         if(shouldMod && trade.PositionModify(ticket, newSL, 0))
-         {
-            g_pos[i].trailLevel = 1;
-            Print("MIX2: TRAIL L1 BE+", TrailL1_BE);
+            g_pos[i].beActivated = true;
+            Print("MIX2: BE+ ACTIVATED @ ", TrailingStartBE, " pips -> entry+", g_pos[i].beOffset, " (SL=", newSL, ")");
          }
       }
 
-      //=== MFE TRAILING ===
-      if(g_pos[i].maxProfitPips >= MFE_Activate && g_pos[i].trailLevel >= 3)
+      //=== TRAILING (nakon BE+, prati na 1000 pips udaljenosti) ===
+      if(g_pos[i].beActivated)
       {
-         double mfeLock = g_pos[i].maxProfitPips - MFE_Distance;
-         double mfeSL;
+         double trailSL;
          if(posType == POSITION_TYPE_BUY)
-            mfeSL = g_pos[i].entryPrice + mfeLock * pipValue;
+            trailSL = currentPrice - TrailingDistance * pipValue;
          else
-            mfeSL = g_pos[i].entryPrice - mfeLock * pipValue;
+            trailSL = currentPrice + TrailingDistance * pipValue;
 
-         mfeSL = NormalizeDouble(mfeSL, digits);
-         bool shouldMod = (posType == POSITION_TYPE_BUY && mfeSL > currentSL) ||
-                          (posType == POSITION_TYPE_SELL && mfeSL < currentSL);
+         trailSL = NormalizeDouble(trailSL, digits);
+         bool shouldMod = (posType == POSITION_TYPE_BUY && trailSL > currentSL) ||
+                          (posType == POSITION_TYPE_SELL && trailSL < currentSL);
 
-         if(shouldMod && trade.PositionModify(ticket, mfeSL, 0))
+         if(shouldMod && trade.PositionModify(ticket, trailSL, 0))
          {
-            Print("MIX2: MFE Trail Lock ", DoubleToString(mfeLock, 0), " pips");
+            Print("MIX2: TRAILING @ ", TrailingDistance, " pips (SL=", trailSL, ")");
          }
       }
    }

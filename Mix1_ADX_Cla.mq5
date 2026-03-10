@@ -1,10 +1,11 @@
 //+------------------------------------------------------------------+
 //|                                                  Mix1_ADX_Cla.mq5|
 //|      *** Mix1 EMA Cross + Trend Channel + ADX/DI Histogram ***   |
-//|                   + Stealth Mode v2.2                            |
+//|                   + Stealth Mode v2.3                            |
 //|                   Based on @gu5tavo71 TradingView Indicator      |
 //|                   Created: 2026-02-25                            |
 //|                   Fixed: 04.03.2026 - SL ODMAH, 3-level trail    |
+//|                   Fixed: 10.03.2026 - Random SL, BE+@1000, Trail |
 //+------------------------------------------------------------------+
 //| Strategy:                                                        |
 //| - EMA Cross (26/50) for trend direction                          |
@@ -13,8 +14,8 @@
 //| BUY: TrendDir=1 + Bullish candle + DI+ > DI-                     |
 //| SELL: TrendDir=-1 + Bearish candle + DI- > DI+                   |
 //+------------------------------------------------------------------+
-#property copyright "Mix1_ADX_Cla v2.2 (04.03.2026)"
-#property version   "2.20"
+#property copyright "Mix1_ADX_Cla v2.3 (10.03.2026)"
+#property version   "2.30"
 #property strict
 
 #include <Trade\\Trade.mqh>
@@ -43,8 +44,6 @@ input bool     RequireADXConf     = true;    // Zahtijevaj ADX potvrdu
 
 input group "=== TRADE MANAGEMENT ==="
 input double   RiskPercent        = 1.0;     // Risk % po tradeu
-input double   RR_Ratio           = 1.5;     // Risk:Reward ratio
-input double   SLMultiplier       = 1.5;     // SL = ATR x množitelj
 input double   Target1_ATR        = 1.5;     // Target 1 (ATR x)
 input double   Target2_ATR        = 2.5;     // Target 2 (ATR x)
 input double   Target3_ATR        = 3.5;     // Target 3 (ATR x)
@@ -56,17 +55,15 @@ input group "=== STEALTH POSTAVKE ==="
 input bool     UseStealthMode     = true;    // Stealth mod (TP hidden)
 input double   LargeCandleATR     = 3.0;     // Filter velikih svijeća
 
-input group "=== 3-LEVEL TRAILING ==="
-input int      TrailL1_Pips       = 500;     // L1: Aktivacija (pips profit)
-input int      TrailL1_BE         = 40;      // L1: BE + pips
-input int      TrailL2_Pips       = 800;     // L2: Aktivacija (pips profit)
-input int      TrailL2_Lock       = 150;     // L2: Lock profit pips
-input int      TrailL3_Pips       = 1200;    // L3: Aktivacija (pips profit)
-input int      TrailL3_Distance   = 200;     // L3: Trail distance pips
+input group "=== SL POSTAVKE (RANDOM) ==="
+input int      InitialSL_Min      = 988;     // SL min pips
+input int      InitialSL_Max      = 1054;    // SL max pips
 
-input group "=== MFE TRAILING ==="
-input int      MFE_Activate       = 1500;    // MFE aktivacija (pips)
-input int      MFE_Distance       = 500;     // MFE trail distance (pips)
+input group "=== TRAILING STANDARD ==="
+input int      TrailingStartBE    = 1000;    // BE+ aktivacija (pips profit)
+input int      BEOffset_Min       = 41;      // BE+ offset min pips
+input int      BEOffset_Max       = 46;      // BE+ offset max pips
+input int      TrailingDistance   = 1000;    // Trailing udaljenost (pips)
 
 input group "=== EARLY & TIME FAILURE ==="
 input int      EarlyFailurePips   = 800;     // Early failure exit (- pips)
@@ -76,6 +73,11 @@ input int      TimeFailurePips    = 20;      // Min profit za time failure
 input group "=== FILTERI ==="
 input double   MaxSpread          = 50;      // Max spread (points)
 input bool     UseNewsFilter      = false;   // News filter
+
+input group "=== RADNO VRIJEME (ZAGREB) ==="
+input int      ZagrebStartHour    = 8;       // Početak tradinga
+input int      ZagrebEndHour      = 22;      // Kraj tradinga
+input int      FridayCloseHour    = 20;      // Petak zatvaranje
 
 input group "=== OPĆE ==="
 input ulong    MagicNumber        = 261450;  // Magic broj
@@ -95,7 +97,8 @@ struct StealthPosInfo
     double   initialLots;
     datetime openTime;
     int      targetHit;
-    int      trailLevel;
+    bool     beActivated;       // BE+ aktiviran
+    int      beOffset;          // Random BE offset za ovu poziciju
     double   maxProfitPips;
     int      barsInTrade;
 };
@@ -177,17 +180,16 @@ int OnInit()
         pipValue = 0.01;
 
     Print("╔═══════════════════════════════════════════════════════════════╗");
-    Print("║     MIX1 EMA CROSS + TREND CHANNEL + ADX/DI CLA v2.2          ║");
+    Print("║     MIX1 EMA CROSS + TREND CHANNEL + ADX/DI CLA v2.3          ║");
     Print("╠═══════════════════════════════════════════════════════════════╣");
     Print("║ EMA Fast: ", EMA_Fast, " | EMA Med: ", EMA_Medium, " | MA Trend: ", MA_Trend);
     Print("║ Channel ATR: ", Channel_ATR_Mult, " | ADX Threshold: ", ADX_Threshold);
     Print("║ DI Buffer: ", DI_Buffer, "%");
     Print("║ Targets: ", Target1_ATR, "x / ", Target2_ATR, "x / ", Target3_ATR, "x ATR");
-    Print("║ SL: ODMAH na ulasku | TP: STEALTH (hidden)");
-    Print("║ TRAILING L1: ", TrailL1_Pips, " pips -> BE+", TrailL1_BE);
-    Print("║ TRAILING L2: ", TrailL2_Pips, " pips -> Lock ", TrailL2_Lock);
-    Print("║ TRAILING L3: ", TrailL3_Pips, " pips -> Trail ", TrailL3_Distance);
-    Print("║ MFE: ", MFE_Activate, " pips -> Trail ", MFE_Distance);
+    Print("║ SL: RANDOM ", InitialSL_Min, "-", InitialSL_Max, " pips ODMAH");
+    Print("║ TP: STEALTH (hidden)");
+    Print("║ BE+: @", TrailingStartBE, " pips -> entry+", BEOffset_Min, "-", BEOffset_Max);
+    Print("║ TRAILING: ", TrailingDistance, " pips distance");
     Print("║ EARLY FAILURE: -", EarlyFailurePips, " pips");
     Print("║ pipValue: ", pipValue);
     Print("╚═══════════════════════════════════════════════════════════════╝");
@@ -268,23 +270,32 @@ double GetDIMinus(int shift = 1)
 }
 
 //+------------------------------------------------------------------+
-//| TRADING WINDOW                                                    |
+//| TRADING WINDOW (Zagreb Time)                                      |
 //+------------------------------------------------------------------+
 bool IsTradingWindow()
 {
     MqlDateTime dt;
     TimeToStruct(TimeCurrent(), dt);
 
+    // Nedjelja - ne trejdaj do 00:01
     if(dt.day_of_week == 0)
         return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1));
 
-    if(dt.day_of_week >= 1 && dt.day_of_week <= 4)
-        return true;
+    // Subota - ne trejdaj
+    if(dt.day_of_week == 6)
+        return false;
 
+    // Petak - završi ranije
     if(dt.day_of_week == 5)
-        return (dt.hour < 11 || (dt.hour == 11 && dt.min <= 30));
+    {
+        if(dt.hour >= FridayCloseHour) return false;
+    }
 
-    return false;
+    // Pon-Pet: Trading window
+    if(dt.hour < ZagrebStartHour || dt.hour >= ZagrebEndHour)
+        return false;
+
+    return true;
 }
 
 bool IsSpreadOK()
@@ -508,7 +519,7 @@ double CalculateLotSize(double slDistance)
 }
 
 //+------------------------------------------------------------------+
-//| TRADE EXECUTION - SL ODMAH                                        |
+//| TRADE EXECUTION - SL ODMAH (RANDOM)                               |
 //+------------------------------------------------------------------+
 void OpenTrade(ENUM_ORDER_TYPE type)
 {
@@ -519,24 +530,31 @@ void OpenTrade(ENUM_ORDER_TYPE type)
                    SymbolInfoDouble(_Symbol, SYMBOL_ASK) :
                    SymbolInfoDouble(_Symbol, SYMBOL_BID);
 
+    // Random SL između 988-1054 pips
+    int slPips = InitialSL_Min + MathRand() % (InitialSL_Max - InitialSL_Min + 1);
+    double slDistance = slPips * pipValue;
+
+    // Random BE offset za ovu poziciju (za kasnije)
+    int beOffset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
+
     double sl, tp1, tp2, tp3;
 
     if(type == ORDER_TYPE_BUY)
     {
-        sl = price - SLMultiplier * atr;
+        sl = price - slDistance;
         tp1 = price + Target1_ATR * atr;
         tp2 = price + Target2_ATR * atr;
         tp3 = price + Target3_ATR * atr;
     }
     else
     {
-        sl = price + SLMultiplier * atr;
+        sl = price + slDistance;
         tp1 = price - Target1_ATR * atr;
         tp2 = price - Target2_ATR * atr;
         tp3 = price - Target3_ATR * atr;
     }
 
-    double lots = CalculateLotSize(SLMultiplier * atr);
+    double lots = CalculateLotSize(slDistance);
     if(lots <= 0) return;
 
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
@@ -566,7 +584,8 @@ void OpenTrade(ENUM_ORDER_TYPE type)
         g_positions[g_posCount].initialLots = lots;
         g_positions[g_posCount].openTime = TimeCurrent();
         g_positions[g_posCount].targetHit = 0;
-        g_positions[g_posCount].trailLevel = 0;
+        g_positions[g_posCount].beActivated = false;
+        g_positions[g_posCount].beOffset = beOffset;
         g_positions[g_posCount].maxProfitPips = 0;
         g_positions[g_posCount].barsInTrade = 0;
         g_posCount++;
@@ -578,11 +597,11 @@ void OpenTrade(ENUM_ORDER_TYPE type)
         Print("║ MIX1_ADX ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"), " - SL ODMAH #", ticket);
         Print("╠════════════════════════════════════════════════╣");
         Print("║ Entry: ", DoubleToString(price, digits), " | Lots: ", DoubleToString(lots, 2));
-        Print("║ SL: ", DoubleToString(sl, digits), " (ODMAH)");
+        Print("║ SL: ", DoubleToString(sl, digits), " (", slPips, " pips RANDOM)");
         Print("║ T1: ", DoubleToString(tp1, digits));
         Print("║ T2: ", DoubleToString(tp2, digits));
         Print("║ T3: ", DoubleToString(tp3, digits));
-        Print("║ Trail: L1@", TrailL1_Pips, " L2@", TrailL2_Pips, " L3@", TrailL3_Pips);
+        Print("║ BE+: @", TrailingStartBE, " pips -> +", beOffset, " | Trail: ", TrailingDistance);
         Print("╚════════════════════════════════════════════════╝");
     }
     else
@@ -592,7 +611,7 @@ void OpenTrade(ENUM_ORDER_TYPE type)
 }
 
 //+------------------------------------------------------------------+
-//| STEALTH POSITION MANAGEMENT - 3-LEVEL TRAILING + MFE              |
+//| STEALTH POSITION MANAGEMENT - BE+ i TRAILING STANDARD             |
 //+------------------------------------------------------------------+
 void ManageStealthPositions()
 {
@@ -715,15 +734,14 @@ void ManageStealthPositions()
             }
         }
 
-        //=== 5. 3-LEVEL TRAILING ===
-        // Level 3 (1200+ pips - trail distance)
-        if(g_positions[i].trailLevel < 3 && profitPips >= TrailL3_Pips)
+        //=== 5. BE+ AKTIVACIJA (na 1000 pips profita) ===
+        if(!g_positions[i].beActivated && profitPips >= TrailingStartBE)
         {
             double newSL;
             if(posType == POSITION_TYPE_BUY)
-                newSL = currentPrice - TrailL3_Distance * pipValue;
+                newSL = g_positions[i].entryPrice + g_positions[i].beOffset * pipValue;
             else
-                newSL = currentPrice + TrailL3_Distance * pipValue;
+                newSL = g_positions[i].entryPrice - g_positions[i].beOffset * pipValue;
 
             newSL = NormalizeDouble(newSL, digits);
 
@@ -732,68 +750,28 @@ void ManageStealthPositions()
 
             if(shouldModify && trade.PositionModify(ticket, newSL, 0))
             {
-                g_positions[i].trailLevel = 3;
-                Print("Mix1_ADX L3: Trail ", TrailL3_Distance, " pips (SL=", newSL, ")");
-            }
-        }
-        // Level 2 (800+ pips - lock profit)
-        else if(g_positions[i].trailLevel < 2 && profitPips >= TrailL2_Pips)
-        {
-            double newSL;
-            if(posType == POSITION_TYPE_BUY)
-                newSL = g_positions[i].entryPrice + TrailL2_Lock * pipValue;
-            else
-                newSL = g_positions[i].entryPrice - TrailL2_Lock * pipValue;
-
-            newSL = NormalizeDouble(newSL, digits);
-
-            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
-                               (posType == POSITION_TYPE_SELL && newSL < currentSL);
-
-            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
-            {
-                g_positions[i].trailLevel = 2;
-                Print("Mix1_ADX L2: Lock ", TrailL2_Lock, " pips (SL=", newSL, ")");
-            }
-        }
-        // Level 1 (500+ pips - BE + buffer)
-        else if(g_positions[i].trailLevel < 1 && profitPips >= TrailL1_Pips)
-        {
-            double newSL;
-            if(posType == POSITION_TYPE_BUY)
-                newSL = g_positions[i].entryPrice + TrailL1_BE * pipValue;
-            else
-                newSL = g_positions[i].entryPrice - TrailL1_BE * pipValue;
-
-            newSL = NormalizeDouble(newSL, digits);
-
-            bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
-                               (posType == POSITION_TYPE_SELL && newSL < currentSL);
-
-            if(shouldModify && trade.PositionModify(ticket, newSL, 0))
-            {
-                g_positions[i].trailLevel = 1;
-                Print("Mix1_ADX L1: BE+", TrailL1_BE, " pips (SL=", newSL, ")");
+                g_positions[i].beActivated = true;
+                Print("Mix1_ADX: BE+ ACTIVATED @ ", TrailingStartBE, " pips -> entry+", g_positions[i].beOffset, " (SL=", newSL, ")");
             }
         }
 
-        //=== 6. MFE TRAILING ===
-        if(g_positions[i].maxProfitPips >= MFE_Activate && g_positions[i].trailLevel >= 3)
+        //=== 6. TRAILING (nakon BE+, prati na 1000 pips udaljenosti) ===
+        if(g_positions[i].beActivated)
         {
-            double mfeSL;
+            double trailSL;
             if(posType == POSITION_TYPE_BUY)
-                mfeSL = currentPrice - MFE_Distance * pipValue;
+                trailSL = currentPrice - TrailingDistance * pipValue;
             else
-                mfeSL = currentPrice + MFE_Distance * pipValue;
+                trailSL = currentPrice + TrailingDistance * pipValue;
 
-            mfeSL = NormalizeDouble(mfeSL, digits);
+            trailSL = NormalizeDouble(trailSL, digits);
 
-            bool shouldModify = (posType == POSITION_TYPE_BUY && mfeSL > currentSL) ||
-                               (posType == POSITION_TYPE_SELL && mfeSL < currentSL);
+            bool shouldModify = (posType == POSITION_TYPE_BUY && trailSL > currentSL) ||
+                               (posType == POSITION_TYPE_SELL && trailSL < currentSL);
 
-            if(shouldModify && trade.PositionModify(ticket, mfeSL, 0))
+            if(shouldModify && trade.PositionModify(ticket, trailSL, 0))
             {
-                Print("Mix1_ADX MFE: Trail ", MFE_Distance, " pips (SL=", mfeSL, ")");
+                Print("Mix1_ADX: TRAILING @ ", TrailingDistance, " pips (SL=", trailSL, ")");
             }
         }
     }
