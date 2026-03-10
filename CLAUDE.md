@@ -53,6 +53,11 @@ int beOffset = BEOffset_Min + MathRand() % (BEOffset_Max - BEOffset_Min + 1);
 double trailPips = highestProfit - TrailingDistance;
 ```
 
+## ZABRANJENO - NE KORISTI
+- **Time Failure Exit**: NE zatvaraj trejd samo zato što je prošlo X barova bez profita
+- **Early Failure Exit**: NE zatvaraj trejd prije SL-a na gubitku
+- **Razlog**: SL na brokeru štiti poziciju, preuranjeni izlazi uzrokuju nepotrebne gubitke
+
 ## Filteri (standardni)
 - **Spread Filter**: MaxSpread input (tipično 50-80 za XAUUSD)
 - **News Filter**: Izbjegavaj trading oko vijesti
