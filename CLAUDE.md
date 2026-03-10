@@ -59,8 +59,7 @@ double trailPips = highestProfit - TrailingDistance;
 - **Large Candle Filter**: Preskoči ako je candle prevelik (ATR multiple)
 
 ## Trading Window
-- **Start**: 08:00
-- **End**: 22:00
+- **Radno vrijeme**: 00:00 - 24:00 (cijeli dan)
 - **Petak close**: 11:00 (stop novih trejdova - izbjegavanje vikend gapa)
 - **Vikend**: Ne trejdaj subota/nedjelja do 00:01
 
@@ -100,8 +99,8 @@ input int BEOffset_Max = 46;       // BE+ offset max
 input int TrailingDistance = 1000; // trailing udaljenost
 
 // Radno vrijeme
-input int StartHour = 8;
-input int EndHour = 22;
+input int StartHour = 0;
+input int EndHour = 24;
 input int FridayCloseHour = 11;    // stop novih trejdova
 ```
 
