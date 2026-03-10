@@ -6,8 +6,9 @@
 //|                   Fixed: 03.03.2026 14:30 (Zagreb)               |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
 //|                   Fixed: 04.03.2026 (Zagreb) - PIP FIX *10       |
-//|                   Fixed: 10.03.2026 (Zagreb) - SL 988-1054 pips  |
+//|                   Fixed: 10.03.2026 (Zagreb) - SL 988-1054 + Trail fix |
 //|                   - SL 988-1054 pips (random) ODMAH              |
+//|                   - Trailing: BE+ 1000 pips, offset 41-46        |
 //|                   - Stealth samo za TP                           |
 //+------------------------------------------------------------------+
 #property copyright "CALF C - Supertrend v3.4 SL988-1054"
@@ -35,10 +36,10 @@ input double   LargeCandleATR   = 3.0;    // Filter dugih svijeća
 input group "=== MFE TRAILING POSTAVKE ==="
 input bool     UseMFETrailing   = true;      // Koristi dinamički MFE trailing
 input double   MFELockPercent   = 70.0;      // Zaključaj X% od MFE (70% = lock 70% profita)
-input int      MFEActivatePips  = 300;       // Aktiviraj MFE trailing nakon X pips profita
-input int      TrailActivatePips = 500;      // Fallback: BE trailing aktivacija
-input int      TrailBEPipsMin   = 38;        // BE + 38
-input int      TrailBEPipsMax   = 43;        // BE + 43
+input int      MFEActivatePips  = 1000;      // Aktiviraj MFE trailing nakon X pips profita
+input int      TrailActivatePips = 1000;     // BE trailing aktivacija (1000 pips)
+input int      TrailBEPipsMin   = 41;        // BE + 41
+input int      TrailBEPipsMax   = 46;        // BE + 46
 input group "=== OPĆE ==="
 input ulong    MagicNumber      = 100003;
 input int      Slippage         = 30;
