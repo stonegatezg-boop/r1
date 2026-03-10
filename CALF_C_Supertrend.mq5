@@ -1,16 +1,17 @@
 //+------------------------------------------------------------------+
 //|                                           CALF_C_Supertrend.mq5  |
 //|                        *** CALF C - Supertrend ***                |
-//|                   + Stealth Mode v3.3 (PIP FIX)                  |
+//|                   + Stealth Mode v3.4 (SL 988-1054)              |
 //|                   Created: 23.02.2026 (Zagreb)                   |
 //|                   Fixed: 03.03.2026 14:30 (Zagreb)               |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
 //|                   Fixed: 04.03.2026 (Zagreb) - PIP FIX *10       |
-//|                   - SL 789-811 pips (random) ODMAH               |
+//|                   Fixed: 10.03.2026 (Zagreb) - SL 988-1054 pips  |
+//|                   - SL 988-1054 pips (random) ODMAH              |
 //|                   - Stealth samo za TP                           |
 //+------------------------------------------------------------------+
-#property copyright "CALF C - Supertrend v3.3 PIP FIX"
-#property version   "3.30"
+#property copyright "CALF C - Supertrend v3.4 SL988-1054"
+#property version   "3.40"
 #property strict
 #include <Trade\Trade.mqh>
 input group "=== SUPERTREND POSTAVKE ==="
@@ -185,8 +186,8 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp) {
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-    // v3.3 FIX: Random SL 789-811 pips (1 pip = 0.01 za XAUUSD)
-    int randomSLPips = RandomRange(789, 811);
+    // v3.4 FIX: Random SL 988-1054 pips (1 pip = 0.01 za XAUUSD)
+    int randomSLPips = RandomRange(988, 1054);
     double slDistance = randomSLPips * point;  // ISPRAVNO: bez * 10
     sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     sl = NormalizeDouble(sl, digits); tp = NormalizeDouble(tp, digits);
