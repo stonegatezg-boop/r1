@@ -26,11 +26,31 @@ trade.Buy(lot, _Symbol, price, 0, 0, "EA_NAME");   // SL=0, postavlja se kasnije
 |----|---------|-----------|
 | CALF_A_UTBot | v2.2 | PRAVI SL ODMAH |
 | CALF_A_M | v2.2 | PRAVI SL ODMAH (800 pips) |
-| CALF_B_EMA | v2.3 | PRAVI SL ODMAH (800 pips) |
+| CALF_B_EMA | v2.5 | PRAVI SL ODMAH (988-1054 pips) + 0-4s delay |
 | CALF_C_Supertrend | v3.1 | PRAVI SL ODMAH (800 pips) |
 | CALF_D_RSI | v2.2 | PRAVI SL ODMAH |
 | CALF_E_Breakout | v3.1 | PRAVI SL ODMAH (800 pips) |
 | Calf_A_Pro | v2.2 | PRAVI SL ODMAH |
+
+## Open Delay (Stealth Entry)
+- **Delay**: Random 0-4 sekunde prije otvaranja trejda
+- **Razlog**: Skrivanje ulaza od brokera, izbjegavanje pattern detekcije
+- **Implementacija**: Signal se detektira, čeka se random delay, pa se trejd otvori
+- **SL**: Postavlja se ODMAH nakon otvaranja (random 988-1054 pips)
+
+```cpp
+// Stealth delay inputi
+input int OpenDelayMin = 0;    // min sekundi
+input int OpenDelayMax = 4;    // max sekundi
+
+// Queue trade s delayem
+g_pendingTrade.delaySeconds = RandomRange(OpenDelayMin, OpenDelayMax);
+g_pendingTrade.signalTime = TimeCurrent();
+
+// Čekaj delay pa otvori
+if(TimeCurrent() >= g_pendingTrade.signalTime + g_pendingTrade.delaySeconds)
+    ExecuteTrade(...);
+```
 
 ## 3 Target System
 - **Target 1**: Zatvori 33% pozicije

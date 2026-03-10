@@ -1,17 +1,18 @@
 //+------------------------------------------------------------------+
 //|                                                CALF_B_EMA.mq5    |
 //|                        *** CALF B - EMA Crossover ***            |
-//|                   + Stealth Mode v2.4 (PIP FIX)                  |
+//|                   + Stealth Mode v2.5 (SL 988-1054)              |
 //|                   Created: 23.02.2026 (Zagreb)                   |
 //|                   Fixed: 03.03.2026 14:30 (Zagreb) - MAE/MFE opt |
 //|                   Fixed: 03.03.2026 22:30 (Zagreb) - REAL SL     |
 //|                   Fixed: 04.03.2026 (Zagreb) - PIP FIX *10       |
-//|                   - SL 789-811 pips (random) ODMAH               |
+//|                   Fixed: 10.03.2026 (Zagreb) - SL 988-1054 pips  |
+//|                   - SL 988-1054 pips (random) ODMAH              |
 //|                   - Stealth samo za TP                           |
 //|                   - Pametni Trailing (1000/500 dynamic lock)     |
 //+------------------------------------------------------------------+
-#property copyright "CALF B - EMA 9/21 + Stealth v2.4 PIP FIX"
-#property version   "2.40"
+#property copyright "CALF B - EMA 9/21 + Stealth v2.5 SL988-1054"
+#property version   "2.50"
 #property strict
 #include <Trade\Trade.mqh>
 input group "=== EMA POSTAVKE ==="
@@ -178,7 +179,7 @@ void QueueTrade(ENUM_ORDER_TYPE type)
     double atr = GetATR(); if(atr <= 0) return;
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
-    // v2.4: SL se računa random 789-811 pips u ExecuteTrade()
+    // v2.5: SL se računa random 988-1054 pips u ExecuteTrade()
     double slDistance = HardSLPips * point;  // ISPRAVNO: bez * 10
     double sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     double tp = (type == ORDER_TYPE_BUY) ? price + TPMultiplier * atr : price - TPMultiplier * atr;
@@ -191,8 +192,8 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
     double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-    // v2.4 FIX: Random SL 789-811 pips (1 pip = 0.01 za XAUUSD)
-    int randomSLPips = RandomRange(789, 811);
+    // v2.5 FIX: Random SL 988-1054 pips (1 pip = 0.01 za XAUUSD)
+    int randomSLPips = RandomRange(988, 1054);
     double slDistance = randomSLPips * point;  // ISPRAVNO: bez * 10
     sl = (type == ORDER_TYPE_BUY) ? price - slDistance : price + slDistance;
     sl = NormalizeDouble(sl, digits); tp = NormalizeDouble(tp, digits);
