@@ -1,9 +1,14 @@
 //+------------------------------------------------------------------+
 //|                                         AbsorptionScalper_Cla.mq5|
 //|      *** Absorption Bubbles + PRO Scalper Combined Strategy ***  |
-//|                   + Stealth Mode v2.2                            |
-//|                   Version 2.2 - Fixed: 04.03.2026 (Zagreb)       |
-//|                   SL ODMAH + 3-level trailing + MFE              |
+//|                   + Stealth Mode v3.0                            |
+//|                   Version 3.0 - Fixed: 10.03.2026 (Zagreb)       |
+//|                   CLAUDE.md STANDARD:                            |
+//|                   - SL ODMAH random 988-1054 pips                |
+//|                   - Stealth TP (TP=0)                            |
+//|                   - BE+ @ 1000 pips (offset 41-46)               |
+//|                   - Trailing 1000 pips                           |
+//|                   - Friday close 11:00                           |
 //+------------------------------------------------------------------+
 //| Strategy: 83% Win Rate Concept                                   |
 //| - Absorption Bubbles: Detect volume absorption at key levels     |
@@ -11,8 +16,8 @@
 //| - BUY: Buy signal + recent bullish absorption (red bubble)       |
 //| - SELL: Sell signal + recent bearish absorption (green bubble)   |
 //+------------------------------------------------------------------+
-#property copyright "AbsorptionScalper_Cla v2.2 (2026-03-04)"
-#property version   "2.22"
+#property copyright "AbsorptionScalper_Cla v3.0 (2026-03-10)"
+#property version   "3.00"
 #property strict
 
 #include <Trade\\Trade.mqh>
@@ -52,28 +57,22 @@ input int      DeltaLookback       = 10;      // Lookback za delta analizu
 input group "=== TRADE MANAGEMENT ==="
 input double   RiskPercent         = 1.0;     // Risk % po tradeu
 input int      ATRPeriod           = 14;      // ATR period
-input double   SLMultiplier        = 2.0;     // SL = ATR x množitelj
-input double   Target1_ATR         = 1.5;     // Target 1 (ATR x)
-input double   Target2_ATR         = 2.5;     // Target 2 (ATR x)
-input double   Target3_ATR         = 4.0;     // Target 3 (ATR x)
 input int      ClosePercent1       = 33;      // % za zatvaranje na T1
 input int      ClosePercent2       = 50;      // % ostatka za T2
 
+input group "=== RANDOM SL (CLAUDE.md) ==="
+input int      InitialSL_Min       = 988;     // SL min pips (random)
+input int      InitialSL_Max       = 1054;    // SL max pips (random)
+
 input group "=== STEALTH POSTAVKE ==="
 input bool     UseStealthMode      = true;    // Stealth mod (TP nikad na broker)
-input int      OpenDelayMin        = 0;       // Min delay otvaranja (sekunde)
-input int      OpenDelayMax        = 4;       // Max delay otvaranja
-input int      SLDelayMin          = 7;       // Min delay SL postavljanja
-input int      SLDelayMax          = 13;      // Max delay SL postavljanja
 input double   LargeCandleATR      = 3.0;     // Filter velikih svijeća
 
-input group "=== TRAILING POSTAVKE ==="
-input int      TrailActivatePips   = 500;     // Aktivacija trailinga (pipsi)
-input int      TrailBEPipsMin      = 38;      // BE + min pipsi
-input int      TrailBEPipsMax      = 43;      // BE + max pipsi
-input int      TrailLevel2Pips     = 800;     // Level 2 aktivacija
-input int      TrailLockPipsMin    = 150;     // Lock min pipsi
-input int      TrailLockPipsMax    = 200;     // Lock max pipsi
+input group "=== TRAILING (CLAUDE.md STANDARD) ==="
+input int      TrailingStartBE     = 1000;    // BE+ aktivacija (pips)
+input int      BEOffset_Min        = 41;      // BE+ offset min pips
+input int      BEOffset_Max        = 46;      // BE+ offset max pips
+input int      TrailingDistance    = 1000;    // Trailing udaljenost (pips)
 
 input group "=== FILTERI ==="
 input double   MaxSpread           = 50;      // Max spread (points)
@@ -105,7 +104,7 @@ struct PendingTradeInfo
     double          intendedTP2;
     double          intendedTP3;
     datetime        signalTime;
-    int             delaySeconds;
+    int             delaySeconds;  // CLAUDE.md: 0 = ODMAH
 };
 
 struct StealthPosInfo
@@ -119,11 +118,10 @@ struct StealthPosInfo
     double   entryPrice;
     double   initialLots;
     datetime openTime;
-    int      delaySeconds;
-    int      randomBEPips;
-    int      randomLockPips;
-    int      targetHit;       // 0=none, 1=T1, 2=T2, 3=T3
-    int      trailLevel;      // 0=none, 1=BE, 2=Lock
+    int      randomBEOffset;   // BE+ offset (41-46 pips)
+    double   highestProfit;    // Za trailing
+    bool     beActivated;      // BE+ aktiviran
+    int      targetHit;        // 0=none, 1=T1, 2=T2, 3=T3
 };
 
 struct SDZone
@@ -216,9 +214,13 @@ int OnInit()
 
     ResetSessionVWAP();
 
-    Print("=== AbsorptionScalper_Cla v2.2 INITIALIZED ===");
-    Print("Strategy: Absorption Bubbles + PRO Scalper (83% WR Concept)");
-    Print("Stealth Mode: ", UseStealthMode ? "ENABLED" : "DISABLED");
+    Print("=== AbsorptionScalper_Cla v3.0 (CLAUDE.md) ===");
+    Print("Strategy: Absorption Bubbles + PRO Scalper");
+    Print("SL: Random ", InitialSL_Min, "-", InitialSL_Max, " pips (ODMAH!)");
+    Print("TP: Stealth (3 Target System)");
+    Print("BE+: ", BEOffset_Min, "-", BEOffset_Max, " pips @ ", TrailingStartBE, " pips profit");
+    Print("Trail: ", TrailingDistance, " pips distance");
+    Print("Vrijeme: 0-24, petak stop 11:00");
 
     return INIT_SUCCEEDED;
 }
@@ -280,26 +282,25 @@ double GetEMA(int handle, int shift = 1)
 }
 
 //+------------------------------------------------------------------+
-//| TRADING WINDOW - Sunday 00:01 to Friday 11:30                     |
+//| TRADING WINDOW - 0-24, Friday close 11:00 (CLAUDE.md)            |
 //+------------------------------------------------------------------+
 bool IsTradingWindow()
 {
     MqlDateTime dt;
     TimeToStruct(TimeCurrent(), dt);
 
-    // Sunday from 00:01
+    // Vikend - ne trejdaj
     if(dt.day_of_week == 0)
-        return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1));
+        return (dt.hour > 0 || (dt.hour == 0 && dt.min >= 1));  // Nedjelja od 00:01
+    if(dt.day_of_week == 6)
+        return false;  // Subota
 
-    // Monday to Thursday - full day
-    if(dt.day_of_week >= 1 && dt.day_of_week <= 4)
-        return true;
-
-    // Friday until 11:30
+    // Petak - stop novih trejdova u 11:00
     if(dt.day_of_week == 5)
-        return (dt.hour < 11 || (dt.hour == 11 && dt.min <= 30));
+        return (dt.hour < 11);
 
-    return false;
+    // Pon-Čet: 0-24
+    return true;
 }
 
 //+------------------------------------------------------------------+
@@ -788,57 +789,61 @@ double CalculateLotSize(double slDistance)
 }
 
 //+------------------------------------------------------------------+
-//| TRADE EXECUTION                                                   |
+//| TRADE EXECUTION (CLAUDE.md: SL ODMAH, random 988-1054 pips)      |
 //+------------------------------------------------------------------+
 void QueueTrade(ENUM_ORDER_TYPE type)
 {
-    double atr = GetATR(1);
-    if(atr <= 0) return;
+    double pipValue = 0.01;  // XAUUSD: 1 pip = 0.01
+    int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
 
     double price = (type == ORDER_TYPE_BUY) ?
                    SymbolInfoDouble(_Symbol, SYMBOL_ASK) :
                    SymbolInfoDouble(_Symbol, SYMBOL_BID);
 
+    // CLAUDE.md: Random SL 988-1054 pips
+    int slPips = RandomRange(InitialSL_Min, InitialSL_Max);
+    double slDistance = slPips * pipValue;
+
     double sl, tp1, tp2, tp3;
 
+    // 3 Target System based on SL distance (R:R)
     if(type == ORDER_TYPE_BUY)
     {
-        sl = price - SLMultiplier * atr;
-        tp1 = price + Target1_ATR * atr;
-        tp2 = price + Target2_ATR * atr;
-        tp3 = price + Target3_ATR * atr;
+        sl = price - slDistance;
+        tp1 = price + slDistance * 0.5;   // T1 = 0.5R
+        tp2 = price + slDistance * 1.0;   // T2 = 1R
+        tp3 = price + slDistance * 1.5;   // T3 = 1.5R
     }
     else
     {
-        sl = price + SLMultiplier * atr;
-        tp1 = price - Target1_ATR * atr;
-        tp2 = price - Target2_ATR * atr;
-        tp3 = price - Target3_ATR * atr;
+        sl = price + slDistance;
+        tp1 = price - slDistance * 0.5;
+        tp2 = price - slDistance * 1.0;
+        tp3 = price - slDistance * 1.5;
     }
 
-    double lots = CalculateLotSize(SLMultiplier * atr);
+    sl = NormalizeDouble(sl, digits);
+    tp1 = NormalizeDouble(tp1, digits);
+    tp2 = NormalizeDouble(tp2, digits);
+    tp3 = NormalizeDouble(tp3, digits);
+
+    double lots = CalculateLotSize(slDistance);
     if(lots <= 0) return;
 
-    if(UseStealthMode)
-    {
-        g_pendingTrade.active = true;
-        g_pendingTrade.type = type;
-        g_pendingTrade.lot = lots;
-        g_pendingTrade.intendedSL = sl;
-        g_pendingTrade.intendedTP1 = tp1;
-        g_pendingTrade.intendedTP2 = tp2;
-        g_pendingTrade.intendedTP3 = tp3;
-        g_pendingTrade.signalTime = TimeCurrent();
-        g_pendingTrade.delaySeconds = RandomRange(OpenDelayMin, OpenDelayMax);
+    // CLAUDE.md: Otvori ODMAH sa SL, nema delay
+    g_pendingTrade.active = true;
+    g_pendingTrade.type = type;
+    g_pendingTrade.lot = lots;
+    g_pendingTrade.intendedSL = sl;
+    g_pendingTrade.intendedTP1 = tp1;
+    g_pendingTrade.intendedTP2 = tp2;
+    g_pendingTrade.intendedTP3 = tp3;
+    g_pendingTrade.signalTime = TimeCurrent();
+    g_pendingTrade.delaySeconds = 0;  // ODMAH
 
-        Print("AbsorptionScalper: Trade QUEUED - ",
-              (type == ORDER_TYPE_BUY ? "BUY" : "SELL"),
-              " Delay: ", g_pendingTrade.delaySeconds, "s");
-    }
-    else
-    {
-        ExecuteTrade(type, lots, sl, tp1);
-    }
+    Print("AbsorptionScalper: Trade QUEUED - ",
+          (type == ORDER_TYPE_BUY ? "BUY" : "SELL"),
+          " SL: ", slPips, " pips ODMAH");
 }
 
 void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
@@ -849,52 +854,42 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double lot, double sl, double tp)
 
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     sl = NormalizeDouble(sl, digits);
-    tp = NormalizeDouble(tp, digits);
 
     bool ok;
 
-    if(UseStealthMode)
-    {
-        // Stealth v2.2: SL ODMAH, TP nikad na broker
-        ok = (type == ORDER_TYPE_BUY) ?
-             trade.Buy(lot, _Symbol, price, sl, 0, "AbsScalp") :
-             trade.Sell(lot, _Symbol, price, sl, 0, "AbsScalp");
-    }
-    else
-    {
-        ok = (type == ORDER_TYPE_BUY) ?
-             trade.Buy(lot, _Symbol, price, sl, tp, "AbsScalp BUY") :
-             trade.Sell(lot, _Symbol, price, sl, tp, "AbsScalp SELL");
-    }
+    // CLAUDE.md: SL ODMAH, TP=0 (stealth)
+    ok = (type == ORDER_TYPE_BUY) ?
+         trade.Buy(lot, _Symbol, price, sl, 0, "AbsScalp") :
+         trade.Sell(lot, _Symbol, price, sl, 0, "AbsScalp");
 
-    if(ok && UseStealthMode)
+    if(ok)
     {
         ulong ticket = trade.ResultOrder();
+
+        // Random BE+ offset (41-46 pips)
+        int beOffset = RandomRange(BEOffset_Min, BEOffset_Max);
 
         ArrayResize(g_positions, g_posCount + 1);
         g_positions[g_posCount].active = true;
         g_positions[g_posCount].ticket = ticket;
-        g_positions[g_posCount].intendedSL = g_pendingTrade.intendedSL;
+        g_positions[g_posCount].intendedSL = sl;
         g_positions[g_posCount].stealthTP1 = g_pendingTrade.intendedTP1;
         g_positions[g_posCount].stealthTP2 = g_pendingTrade.intendedTP2;
         g_positions[g_posCount].stealthTP3 = g_pendingTrade.intendedTP3;
         g_positions[g_posCount].entryPrice = price;
         g_positions[g_posCount].initialLots = lot;
         g_positions[g_posCount].openTime = TimeCurrent();
-        g_positions[g_posCount].delaySeconds = RandomRange(SLDelayMin, SLDelayMax);
-        g_positions[g_posCount].randomBEPips = RandomRange(TrailBEPipsMin, TrailBEPipsMax);
-        g_positions[g_posCount].randomLockPips = RandomRange(TrailLockPipsMin, TrailLockPipsMax);
+        g_positions[g_posCount].randomBEOffset = beOffset;
+        g_positions[g_posCount].highestProfit = 0;
+        g_positions[g_posCount].beActivated = false;
         g_positions[g_posCount].targetHit = 0;
-        g_positions[g_posCount].trailLevel = 0;
         g_posCount++;
 
-        Print("AbsorptionScalper STEALTH: Opened #", ticket,
-              " Lots: ", DoubleToString(lot, 2),
-              " Entry: ", DoubleToString(price, digits));
-    }
-    else if(ok)
-    {
-        Print("AbsorptionScalper: Trade opened - Lots: ", DoubleToString(lot, 2));
+        Print("=== AbsorptionScalper ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"), " (SL ODMAH) ===");
+        Print("Entry: ", price, " | Lots: ", DoubleToString(lot, 2));
+        Print("SL: ", sl, " ODMAH!");
+        Print("TP1: ", g_pendingTrade.intendedTP1, " | TP2: ", g_pendingTrade.intendedTP2, " | TP3: ", g_pendingTrade.intendedTP3, " STEALTH");
+        Print("Trail: BE+", beOffset, " @ ", TrailingStartBE, " pips, trail ", TrailingDistance);
     }
     else
     {
@@ -915,11 +910,11 @@ void ProcessPendingTrade()
 }
 
 //+------------------------------------------------------------------+
-//| STEALTH POSITION MANAGEMENT                                       |
+//| STEALTH POSITION MANAGEMENT (CLAUDE.md standard)                  |
 //+------------------------------------------------------------------+
 void ManageStealthPositions()
 {
-    double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+    double pipValue = 0.01;  // XAUUSD: 1 pip = 0.01
     int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
     double lotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
     double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
@@ -943,27 +938,28 @@ void ManageStealthPositions()
                              SymbolInfoDouble(_Symbol, SYMBOL_BID) :
                              SymbolInfoDouble(_Symbol, SYMBOL_ASK);
 
-        // 1. Delayed SL placement
+        // 1. BACKUP SL CHECK (ako SL nije postavljen)
         if(currentSL == 0 && g_positions[i].intendedSL != 0)
         {
-            if(TimeCurrent() >= g_positions[i].openTime + g_positions[i].delaySeconds)
+            double newSL = NormalizeDouble(g_positions[i].intendedSL, digits);
+            if(trade.PositionModify(ticket, newSL, 0))
             {
-                double newSL = NormalizeDouble(g_positions[i].intendedSL, digits);
-                if(trade.PositionModify(ticket, newSL, 0))
-                {
-                    Print("AbsorptionScalper: SL set for #", ticket, " at ", newSL);
-                }
+                Print("AbsScalp BACKUP [", ticket, "]: SL postavljen na ", newSL);
             }
         }
 
         // Calculate profit in pips
         double profitPips = 0;
         if(posType == POSITION_TYPE_BUY)
-            profitPips = (currentPrice - g_positions[i].entryPrice) / point;
+            profitPips = (currentPrice - g_positions[i].entryPrice) / pipValue;
         else
-            profitPips = (g_positions[i].entryPrice - currentPrice) / point;
+            profitPips = (g_positions[i].entryPrice - currentPrice) / pipValue;
 
-        // 2. Target management (partial closes)
+        // Update highest profit
+        if(profitPips > g_positions[i].highestProfit)
+            g_positions[i].highestProfit = profitPips;
+
+        // 2. Target management (partial closes) - STEALTH
         // Target 1
         if(g_positions[i].targetHit < 1)
         {
@@ -981,24 +977,14 @@ void ManageStealthPositions()
                     if(trade.PositionClosePartial(ticket, closeAmount))
                     {
                         g_positions[i].targetHit = 1;
-                        Print("AbsorptionScalper: T1 HIT - Closed ", closeAmount, " lots");
-
-                        // Move SL to BE + random pips
-                        double beSL;
-                        if(posType == POSITION_TYPE_BUY)
-                            beSL = g_positions[i].entryPrice + g_positions[i].randomBEPips * point;
-                        else
-                            beSL = g_positions[i].entryPrice - g_positions[i].randomBEPips * point;
-
-                        beSL = NormalizeDouble(beSL, digits);
-                        trade.PositionModify(ticket, beSL, 0);
+                        Print("AbsScalp T1 [", ticket, "]: Zatvorio ", closeAmount, " lots");
                     }
                 }
                 else if(closeAmount >= currentLots)
                 {
                     trade.PositionClose(ticket);
                     g_positions[i].active = false;
-                    Print("AbsorptionScalper: T1 FULL CLOSE");
+                    Print("AbsScalp T1 [", ticket, "]: FULL CLOSE");
                     continue;
                 }
             }
@@ -1012,7 +998,6 @@ void ManageStealthPositions()
 
             if(t2Hit)
             {
-                // Recalculate remaining lots
                 if(!PositionSelectByTicket(ticket)) continue;
                 currentLots = PositionGetDouble(POSITION_VOLUME);
 
@@ -1025,14 +1010,14 @@ void ManageStealthPositions()
                     if(trade.PositionClosePartial(ticket, closeAmount))
                     {
                         g_positions[i].targetHit = 2;
-                        Print("AbsorptionScalper: T2 HIT - Closed ", closeAmount, " lots");
+                        Print("AbsScalp T2 [", ticket, "]: Zatvorio ", closeAmount, " lots");
                     }
                 }
                 else if(closeAmount >= currentLots)
                 {
                     trade.PositionClose(ticket);
                     g_positions[i].active = false;
-                    Print("AbsorptionScalper: T2 FULL CLOSE");
+                    Print("AbsScalp T2 [", ticket, "]: FULL CLOSE");
                     continue;
                 }
             }
@@ -1048,53 +1033,69 @@ void ManageStealthPositions()
             {
                 trade.PositionClose(ticket);
                 g_positions[i].active = false;
-                Print("AbsorptionScalper: T3 HIT - FULL CLOSE");
+                Print("AbsScalp T3 [", ticket, "]: FULL CLOSE");
                 continue;
             }
         }
 
-        // 3. Trailing stop management (after T1)
-        if(g_positions[i].targetHit >= 1 && currentSL > 0)
+        // 3. CLAUDE.md TRAILING: BE+ at 1000 pips, trail 1000
+        // BE+ aktivacija na 1000 pips
+        if(!g_positions[i].beActivated && profitPips >= TrailingStartBE)
         {
-            // Level 1: 500 pips -> BE + random
-            if(g_positions[i].trailLevel < 1 && profitPips >= TrailActivatePips)
+            double newSL;
+            if(posType == POSITION_TYPE_BUY)
             {
-                double newSL;
-                if(posType == POSITION_TYPE_BUY)
-                    newSL = g_positions[i].entryPrice + g_positions[i].randomBEPips * point;
-                else
-                    newSL = g_positions[i].entryPrice - g_positions[i].randomBEPips * point;
-
+                newSL = g_positions[i].entryPrice + g_positions[i].randomBEOffset * pipValue;
                 newSL = NormalizeDouble(newSL, digits);
-
-                bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
-                                   (posType == POSITION_TYPE_SELL && newSL < currentSL);
-
-                if(shouldModify && trade.PositionModify(ticket, newSL, 0))
+                if(newSL > currentSL)
                 {
-                    g_positions[i].trailLevel = 1;
-                    Print("AbsorptionScalper: Trail L1 activated - BE+", g_positions[i].randomBEPips);
+                    if(trade.PositionModify(ticket, newSL, 0))
+                    {
+                        g_positions[i].beActivated = true;
+                        Print("AbsScalp BE+ [", ticket, "]: SL na BE+", g_positions[i].randomBEOffset, " pips");
+                    }
                 }
             }
-
-            // Level 2: 800 pips -> Lock profit
-            if(g_positions[i].trailLevel < 2 && profitPips >= TrailLevel2Pips)
+            else
+            {
+                newSL = g_positions[i].entryPrice - g_positions[i].randomBEOffset * pipValue;
+                newSL = NormalizeDouble(newSL, digits);
+                if(newSL < currentSL || currentSL == 0)
+                {
+                    if(trade.PositionModify(ticket, newSL, 0))
+                    {
+                        g_positions[i].beActivated = true;
+                        Print("AbsScalp BE+ [", ticket, "]: SL na BE+", g_positions[i].randomBEOffset, " pips");
+                    }
+                }
+            }
+        }
+        // Trailing nakon BE+ - prati na 1000 pips udaljenosti
+        else if(g_positions[i].beActivated && profitPips >= TrailingStartBE)
+        {
+            double trailPips = g_positions[i].highestProfit - TrailingDistance;
+            if(trailPips > g_positions[i].randomBEOffset)  // Samo ako je bolji od BE+
             {
                 double newSL;
                 if(posType == POSITION_TYPE_BUY)
-                    newSL = g_positions[i].entryPrice + g_positions[i].randomLockPips * point;
-                else
-                    newSL = g_positions[i].entryPrice - g_positions[i].randomLockPips * point;
-
-                newSL = NormalizeDouble(newSL, digits);
-
-                bool shouldModify = (posType == POSITION_TYPE_BUY && newSL > currentSL) ||
-                                   (posType == POSITION_TYPE_SELL && newSL < currentSL);
-
-                if(shouldModify && trade.PositionModify(ticket, newSL, 0))
                 {
-                    g_positions[i].trailLevel = 2;
-                    Print("AbsorptionScalper: Trail L2 activated - Lock+", g_positions[i].randomLockPips);
+                    newSL = g_positions[i].entryPrice + trailPips * pipValue;
+                    newSL = NormalizeDouble(newSL, digits);
+                    if(newSL > currentSL)
+                    {
+                        if(trade.PositionModify(ticket, newSL, 0))
+                            Print("AbsScalp TRAIL [", ticket, "]: SL na +", (int)trailPips, " pips (high: ", (int)g_positions[i].highestProfit, ")");
+                    }
+                }
+                else
+                {
+                    newSL = g_positions[i].entryPrice - trailPips * pipValue;
+                    newSL = NormalizeDouble(newSL, digits);
+                    if(newSL < currentSL || currentSL == 0)
+                    {
+                        if(trade.PositionModify(ticket, newSL, 0))
+                            Print("AbsScalp TRAIL [", ticket, "]: SL na +", (int)trailPips, " pips (high: ", (int)g_positions[i].highestProfit, ")");
+                    }
                 }
             }
         }
