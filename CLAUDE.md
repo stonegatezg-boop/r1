@@ -26,7 +26,7 @@ trade.Buy(lot, _Symbol, price, 0, 0, "EA_NAME");   // SL=0, postavlja se kasnije
 |----|---------|-----------|
 | CALF_A_UTBot | v2.2 | PRAVI SL ODMAH |
 | CALF_A_M | v2.2 | PRAVI SL ODMAH (800 pips) |
-| CALF_B_EMA | v2.5 | PRAVI SL ODMAH (988-1054 pips) + 0-4s delay |
+| CALF_B_EMA | v2.6 | Full Standard (SL 988-1054, 3T, Trail 1000) |
 | CALF_C_Supertrend | v3.5 | Full Standard (SL 988-1054, 3T, Trail 1000) |
 | CALF_D_RSI | v2.2 | PRAVI SL ODMAH |
 | CALF_E_Breakout | v3.1 | PRAVI SL ODMAH (800 pips) |
