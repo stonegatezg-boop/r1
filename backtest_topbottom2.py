@@ -1,23 +1,34 @@
 #!/usr/bin/env python3
 """
-TopBottom 2 Backtest
-EMA20 Pullback Engulf + Kalman Hull RSI
+TopBottom 2 Backtest (TopBottom_New_Cla)
+EMA20 Pullback Engulf + Kalman Hull RSI v3.0
+- Improved pullback detection (0.2% tolerance)
+- TimeFailure 6 bars / 50 pips
+- Dynamic SL based on swing
 """
 
 import pandas as pd
 import numpy as np
 from datetime import datetime
 
-# Parameters from EA
+# Parameters from TopBottom_New_Cla.mq5
 EMA_FAST = 10
 EMA_SLOW = 20
-PULLBACK_CANDLES = 3
+PULLBACK_CANDLES = 5  # Increased from 3
+PULLBACK_TOLERANCE = 0.002  # 0.2%
 
 # Targets in pips
 TARGET1_PIPS = 300
 TARGET2_PIPS = 500
 TARGET3_PIPS = 800
 SL_PIPS = 300
+
+# Dynamic SL
+USE_DYNAMIC_SL = True
+SWING_LOOKBACK = 10
+SL_BUFFER_PIPS = 30
+SL_MIN_MULT = 0.5  # Min SL = SL_PIPS * 0.5
+SL_MAX_MULT = 2.0  # Max SL = SL_PIPS * 2.0
 
 # Trailing
 TRAIL_L1_PIPS = 500
@@ -29,10 +40,14 @@ TRAIL_L3_LOCK = 200
 MFE_ACTIVATE = 1500
 MFE_TRAIL = 500
 
-# Failure exits
+# Failure exits - RELAXED
 EARLY_FAILURE_PIPS = 800
-TIME_FAILURE_BARS = 3
-TIME_FAILURE_MIN_PIPS = 20
+TIME_FAILURE_BARS = 6   # Increased from 3
+TIME_FAILURE_MIN_PIPS = 50  # Increased from 20
+
+# KHRSI levels
+KHRSI_BUY_LEVEL = 45   # Was 50
+KHRSI_SELL_LEVEL = 55  # Was 50
 
 PIP_VALUE = 0.01  # XAUUSD: 1 pip = 0.01
 
@@ -50,15 +65,33 @@ def backtest(df):
     df['ema10'] = df['close'].ewm(span=EMA_FAST, adjust=False).mean()
     df['ema20'] = df['close'].ewm(span=EMA_SLOW, adjust=False).mean()
 
-    # Simple RSI for KHRSI approximation
-    delta = df['close'].diff()
+    # Kalman Hull RSI approximation
+    # Using simple RSI on smoothed price as approximation
+    # Kalman smoothing
+    kf_state = df['close'].iloc[0]
+    kf_cov = 1.0
+    noise = 3.0
+    process = 0.01
+    kalman_vals = []
+
+    for price in df['close']:
+        pred_cov = kf_cov + process
+        gain = pred_cov / (pred_cov + noise)
+        kf_state = kf_state + gain * (price - kf_state)
+        kf_cov = (1 - gain) * pred_cov
+        kalman_vals.append(kf_state)
+
+    df['kalman'] = kalman_vals
+
+    # RSI on Kalman smoothed values
+    delta = df['kalman'].diff()
     gain = delta.where(delta > 0, 0).rolling(window=12).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=12).mean()
     rs = gain / loss
-    df['rsi'] = 100 - (100 / (1 + rs))
-    df['rsi'] = df['rsi'].fillna(50)
+    df['khrsi'] = 100 - (100 / (1 + rs))
+    df['khrsi'] = df['khrsi'].fillna(50)
 
-    # Daily VWAP - precompute
+    # Daily VWAP
     df['date'] = df['datetime'].dt.date
     df['typical'] = (df['high'] + df['low'] + df['close']) / 3
     df['vol'] = df['volume'].replace(0, 1)
@@ -67,9 +100,11 @@ def backtest(df):
     df['cum_vol'] = df.groupby('date')['vol'].cumsum()
     df['vwap'] = df['cum_pv'] / df['cum_vol']
 
-    # Candle colors
+    # Candle properties
     df['is_green'] = df['close'] > df['open']
     df['is_red'] = df['close'] < df['open']
+    df['body'] = abs(df['close'] - df['open'])
+    df['range'] = df['high'] - df['low']
 
     print("Indicators calculated. Running signals...")
 
@@ -96,9 +131,10 @@ def backtest(df):
                 position['mfe'] = profit_pips
 
             exit_reason = None
+            dynamic_sl = position['sl_pips']
 
             # Check exits
-            if profit_pips <= -SL_PIPS:
+            if profit_pips <= -dynamic_sl:
                 exit_reason = "SL HIT"
             elif profit_pips <= -EARLY_FAILURE_PIPS:
                 exit_reason = "EARLY FAILURE"
@@ -133,6 +169,7 @@ def backtest(df):
                     'pips': round(profit_pips, 1),
                     'mfe': round(position['mfe'], 1),
                     'bars': position['bars'],
+                    'sl_pips': position['sl_pips'],
                     'exit_reason': exit_reason
                 })
                 position = None
@@ -145,37 +182,74 @@ def backtest(df):
             prev_ema20 = prev2['ema20']
             close = prev['close']
             vwap = prev['vwap']
-            rsi = prev['rsi']
+            khrsi = prev['khrsi']
 
             # Trend filters
-            bull_trend = close > vwap and ema10 > ema20 and ema20 > prev_ema20
-            bear_trend = close < vwap and ema10 < ema20 and ema20 < prev_ema20
+            bull_trend = close > vwap and ema10 > ema20 and ema20 >= prev_ema20
+            bear_trend = close < vwap and ema10 < ema20 and ema20 <= prev_ema20
 
             if not bull_trend and not bear_trend:
                 continue
 
-            # Check pullback - look at previous 1-3 candles
+            # Check pullback with tolerance
             bull_pullback = False
             bear_pullback = False
+            tol = ema20 * PULLBACK_TOLERANCE
 
             for i in range(1, min(PULLBACK_CANDLES + 1, idx)):
                 pb_row = df.iloc[idx - 1 - i]
+                pb_low = pb_row['low']
+                pb_high = pb_row['high']
+                pb_open = pb_row['open']
+                pb_close = pb_row['close']
+
                 if bull_trend:
-                    if pb_row['is_red'] and pb_row['low'] <= ema20 * 1.001:
-                        bull_pullback = True
-                        break
+                    # Red candle near EMA20
+                    if pb_row['is_red']:
+                        near_ema = (pb_low <= ema20 + tol and pb_low >= ema20 - tol)
+                        crosses_ema = (min(pb_open, pb_close) <= ema20 and max(pb_open, pb_close) >= ema20)
+                        if near_ema or crosses_ema:
+                            bull_pullback = True
+                            break
                 else:
-                    if pb_row['is_green'] and pb_row['high'] >= ema20 * 0.999:
-                        bear_pullback = True
-                        break
+                    # Green candle near EMA20
+                    if pb_row['is_green']:
+                        near_ema = (pb_high >= ema20 - tol and pb_high <= ema20 + tol)
+                        crosses_ema = (min(pb_open, pb_close) <= ema20 and max(pb_open, pb_close) >= ema20)
+                        if near_ema or crosses_ema:
+                            bear_pullback = True
+                            break
 
-            # Check engulfing
-            bull_engulf = prev['is_green'] and prev['close'] > prev2['close'] and prev['open'] < prev2['open'] and prev['close'] > ema20
-            bear_engulf = prev['is_red'] and prev['close'] < prev2['close'] and prev['open'] > prev2['open'] and prev['close'] < ema20
+            # Check engulfing or strong candle
+            o1, c1 = prev['open'], prev['close']
+            o2, c2 = prev2['open'], prev2['close']
+            body_ratio = prev['body'] / prev['range'] if prev['range'] > 0 else 0
 
-            # KHRSI confirmation
-            khrsi_up = rsi > 50
-            khrsi_down = rsi < 50
+            bull_engulf = prev['is_green'] and (
+                (c1 > max(o2, c2) and o1 < min(o2, c2)) or  # Classic engulf
+                (c1 > ema20 and body_ratio > 0.6)  # Strong candle
+            )
+            bear_engulf = prev['is_red'] and (
+                (c1 < min(o2, c2) and o1 > max(o2, c2)) or  # Classic engulf
+                (c1 < ema20 and body_ratio > 0.6)  # Strong candle
+            )
+
+            # KHRSI with new levels
+            khrsi_up = khrsi > KHRSI_BUY_LEVEL
+            khrsi_down = khrsi < KHRSI_SELL_LEVEL
+
+            # Calculate dynamic SL
+            if USE_DYNAMIC_SL:
+                if bull_trend:
+                    swing_low = min(df.iloc[idx-SWING_LOOKBACK:idx]['low'])
+                    sl_dist = (row['open'] - swing_low) / PIP_VALUE + SL_BUFFER_PIPS
+                else:
+                    swing_high = max(df.iloc[idx-SWING_LOOKBACK:idx]['high'])
+                    sl_dist = (swing_high - row['open']) / PIP_VALUE + SL_BUFFER_PIPS
+
+                dynamic_sl = max(SL_PIPS * SL_MIN_MULT, min(SL_PIPS * SL_MAX_MULT, sl_dist))
+            else:
+                dynamic_sl = SL_PIPS
 
             # BUY signal
             if bull_trend and bull_pullback and bull_engulf and khrsi_up:
@@ -185,7 +259,8 @@ def backtest(df):
                     'entry_time': row['datetime'],
                     'bars': 0,
                     'trail_level': 0,
-                    'mfe': 0
+                    'mfe': 0,
+                    'sl_pips': round(dynamic_sl, 1)
                 }
             # SELL signal
             elif bear_trend and bear_pullback and bear_engulf and khrsi_down:
@@ -195,15 +270,21 @@ def backtest(df):
                     'entry_time': row['datetime'],
                     'bars': 0,
                     'trail_level': 0,
-                    'mfe': 0
+                    'mfe': 0,
+                    'sl_pips': round(dynamic_sl, 1)
                 }
 
     return trades
 
 def main():
     print("=" * 80)
-    print("TOPBOTTOM 2 BACKTEST")
+    print("TOPBOTTOM 2 BACKTEST (TopBottom_New_Cla v3.0)")
     print("EMA20 Pullback Engulf + Kalman Hull RSI | XAUUSD M5")
+    print("=" * 80)
+    print(f"Pullback candles: {PULLBACK_CANDLES} | Tolerance: {PULLBACK_TOLERANCE*100:.1f}%")
+    print(f"Time failure: {TIME_FAILURE_BARS} bars / {TIME_FAILURE_MIN_PIPS} pips")
+    print(f"KHRSI levels: Buy > {KHRSI_BUY_LEVEL} | Sell < {KHRSI_SELL_LEVEL}")
+    print(f"Dynamic SL: {USE_DYNAMIC_SL} | Range: {SL_PIPS*SL_MIN_MULT:.0f}-{SL_PIPS*SL_MAX_MULT:.0f} pips")
     print("=" * 80)
 
     df = load_data('/home/user/r1/xauusd_m5_3y.csv')
@@ -262,6 +343,13 @@ def main():
         avg = pips / count if count > 0 else 0
         print(f"{reason:<20} {count:>8} {pips:>+12.1f} {win_pct:>7.1f}% {avg:>+10.1f}")
 
+    # Dynamic SL analysis
+    print("\n" + "-" * 80)
+    print("DYNAMIC SL ANALIZA:")
+    print("-" * 80)
+    sl_values = [t['sl_pips'] for t in trades]
+    print(f"Min SL: {min(sl_values):.1f} pips | Max SL: {max(sl_values):.1f} pips | Avg: {np.mean(sl_values):.1f} pips")
+
     # MFE Analysis
     print("\n" + "-" * 80)
     print("MFE ANALIZA (Maximum Favorable Excursion):")
@@ -311,12 +399,12 @@ def main():
     print("\n" + "-" * 80)
     print("ZADNJIH 20 TREJDOVA:")
     print("-" * 80)
-    print(f"{'Datum':<20} {'Tip':<5} {'Entry':>10} {'Exit':>10} {'Pips':>8} {'MFE':>8} {'Bars':>5} {'Izlaz'}")
+    print(f"{'Datum':<20} {'Tip':<5} {'Entry':>10} {'Exit':>10} {'Pips':>8} {'MFE':>8} {'SL':>6} {'Izlaz'}")
     print("-" * 80)
 
     for t in trades[-20:]:
         entry_date = t['entry_time'].strftime('%Y-%m-%d %H:%M')
-        print(f"{entry_date:<20} {t['type']:<5} {t['entry']:>10.2f} {t['exit']:>10.2f} {t['pips']:>+8.1f} {t['mfe']:>+8.1f} {t['bars']:>5} {t['exit_reason']}")
+        print(f"{entry_date:<20} {t['type']:<5} {t['entry']:>10.2f} {t['exit']:>10.2f} {t['pips']:>+8.1f} {t['mfe']:>+8.1f} {t['sl_pips']:>6.0f} {t['exit_reason']}")
 
     # Save all trades
     trades_df = pd.DataFrame(trades)
