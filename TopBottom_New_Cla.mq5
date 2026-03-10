@@ -59,10 +59,6 @@ input int      BEOffset_Min = 41;          // BE+ offset min pips
 input int      BEOffset_Max = 46;          // BE+ offset max pips
 input int      TrailingDistance = 1000;    // Trailing udaljenost (pips)
 
-input group "=== FAILURE EXIT ==="
-input int      EarlyFailurePips = 800;
-input int      TimeFailureBars = 6;        // 30 min na M5
-input int      TimeFailureMinPips = 50;
 
 input group "=== FILTERI ==="
 input bool     UseSpreadFilter = true;
@@ -94,8 +90,6 @@ bool     beActivated = false;
 int      beOffset = 0;           // Random BE offset za ovaj trejd
 int      slPips = 0;             // Random SL za ovaj trejd
 double   maxProfitPips = 0;
-int      barsInTrade = 0;
-datetime lastBarTime = 0;
 datetime lastSignalBar = 0;
 
 // XAUUSD: 1 pip = 0.01
@@ -501,8 +495,6 @@ void OpenBuy()
       target2Hit = false;
       beActivated = false;
       maxProfitPips = 0;
-      barsInTrade = 0;
-      lastBarTime = 0;
       statBuys++;
 
       Print("=== BUY #", currentTicket, " @ ", ask, " SL: ", sl, " (", slPips, " pips) BE+", beOffset, " ===");
@@ -534,8 +526,6 @@ void OpenSell()
       target2Hit = false;
       beActivated = false;
       maxProfitPips = 0;
-      barsInTrade = 0;
-      lastBarTime = 0;
       statSells++;
 
       Print("=== SELL #", currentTicket, " @ ", bid, " SL: ", sl, " (", slPips, " pips) BE+", beOffset, " ===");
@@ -556,35 +546,8 @@ void ManagePosition()
 
    if(profitPips > maxProfitPips) maxProfitPips = profitPips;
 
-   // Bar tracking
-   datetime curBar = iTime(_Symbol, PERIOD_CURRENT, 0);
-   if(curBar != lastBarTime)
-   {
-      lastBarTime = curBar;
-      barsInTrade++;
-
-      // Time failure
-      if(barsInTrade >= TimeFailureBars && profitPips < TimeFailureMinPips && profitPips > -EarlyFailurePips * 0.3)
-      {
-         if(trade.PositionClose(currentTicket))
-         {
-            hasOpenPosition = false;
-            Print("TIME EXIT: ", barsInTrade, " bars, ", DoubleToString(profitPips, 0), " pips");
-            return;
-         }
-      }
-   }
-
-   // Early failure
-   if(profitPips <= -EarlyFailurePips)
-   {
-      if(trade.PositionClose(currentTicket))
-      {
-         hasOpenPosition = false;
-         Print("EARLY FAIL: ", DoubleToString(profitPips, 0), " pips");
-         return;
-      }
-   }
+   // Nema Time Failure ni Early Failure - SL na brokeru štiti poziciju
+   // Zatvaranje samo na: SL, Stealth Targets, BE+/Trailing
 
    CheckTargets(profitPips);
    ManageTrailing(profitPips);
