@@ -1,0 +1,128 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © CLAMA_M v1.1 - MACD + Hull MA Strategy
+// Matches CLAMA_M.mq5 EA logic
+
+//@version=5
+indicator("CLAMA_M MACD+Hull", overlay=true, max_labels_count=500)
+
+// === MACD POSTAVKE ===
+FastEMA = input.int(8, "Fast EMA", group="MACD Settings")
+SlowEMA = input.int(17, "Slow EMA", group="MACD Settings")
+SignalSMA = input.int(9, "Signal SMA", group="MACD Settings")
+UseHistogramFilter = input.bool(true, "Histogram mora rasti", group="MACD Settings")
+
+// === HULL MA TREND FILTER ===
+UseTrendFilter = input.bool(true, "Koristi Hull MA filter", group="Hull MA Filter")
+HullPeriod = input.int(20, "Hull MA Period", group="Hull MA Filter")
+StrictHullFilter = input.bool(true, "Striktni filter", group="Hull MA Filter")
+
+// === ATR SETTINGS ===
+ATRPeriod = input.int(20, "ATR Period", group="ATR Settings")
+MinATR = input.float(1.0, "Min ATR za trade", group="ATR Settings")
+LargeCandleATR = input.float(3.0, "Large Candle Filter (x ATR)", group="ATR Settings")
+
+// === VIZUALIZACIJA ===
+ShowHullMA = input.bool(true, "Prikaži Hull MA", group="Vizualizacija")
+ShowSignals = input.bool(true, "Prikaži signale", group="Vizualizacija")
+ShowMACDPanel = input.bool(false, "Prikaži MACD info", group="Vizualizacija")
+
+// === MACD KALKULACIJA ===
+[macdLine, signalLine, histLine] = ta.macd(close, FastEMA, SlowEMA, SignalSMA)
+
+// MACD Crossover detection
+macdAbove = macdLine > signalLine
+macdBelow = macdLine < signalLine
+macdWasAbove = macdLine[1] > signalLine[1]
+macdWasBelow = macdLine[1] < signalLine[1]
+
+macdCrossUp = macdAbove and macdWasBelow
+macdCrossDown = macdBelow and macdWasAbove
+
+// === HISTOGRAM FILTER ===
+// Za BUY: histogram mora rasti (hist[1] > hist[2] > hist[3])
+// Za SELL: histogram mora padati (hist[1] < hist[2] < hist[3])
+histGrowingBuy = histLine[1] > histLine[2] and histLine[2] > histLine[3]
+histGrowingSell = histLine[1] < histLine[2] and histLine[2] < histLine[3]
+
+// === HULL MA KALKULACIJA ===
+// Hull MA = WMA(2*WMA(n/2) - WMA(n), sqrt(n))
+halfPeriod = math.floor(HullPeriod / 2)
+sqrtPeriod = math.floor(math.sqrt(HullPeriod))
+
+// WMA kalkulacija
+wmaHalf = ta.wma(close, halfPeriod)
+wmaFull = ta.wma(close, HullPeriod)
+hullRaw = 2 * wmaHalf - wmaFull
+hullMA = ta.wma(hullRaw, sqrtPeriod)
+
+// Hull direction (kao u EA - usporedba s prijašnjom vrijednošću)
+atrValue = ta.atr(ATRPeriod)
+hullThreshold = atrValue * 0.1
+hullDiff = hullMA - hullMA[2]
+
+hullDirection = hullDiff > hullThreshold ? 1 : hullDiff < -hullThreshold ? -1 : 0
+
+// === FILTERI ===
+// Large candle filter
+candleSize = high[1] - low[1]
+isLargeCandle = candleSize > LargeCandleATR * atrValue[1]
+
+// Min ATR filter
+atrOK = atrValue >= MinATR
+
+// === SIGNAL LOGIKA (identična EA) ===
+// BUY Signal
+buyCondition1 = macdCrossUp                                           // MACD cross up
+buyCondition2 = not UseTrendFilter or (StrictHullFilter ? hullDirection == 1 : hullDirection >= 0)  // Hull filter
+buyCondition3 = not UseHistogramFilter or histGrowingBuy              // Histogram growing
+buyCondition4 = not isLargeCandle                                     // No large candle
+buyCondition5 = atrOK                                                 // Min ATR
+
+buySignal = buyCondition1 and buyCondition2 and buyCondition3 and buyCondition4 and buyCondition5
+
+// SELL Signal
+sellCondition1 = macdCrossDown                                        // MACD cross down
+sellCondition2 = not UseTrendFilter or (StrictHullFilter ? hullDirection == -1 : hullDirection <= 0)  // Hull filter
+sellCondition3 = not UseHistogramFilter or histGrowingSell            // Histogram falling
+sellCondition4 = not isLargeCandle                                    // No large candle
+sellCondition5 = atrOK                                                // Min ATR
+
+sellSignal = sellCondition1 and sellCondition2 and sellCondition3 and sellCondition4 and sellCondition5
+
+// === VIZUALIZACIJA ===
+// Hull MA linija
+hullColor = hullDirection == 1 ? color.green : hullDirection == -1 ? color.red : color.gray
+plot(ShowHullMA ? hullMA : na, "Hull MA", color=hullColor, linewidth=2)
+
+// Signali
+plotshape(ShowSignals and buySignal, "BUY Signal", style=shape.triangleup, location=location.belowbar, color=color.green, size=size.normal, text="BUY")
+plotshape(ShowSignals and sellSignal, "SELL Signal", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.normal, text="SELL")
+
+// === MACD PANEL INFO ===
+var table macdTable = table.new(position.top_right, 2, 6, bgcolor=color.new(color.black, 80))
+
+if ShowMACDPanel and barstate.islast
+    table.cell(macdTable, 0, 0, "CLAMA_M", text_color=color.white, text_size=size.normal)
+    table.cell(macdTable, 1, 0, "v1.1", text_color=color.yellow, text_size=size.normal)
+
+    table.cell(macdTable, 0, 1, "MACD", text_color=color.gray, text_size=size.small)
+    table.cell(macdTable, 1, 1, str.tostring(macdLine, "#.##"), text_color=macdLine > 0 ? color.green : color.red, text_size=size.small)
+
+    table.cell(macdTable, 0, 2, "Signal", text_color=color.gray, text_size=size.small)
+    table.cell(macdTable, 1, 2, str.tostring(signalLine, "#.##"), text_color=color.orange, text_size=size.small)
+
+    table.cell(macdTable, 0, 3, "Histogram", text_color=color.gray, text_size=size.small)
+    histColor = histLine > 0 ? (histLine > histLine[1] ? color.lime : color.green) : (histLine < histLine[1] ? color.maroon : color.red)
+    table.cell(macdTable, 1, 3, str.tostring(histLine, "#.##"), text_color=histColor, text_size=size.small)
+
+    table.cell(macdTable, 0, 4, "Hull Dir", text_color=color.gray, text_size=size.small)
+    hullText = hullDirection == 1 ? "UP" : hullDirection == -1 ? "DOWN" : "FLAT"
+    table.cell(macdTable, 1, 4, hullText, text_color=hullDirection == 1 ? color.green : hullDirection == -1 ? color.red : color.gray, text_size=size.small)
+
+    table.cell(macdTable, 0, 5, "ATR", text_color=color.gray, text_size=size.small)
+    table.cell(macdTable, 1, 5, str.tostring(atrValue, "#.##"), text_color=atrOK ? color.white : color.red, text_size=size.small)
+
+// === ALERTS ===
+alertcondition(buySignal, title="CLAMA_M BUY", message="CLAMA_M BUY Signal - MACD Cross Up + Hull UP + Histogram Growing")
+alertcondition(sellSignal, title="CLAMA_M SELL", message="CLAMA_M SELL Signal - MACD Cross Down + Hull DOWN + Histogram Falling")
+alertcondition(buySignal or sellSignal, title="CLAMA_M Signal", message="CLAMA_M Signal Detected")
