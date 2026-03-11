@@ -1,0 +1,241 @@
+// This Pine Script™ is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Mix1_ADX_Cla v2.3 - STRATEGY VERSION for Backtesting
+// Based on @gu5tavo71 TradingView Indicator
+// Created: 2026-03-11
+
+//@version=5
+strategy("Mix1 ADX Strategy", shorttitle="Mix1_ADX_Strat", overlay=true,
+         default_qty_type=strategy.percent_of_equity, default_qty_value=1,
+         initial_capital=10000, commission_type=strategy.commission.cash_per_order, commission_value=0)
+
+// ═══════════════════════════════════════════════════════════════════
+// INPUT PARAMETERS
+// ═══════════════════════════════════════════════════════════════════
+
+// EMA Cross Settings
+grp1 = "═══ EMA CROSS POSTAVKE ═══"
+emaFastLen = input.int(26, "EMA Fast Period", minval=1, group=grp1)
+emaMedLen = input.int(50, "EMA Medium Period", minval=1, group=grp1)
+
+// Trend Channel Settings
+grp2 = "═══ TREND CHANNEL POSTAVKE ═══"
+maTrendLen = input.int(200, "MA Trend Period", minval=1, group=grp2)
+useSMA = input.bool(true, "Use SMA (false = EMA)", group=grp2)
+channelATRMult = input.float(0.618, "ATR Multiplier for Channel", minval=0.1, step=0.1, group=grp2)
+atrPeriod = input.int(14, "ATR Period", minval=1, group=grp2)
+
+// ADX/DI Settings
+grp3 = "═══ ADX/DI POSTAVKE ═══"
+adxPeriod = input.int(14, "ADX Period", minval=1, group=grp3)
+adxThreshold = input.int(22, "ADX Threshold (Strong Trend)", minval=1, group=grp3)
+diBuffer = input.float(10.0, "DI Buffer %", minval=0, step=1, group=grp3)
+
+// Signal Confirmation
+grp4 = "═══ SIGNAL POTVRDA ═══"
+requireCandleConf = input.bool(true, "Require Bull/Bear Candle", group=grp4)
+requireADXConf = input.bool(true, "Require ADX Confirmation", group=grp4)
+
+// Trade Management (ATR-based targets)
+grp5 = "═══ TRADE MANAGEMENT ═══"
+target1ATR = input.float(1.5, "Target 1 (ATR x)", minval=0.1, step=0.1, group=grp5)
+target2ATR = input.float(2.5, "Target 2 (ATR x)", minval=0.1, step=0.1, group=grp5)
+target3ATR = input.float(3.5, "Target 3 (ATR x)", minval=0.1, step=0.1, group=grp5)
+slMultATR = input.float(2.0, "Stop Loss (ATR x)", minval=0.1, step=0.1, group=grp5)
+useTrailing = input.bool(true, "Use Trailing Stop", group=grp5)
+trailATR = input.float(1.5, "Trailing Distance (ATR x)", minval=0.1, step=0.1, group=grp5)
+
+// Filters
+grp6 = "═══ FILTERI ═══"
+useLargeCandleFilter = input.bool(true, "Large Candle Filter", group=grp6)
+largeCandleATR = input.float(3.0, "Large Candle ATR Multiple", minval=1, step=0.5, group=grp6)
+
+// Display Settings
+grp7 = "═══ DISPLAY POSTAVKE ═══"
+showEMAs = input.bool(true, "Show EMAs", group=grp7)
+showChannel = input.bool(true, "Show Trend Channel", group=grp7)
+showBackground = input.bool(true, "Show Trend Background", group=grp7)
+
+// ═══════════════════════════════════════════════════════════════════
+// INDICATOR CALCULATIONS
+// ═══════════════════════════════════════════════════════════════════
+
+// EMAs
+emaFast = ta.ema(close, emaFastLen)
+emaMed = ta.ema(close, emaMedLen)
+
+// MA Trend (SMA or EMA based on setting)
+maTrend = useSMA ? ta.sma(close, maTrendLen) : ta.ema(close, maTrendLen)
+
+// ATR for channel and targets
+atr = ta.atr(atrPeriod)
+
+// Trend Channel
+channelTop = maTrend + atr * channelATRMult
+channelBot = maTrend - atr * channelATRMult
+
+// ADX/DI Calculation
+[diPlus, diMinus, adx] = ta.dmi(adxPeriod, adxPeriod)
+
+// ═══════════════════════════════════════════════════════════════════
+// TREND DIRECTION CALCULATION
+// ═══════════════════════════════════════════════════════════════════
+
+// MA Direction: Fast EMA vs Medium EMA
+maDir = emaFast > emaMed ? 1 : -1
+
+// Trend Direction: Price vs MA Trend
+maTrendDir = close >= maTrend ? 1 : -1
+
+// Check if price is inside channel
+inChannel = (open <= channelTop or close <= channelTop) and (open >= channelBot or close >= channelBot)
+
+// Final Trend Direction
+getTrendDir() =>
+    if inChannel
+        0
+    else if maTrendDir == 1 and maDir == 1
+        1
+    else if maTrendDir == -1 and maDir == -1
+        -1
+    else
+        0
+
+trendDir = getTrendDir()
+
+// ═══════════════════════════════════════════════════════════════════
+// ADX/DI HISTOGRAM SIGNAL
+// ═══════════════════════════════════════════════════════════════════
+
+bufferPlus = diPlus * diBuffer / 100.0
+bufferMinus = diMinus * diBuffer / 100.0
+
+bullishDI = diPlus > (diMinus + bufferPlus)
+bearishDI = diMinus > (diPlus + bufferMinus)
+
+getADXSignal() =>
+    if bullishDI and adx > adxThreshold
+        1
+    else if bearishDI and adx > adxThreshold
+        -1
+    else if bullishDI and adx > 11
+        1
+    else if bearishDI and adx > 11
+        -1
+    else
+        0
+
+adxSignal = getADXSignal()
+
+// ═══════════════════════════════════════════════════════════════════
+// CANDLE & FILTER CONDITIONS
+// ═══════════════════════════════════════════════════════════════════
+
+isBullishCandle = close > open
+isBearishCandle = close < open
+
+// Large candle filter
+candleSize = high - low
+isLargeCandle = useLargeCandleFilter and candleSize > largeCandleATR * atr
+
+// ═══════════════════════════════════════════════════════════════════
+// SIGNAL GENERATION
+// ═══════════════════════════════════════════════════════════════════
+
+// BUY Conditions
+adxConfBuy = not requireADXConf or adxSignal == 1
+candleConfBuy = not requireCandleConf or isBullishCandle
+buySignal = trendDir == 1 and adxConfBuy and candleConfBuy and not isLargeCandle
+
+// SELL Conditions
+adxConfSell = not requireADXConf or adxSignal == -1
+candleConfSell = not requireCandleConf or isBearishCandle
+sellSignal = trendDir == -1 and adxConfSell and candleConfSell and not isLargeCandle
+
+// ═══════════════════════════════════════════════════════════════════
+// STRATEGY EXECUTION
+// ═══════════════════════════════════════════════════════════════════
+
+// Calculate SL and TP levels
+slDistance = atr * slMultATR
+tp1Distance = atr * target1ATR
+tp2Distance = atr * target2ATR
+tp3Distance = atr * target3ATR
+
+// Entry conditions (only on new signal, not repeated)
+buyEntry = buySignal and not buySignal[1] and strategy.position_size == 0
+sellEntry = sellSignal and not sellSignal[1] and strategy.position_size == 0
+
+// Execute BUY
+if buyEntry
+    entryPrice = close
+    sl = entryPrice - slDistance
+    tp = entryPrice + tp3Distance  // Use T3 as main TP for strategy
+    strategy.entry("BUY", strategy.long)
+    strategy.exit("BUY Exit", "BUY", stop=sl, limit=tp, trail_points=useTrailing ? trailATR * atr / syminfo.mintick : na, trail_offset=useTrailing ? trailATR * atr / syminfo.mintick : na)
+
+// Execute SELL
+if sellEntry
+    entryPrice = close
+    sl = entryPrice + slDistance
+    tp = entryPrice - tp3Distance  // Use T3 as main TP for strategy
+    strategy.entry("SELL", strategy.short)
+    strategy.exit("SELL Exit", "SELL", stop=sl, limit=tp, trail_points=useTrailing ? trailATR * atr / syminfo.mintick : na, trail_offset=useTrailing ? trailATR * atr / syminfo.mintick : na)
+
+// ═══════════════════════════════════════════════════════════════════
+// PLOTTING
+// ═══════════════════════════════════════════════════════════════════
+
+// EMAs
+plot(showEMAs ? emaFast : na, "EMA Fast", color=color.new(color.blue, 0), linewidth=2)
+plot(showEMAs ? emaMed : na, "EMA Medium", color=color.new(color.orange, 0), linewidth=2)
+
+// MA Trend and Channel
+plot(showChannel ? maTrend : na, "MA Trend 200", color=color.new(color.gray, 0), linewidth=2)
+p1 = plot(showChannel ? channelTop : na, "Channel Top", color=color.new(color.green, 60))
+p2 = plot(showChannel ? channelBot : na, "Channel Bot", color=color.new(color.red, 60))
+fill(p1, p2, color=showChannel ? color.new(color.gray, 90) : na, title="Channel Fill")
+
+// Background color based on trend
+bgColor = trendDir == 1 ? color.new(color.green, 90) : trendDir == -1 ? color.new(color.red, 90) : na
+bgcolor(showBackground ? bgColor : na, title="Trend Background")
+
+// Entry signals
+plotshape(buyEntry, "BUY Entry", style=shape.triangleup, location=location.belowbar,
+          color=color.green, size=size.normal, text="BUY")
+plotshape(sellEntry, "SELL Entry", style=shape.triangledown, location=location.abovebar,
+          color=color.red, size=size.normal, text="SELL")
+
+// ═══════════════════════════════════════════════════════════════════
+// INFO TABLE
+// ═══════════════════════════════════════════════════════════════════
+
+var table infoTable = table.new(position.top_right, 2, 8, bgcolor=color.new(color.black, 80), border_width=1)
+
+if barstate.islast
+    table.cell(infoTable, 0, 0, "Mix1 ADX Strategy", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 0, "", text_color=color.white, text_size=size.small)
+
+    trendText = trendDir == 1 ? "BULLISH" : trendDir == -1 ? "BEARISH" : "NEUTRAL"
+    trendColor = trendDir == 1 ? color.green : trendDir == -1 ? color.red : color.gray
+    table.cell(infoTable, 0, 1, "Trend:", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 1, trendText, text_color=trendColor, text_size=size.small)
+
+    table.cell(infoTable, 0, 2, "ADX:", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 2, str.tostring(adx, "#.#"), text_color=adx > adxThreshold ? color.green : color.gray, text_size=size.small)
+
+    table.cell(infoTable, 0, 3, "DI+:", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 3, str.tostring(diPlus, "#.#"), text_color=diPlus > diMinus ? color.green : color.gray, text_size=size.small)
+
+    table.cell(infoTable, 0, 4, "DI-:", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 4, str.tostring(diMinus, "#.#"), text_color=diMinus > diPlus ? color.red : color.gray, text_size=size.small)
+
+    table.cell(infoTable, 0, 5, "ATR:", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 5, str.tostring(atr, "#.##"), text_color=color.white, text_size=size.small)
+
+    table.cell(infoTable, 0, 6, "Position:", text_color=color.white, text_size=size.small)
+    posText = strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : "FLAT"
+    posColor = strategy.position_size > 0 ? color.green : strategy.position_size < 0 ? color.red : color.gray
+    table.cell(infoTable, 1, 6, posText, text_color=posColor, text_size=size.small)
+
+    table.cell(infoTable, 0, 7, "In Channel:", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 7, inChannel ? "YES" : "NO", text_color=inChannel ? color.yellow : color.gray, text_size=size.small)
