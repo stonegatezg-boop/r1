@@ -1,0 +1,106 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © CALF_C_Supertrend v3.3 - Supertrend Strategy
+// Matches CALF_C_Supertrend.mq5 EA logic
+// Created: 11.03.2026 (Zagreb)
+// Fixed:   11.03.2026 - na handling na prvim barovima
+// Napomena: EA koristi SMA ATR (ne Wilder's RMA) - implementirano ručno
+// Napomena: ATR Range Filter je u EA definiran ali se NE poziva - nije uključen
+
+//@version=5
+indicator("CALF_C Supertrend", overlay=true, max_labels_count=500)
+
+// === SUPERTREND POSTAVKE ===
+STperiod     = input.int(10,    "ST Period",     group="Supertrend Settings")
+STmultiplier = input.float(2.0, "ST Multiplier", group="Supertrend Settings")
+
+// === FILTERI ===
+LargeCandleATR = input.float(3.0, "Large Candle Filter (x ATR)", group="Filteri")
+
+// === VIZUALIZACIJA ===
+ShowSupertrend = input.bool(true,  "Prikaži Supertrend liniju", group="Vizualizacija")
+ShowSignals    = input.bool(true,  "Prikaži signale",           group="Vizualizacija")
+ShowPanel      = input.bool(false, "Prikaži info panel",        group="Vizualizacija")
+
+// === ATR KALKULACIJA (SMA, identično EA-u koji koristi sumTR/period) ===
+tr     = math.max(high - low, math.max(math.abs(high - close[1]), math.abs(low - close[1])))
+atrSMA = ta.sma(tr, STperiod)
+
+hl2       = (high + low) / 2.0
+upperBand = hl2 + STmultiplier * atrSMA
+lowerBand = hl2 - STmultiplier * atrSMA
+
+// === SUPERTREND KALKULACIJA ===
+var float stLine = na
+var int   stDir  = 1
+
+if not na(atrSMA)
+    // Inicijalizacija: prvi valid bar koristi hl2 kao prevST
+    float prevST  = na(stLine[1]) ? hl2 : stLine[1]
+    int   prevDir = na(stDir[1])  ? 1   : stDir[1]
+
+    if prevDir == 1
+        if close < prevST
+            stLine := upperBand
+            stDir  := -1
+        else
+            stLine := math.max(lowerBand, prevST)
+            stDir  := 1
+    else
+        if close > prevST
+            stLine := lowerBand
+            stDir  := 1
+        else
+            stLine := math.min(upperBand, prevST)
+            stDir  := -1
+
+// === SIGNAL LOGIKA (identična EA-u) ===
+// EA: buySignal  = stDirection[1] == 1  && stDirection[2] == -1
+// EA: sellSignal = stDirection[1] == -1 && stDirection[2] == 1
+buySignal  = stDir[1] == 1  and stDir[2] == -1
+sellSignal = stDir[1] == -1 and stDir[2] == 1
+
+// === LARGE CANDLE FILTER (bar [1], ATR bar [1] - identično EA-u) ===
+isLargeCandle = (high[1] - low[1]) > LargeCandleATR * atrSMA[1]
+
+buySignal  := buySignal  and not isLargeCandle
+sellSignal := sellSignal and not isLargeCandle
+
+// === VIZUALIZACIJA ===
+// Supertrend linija
+stColor = stDir[1] == 1 ? color.green : color.red
+plot(ShowSupertrend ? stLine : na, "Supertrend", color=stColor, linewidth=2)
+
+// Signali
+plotshape(ShowSignals and buySignal,  "BUY Signal",  style=shape.triangleup,   location=location.belowbar, color=color.green, size=size.normal, text="BUY")
+plotshape(ShowSignals and sellSignal, "SELL Signal", style=shape.triangledown,  location=location.abovebar, color=color.red,   size=size.normal, text="SELL")
+
+// Blokirani signali (large candle filter)
+rawBuy  = stDir[1] == 1  and stDir[2] == -1
+rawSell = stDir[1] == -1 and stDir[2] == 1
+plotshape(ShowSignals and rawBuy  and isLargeCandle, "BUY Blocked",  style=shape.xcross, location=location.belowbar, color=color.new(color.green, 60), size=size.small)
+plotshape(ShowSignals and rawSell and isLargeCandle, "SELL Blocked", style=shape.xcross, location=location.abovebar, color=color.new(color.red,   60), size=size.small)
+
+// === INFO PANEL ===
+var table infoTable = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 80))
+
+if ShowPanel and barstate.islast
+    table.cell(infoTable, 0, 0, "CALF_C",   text_color=color.white,  text_size=size.normal)
+    table.cell(infoTable, 1, 0, "v3.3",      text_color=color.yellow, text_size=size.normal)
+
+    table.cell(infoTable, 0, 1, "ST Period", text_color=color.gray, text_size=size.small)
+    table.cell(infoTable, 1, 1, str.tostring(STperiod), text_color=color.white, text_size=size.small)
+
+    table.cell(infoTable, 0, 2, "ST Multi",  text_color=color.gray, text_size=size.small)
+    table.cell(infoTable, 1, 2, str.tostring(STmultiplier, "#.#"), text_color=color.white, text_size=size.small)
+
+    table.cell(infoTable, 0, 3, "ST Dir",    text_color=color.gray, text_size=size.small)
+    stDirText = stDir == 1 ? "BULLISH" : "BEARISH"
+    table.cell(infoTable, 1, 3, stDirText, text_color=stDir == 1 ? color.green : color.red, text_size=size.small)
+
+    table.cell(infoTable, 0, 4, "ATR (SMA)", text_color=color.gray, text_size=size.small)
+    table.cell(infoTable, 1, 4, str.tostring(atrSMA, "#.##"), text_color=color.white, text_size=size.small)
+
+// === ALERTS ===
+alertcondition(buySignal,               title="CALF_C BUY",    message="CALF_C BUY Signal - Supertrend turned Bullish")
+alertcondition(sellSignal,              title="CALF_C SELL",   message="CALF_C SELL Signal - Supertrend turned Bearish")
+alertcondition(buySignal or sellSignal, title="CALF_C Signal", message="CALF_C Signal Detected")
