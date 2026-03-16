@@ -1,0 +1,252 @@
+//@version=6
+strategy(
+     title             = "BTC_Cla_V1 - EMA Cross + RSI + ADX + H1 Trend",
+     shorttitle        = "BTC_Cla_V1",
+     overlay           = true,
+     default_qty_type  = strategy.percent_of_equity,
+     default_qty_value = 1,
+     initial_capital   = 10000,
+     commission_type   = strategy.commission.percent,
+     commission_value  = 0.05,
+     slippage          = 3,
+     max_bars_back     = 500)
+
+// ================================================================
+// INPUTS
+// ================================================================
+
+grp1 = "--- Signal (M5) ---"
+fastLen     = input.int(9,   "Fast EMA",        group=grp1)
+slowLen     = input.int(21,  "Slow EMA",        group=grp1)
+rsiLen      = input.int(14,  "RSI Period",      group=grp1)
+useEma200   = input.bool(true, "Use EMA(200) M5 filter", group=grp1)
+
+grp2 = "--- Trend Filter (H1) ---"
+useH1       = input.bool(true, "H1 EMA Trend Filter", group=grp2)
+h1EmaLen    = input.int(50,  "H1 EMA Period",   group=grp2)
+
+grp3 = "--- ADX Filter ---"
+useAdx      = input.bool(true, "ADX Filter (avoid chop)", group=grp3)
+adxLen      = input.int(14,  "ADX Period",      group=grp3)
+adxMin      = input.float(20.0, "Min ADX",      group=grp3)
+
+grp4 = "--- ATR & Risk ---"
+atrLen      = input.int(14,   "ATR Period",     group=grp4)
+minAtr      = input.float(50.0, "Min ATR (USD)", group=grp4)
+maxAtr      = input.float(600.0,"Max ATR (USD)", group=grp4)
+slMulti     = input.float(1.2,  "SL = ATR ×",  group=grp4)
+tpMulti     = input.float(2.4,  "TP = ATR ×",  group=grp4)
+riskPct     = input.float(1.0,  "Risk % per trade", group=grp4)
+
+grp5 = "--- Session Filter (UTC) ---"
+sessStart   = input.int(7,  "Session start hour (UTC)", group=grp5)
+sessEnd     = input.int(20, "Session end hour (UTC)",   group=grp5)
+fridayStop  = input.int(11, "Friday: stop after hour (UTC)", group=grp5)
+
+grp6 = "--- Daily Limits ---"
+maxTrades   = input.int(3,   "Max trades per day",     group=grp6)
+maxDDPct    = input.float(3.0,"Max daily loss %",      group=grp6)
+minBars     = input.int(3,   "Min bars between trades",group=grp6)
+
+// ================================================================
+// INDICATORS
+// ================================================================
+
+// M5 EMAs
+emaFast = ta.ema(close, fastLen)
+emaSlow = ta.ema(close, slowLen)
+ema200  = ta.ema(close, 200)
+
+// RSI
+rsiVal  = ta.rsi(close, rsiLen)
+
+// ADX (manual calculation — Pine Script native)
+[diPlus, diMinus, adxVal] = ta.dmi(adxLen, adxLen)
+
+// ATR
+atrVal  = ta.atr(atrLen)
+
+// H1 EMA via security() — higher timeframe trend
+h1Ema   = request.security(syminfo.tickerid, "60", ta.ema(close, h1EmaLen), lookahead=barmerge.lookahead_off)
+h1Close = request.security(syminfo.tickerid, "60", close[1], lookahead=barmerge.lookahead_off)
+
+// ================================================================
+// SESSION FILTER
+// ================================================================
+
+hourUTC    = hour(time, "UTC")
+dayOfWeek  = dayofweek(time, "UTC")  // 1=Sun, 2=Mon ... 7=Sat
+
+isSaturday = (dayOfWeek == 7)
+isSunday   = (dayOfWeek == 1)
+isFriday   = (dayOfWeek == 6)
+
+inSession = not isSaturday
+         and not (isSunday and hourUTC < 1)
+         and not (isFriday and hourUTC >= fridayStop)
+         and hourUTC >= sessStart
+         and hourUTC < sessEnd
+
+// ================================================================
+// DAILY TRADE COUNTER & LOSS CAP
+// ================================================================
+
+isNewDay = ta.change(time("D")) != 0
+
+var int   tradesToday    = 0
+var float dayStartEquity = strategy.initial_capital
+
+if isNewDay
+    tradesToday    := 0
+    dayStartEquity := strategy.equity
+
+if strategy.closedtrades > 0 and isNewDay[1]
+    tradesToday := 0
+
+// Count entries today
+if strategy.position_size[1] == 0 and strategy.position_size != 0
+    tradesToday += 1
+
+dailyLoss    = (dayStartEquity - strategy.equity) / dayStartEquity * 100
+dailyCapOK   = dailyLoss < maxDDPct
+tradeCountOK = tradesToday < maxTrades
+
+// ================================================================
+// SIGNAL LOGIC
+// ================================================================
+
+// EMA cross (previous closed bar)
+crossUp   = ta.crossover(emaFast, emaSlow)
+crossDown = ta.crossunder(emaFast, emaSlow)
+
+// RSI bias (momentum direction, not OS/OB)
+rsiBull = rsiVal > 50
+rsiBear = rsiVal < 50
+
+// ADX filter
+adxOK = not useAdx or adxVal >= adxMin
+
+// Volatility filter
+volOK = atrVal >= minAtr and atrVal <= maxAtr
+
+// H1 trend filter
+h1Bull  = not useH1 or h1Close > h1Ema
+h1Bear  = not useH1 or h1Close < h1Ema
+
+// EMA200 M5 filter
+ema200Bull = not useEma200 or close > ema200
+ema200Bear = not useEma200 or close < ema200
+
+// Cooldown: no signal within minBars of last trade
+var int barsSinceTrade = 999
+if strategy.position_size[1] == 0 and strategy.position_size != 0
+    barsSinceTrade := 0
+else
+    barsSinceTrade += 1
+
+cooldownOK = barsSinceTrade >= minBars
+
+// No position open
+noPos = strategy.position_size == 0
+
+// Final entry conditions
+longCondition  = crossUp   and rsiBull and adxOK and volOK and h1Bull and ema200Bull
+              and inSession and dailyCapOK and tradeCountOK and cooldownOK and noPos
+
+shortCondition = crossDown and rsiBear and adxOK and volOK and h1Bear and ema200Bear
+              and inSession and dailyCapOK and tradeCountOK and cooldownOK and noPos
+
+// ================================================================
+// ENTRY & EXIT
+// ================================================================
+
+var float entryPrice = na
+var float slLevel    = na
+var float tpLevel    = na
+
+if longCondition
+    entryPrice := close
+    slLevel    := close - slMulti * atrVal
+    tpLevel    := close + tpMulti * atrVal
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", "Long",
+         stop   = slLevel,
+         limit  = tpLevel,
+         comment= "SL/TP")
+
+if shortCondition
+    entryPrice := close
+    slLevel    := close + slMulti * atrVal
+    tpLevel    := close - tpMulti * atrVal
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", "Short",
+         stop   = slLevel,
+         limit  = tpLevel,
+         comment= "SL/TP")
+
+// ================================================================
+// VISUALS
+// ================================================================
+
+// EMAs
+plot(emaFast, "EMA Fast (9)",  color=color.new(color.aqua, 0),   linewidth=1)
+plot(emaSlow, "EMA Slow (21)", color=color.new(color.orange, 0), linewidth=1)
+plot(useEma200 ? ema200 : na,  "EMA 200",  color=color.new(color.gray, 40), linewidth=1)
+
+// H1 EMA reference line
+plot(useH1 ? h1Ema : na, "H1 EMA (50)", color=color.new(color.yellow, 30), linewidth=2, style=plot.style_stepline)
+
+// Entry signals
+plotshape(longCondition,  "Buy",  shape.labelup,   location.belowbar, color.new(color.green, 0),  text="▲", textcolor=color.white, size=size.small)
+plotshape(shortCondition, "Sell", shape.labeldown, location.abovebar, color.new(color.red, 0),    text="▼", textcolor=color.white, size=size.small)
+
+// SL / TP lines for active trade
+var line slLine = na
+var line tpLine = na
+
+if strategy.position_size > 0 and not na(slLevel)
+    line.delete(slLine)
+    line.delete(tpLine)
+    slLine := line.new(bar_index - 1, slLevel, bar_index, slLevel, color=color.red,   width=1, style=line.style_dashed)
+    tpLine := line.new(bar_index - 1, tpLevel, bar_index, tpLevel, color=color.green, width=1, style=line.style_dashed)
+
+if strategy.position_size < 0 and not na(slLevel)
+    line.delete(slLine)
+    line.delete(tpLine)
+    slLine := line.new(bar_index - 1, slLevel, bar_index, slLevel, color=color.red,   width=1, style=line.style_dashed)
+    tpLine := line.new(bar_index - 1, tpLevel, bar_index, tpLevel, color=color.green, width=1, style=line.style_dashed)
+
+// Background: session highlight
+bgcolor(inSession ? color.new(color.blue, 97) : na, title="Trading Session")
+
+// Background: no trade zone (daily cap hit)
+bgcolor(not dailyCapOK ? color.new(color.red, 92) : na, title="Daily Cap Reached")
+
+// ================================================================
+// INFO TABLE
+// ================================================================
+
+var table infoTable = table.new(position.top_right, 2, 8, bgcolor=color.new(color.black, 70), border_width=1)
+
+if barstate.islast
+    table.cell(infoTable, 0, 0, "BTC_Cla_V1",        text_color=color.yellow, text_size=size.small)
+    table.cell(infoTable, 1, 0, syminfo.ticker,       text_color=color.white,  text_size=size.small)
+    table.cell(infoTable, 0, 1, "ATR",                text_color=color.gray,   text_size=size.small)
+    table.cell(infoTable, 1, 1, str.tostring(atrVal, "#.##"), text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 0, 2, "ADX",                text_color=color.gray,   text_size=size.small)
+    table.cell(infoTable, 1, 2, str.tostring(adxVal, "#.##") + (adxOK ? " ✓" : " ✗"),
+         text_color = adxOK ? color.green : color.red, text_size=size.small)
+    table.cell(infoTable, 0, 3, "RSI",                text_color=color.gray,   text_size=size.small)
+    table.cell(infoTable, 1, 3, str.tostring(rsiVal, "#.##"), text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 0, 4, "H1 Trend",           text_color=color.gray,   text_size=size.small)
+    table.cell(infoTable, 1, 4, h1Close > h1Ema ? "BULL ↑" : "BEAR ↓",
+         text_color = h1Close > h1Ema ? color.green : color.red, text_size=size.small)
+    table.cell(infoTable, 0, 5, "Session",            text_color=color.gray,   text_size=size.small)
+    table.cell(infoTable, 1, 5, inSession ? "OPEN ✓" : "CLOSED ✗",
+         text_color = inSession ? color.green : color.red, text_size=size.small)
+    table.cell(infoTable, 0, 6, "Trades today",       text_color=color.gray,   text_size=size.small)
+    table.cell(infoTable, 1, 6, str.tostring(tradesToday) + "/" + str.tostring(maxTrades),
+         text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 0, 7, "Daily P&L",          text_color=color.gray,   text_size=size.small)
+    table.cell(infoTable, 1, 7, str.tostring(-dailyLoss, "#.##") + "%",
+         text_color = dailyCapOK ? color.green : color.red, text_size=size.small)
