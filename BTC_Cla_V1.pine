@@ -1,37 +1,36 @@
-//@version=5
+//@version=6
 strategy(
-     title       = "BTC_Cla_V1 — EMA Cross + RSI + ADX + H1 Trend",
-     shorttitle  = "BTC_Cla_V1",
-     overlay     = true,
+     title             = "BTC_Cla_V1 - EMA Cross + RSI + ADX + H1 Trend",
+     shorttitle        = "BTC_Cla_V1",
+     overlay           = true,
      default_qty_type  = strategy.percent_of_equity,
      default_qty_value = 1,
      initial_capital   = 10000,
      commission_type   = strategy.commission.percent,
-     commission_value  = 0.05,   // 0.05% per trade (IC Markets BTC typical)
+     commission_value  = 0.05,
      slippage          = 3,
-     max_bars_back     = 500
-)
+     max_bars_back     = 500)
 
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 // INPUTS
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 
-grp1 = "═══ Signal (M5) ═══"
+grp1 = "--- Signal (M5) ---"
 fastLen     = input.int(9,   "Fast EMA",        group=grp1)
 slowLen     = input.int(21,  "Slow EMA",        group=grp1)
 rsiLen      = input.int(14,  "RSI Period",      group=grp1)
 useEma200   = input.bool(true, "Use EMA(200) M5 filter", group=grp1)
 
-grp2 = "═══ Trend Filter (H1) ═══"
+grp2 = "--- Trend Filter (H1) ---"
 useH1       = input.bool(true, "H1 EMA Trend Filter", group=grp2)
 h1EmaLen    = input.int(50,  "H1 EMA Period",   group=grp2)
 
-grp3 = "═══ ADX Filter ═══"
+grp3 = "--- ADX Filter ---"
 useAdx      = input.bool(true, "ADX Filter (avoid chop)", group=grp3)
 adxLen      = input.int(14,  "ADX Period",      group=grp3)
 adxMin      = input.float(20.0, "Min ADX",      group=grp3)
 
-grp4 = "═══ ATR & Risk ═══"
+grp4 = "--- ATR & Risk ---"
 atrLen      = input.int(14,   "ATR Period",     group=grp4)
 minAtr      = input.float(50.0, "Min ATR (USD)", group=grp4)
 maxAtr      = input.float(600.0,"Max ATR (USD)", group=grp4)
@@ -39,19 +38,19 @@ slMulti     = input.float(1.2,  "SL = ATR ×",  group=grp4)
 tpMulti     = input.float(2.4,  "TP = ATR ×",  group=grp4)
 riskPct     = input.float(1.0,  "Risk % per trade", group=grp4)
 
-grp5 = "═══ Session Filter (UTC) ═══"
+grp5 = "--- Session Filter (UTC) ---"
 sessStart   = input.int(7,  "Session start hour (UTC)", group=grp5)
 sessEnd     = input.int(20, "Session end hour (UTC)",   group=grp5)
 fridayStop  = input.int(11, "Friday: stop after hour (UTC)", group=grp5)
 
-grp6 = "═══ Daily Limits ═══"
+grp6 = "--- Daily Limits ---"
 maxTrades   = input.int(3,   "Max trades per day",     group=grp6)
 maxDDPct    = input.float(3.0,"Max daily loss %",      group=grp6)
 minBars     = input.int(3,   "Min bars between trades",group=grp6)
 
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 // INDICATORS
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 
 // M5 EMAs
 emaFast = ta.ema(close, fastLen)
@@ -71,9 +70,9 @@ atrVal  = ta.atr(atrLen)
 h1Ema   = request.security(syminfo.tickerid, "60", ta.ema(close, h1EmaLen), lookahead=barmerge.lookahead_off)
 h1Close = request.security(syminfo.tickerid, "60", close[1], lookahead=barmerge.lookahead_off)
 
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 // SESSION FILTER
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 
 hourUTC    = hour(time, "UTC")
 dayOfWeek  = dayofweek(time, "UTC")  // 1=Sun, 2=Mon ... 7=Sat
@@ -88,9 +87,9 @@ inSession = not isSaturday
          and hourUTC >= sessStart
          and hourUTC < sessEnd
 
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 // DAILY TRADE COUNTER & LOSS CAP
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 
 isNewDay = ta.change(time("D")) != 0
 
@@ -112,9 +111,9 @@ dailyLoss    = (dayStartEquity - strategy.equity) / dayStartEquity * 100
 dailyCapOK   = dailyLoss < maxDDPct
 tradeCountOK = tradesToday < maxTrades
 
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 // SIGNAL LOGIC
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 
 // EMA cross (previous closed bar)
 crossUp   = ta.crossover(emaFast, emaSlow)
@@ -157,9 +156,9 @@ longCondition  = crossUp   and rsiBull and adxOK and volOK and h1Bull and ema200
 shortCondition = crossDown and rsiBear and adxOK and volOK and h1Bear and ema200Bear
               and inSession and dailyCapOK and tradeCountOK and cooldownOK and noPos
 
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 // ENTRY & EXIT
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 
 var float entryPrice = na
 var float slLevel    = na
@@ -185,9 +184,9 @@ if shortCondition
          limit  = tpLevel,
          comment= "SL/TP")
 
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 // VISUALS
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 
 // EMAs
 plot(emaFast, "EMA Fast (9)",  color=color.new(color.aqua, 0),   linewidth=1)
@@ -223,9 +222,9 @@ bgcolor(inSession ? color.new(color.blue, 97) : na, title="Trading Session")
 // Background: no trade zone (daily cap hit)
 bgcolor(not dailyCapOK ? color.new(color.red, 92) : na, title="Daily Cap Reached")
 
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 // INFO TABLE
-// ══════════════════════════════════════════════════════════════════
+// ================================================================
 
 var table infoTable = table.new(position.top_right, 2, 8, bgcolor=color.new(color.black, 70), border_width=1)
 
