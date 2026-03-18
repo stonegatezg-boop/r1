@@ -1,0 +1,380 @@
+//@version=6
+strategy(
+     title             = "Bounce FTMO EA - SMC + Liquidity Sweep",
+     shorttitle        = "Bounce_FTMO",
+     overlay           = true,
+     default_qty_type  = strategy.percent_of_equity,
+     default_qty_value = 1,
+     initial_capital   = 100000,
+     commission_type   = strategy.commission.percent,
+     commission_value  = 0.04,
+     slippage          = 2,
+     max_bars_back     = 500,
+     pyramiding        = 0)
+
+// ================================================================
+// OPIS STRATEGIJE
+// ================================================================
+// Bounce FTMO EA - dizajnirana za FTMO Challenge / Prop Firm pravila:
+//   - Max daily drawdown 5%, max total drawdown 10%
+//   - Profit target: 10% (Phase 1), 5% (Phase 2)
+//
+// Logika:
+//   1. Identificira swing high/low (liquidity pool zone)
+//   2. Čeka sweep (wick ispod/iznad swing level-a)
+//   3. Potvrda: FVG (Fair Value Gap) ili bullish/bearish engulfing
+//   4. Entry na pullback u FVG zonu
+//   5. SL ispod sweep wicka, TP na suprotnu liquidity zonu
+//
+// Multi-timeframe:
+//   - H1: bias (trend direction)
+//   - M15/M5: entry trigger (sweep + FVG)
+// ================================================================
+
+// ================================================================
+// INPUTS
+// ================================================================
+
+grp_smc = "=== SMC Structure ==="
+swingLen        = input.int(10,    "Swing Detection Length",     group=grp_smc, minval=3, maxval=50)
+fvgMinSize      = input.float(0.3, "Min FVG Size (ATR multiple)", group=grp_smc, step=0.1)
+sweepWickMin    = input.float(0.1, "Min Sweep Wick (ATR mult)",  group=grp_smc, step=0.1)
+sweepLookback   = input.int(3,     "Sweep Lookback (bars)",      group=grp_smc, minval=1, maxval=10)
+useEngulfing    = input.bool(true, "Use Engulfing as confirmation", group=grp_smc)
+
+grp_htf = "=== HTF Bias (H1) ==="
+useHTFBias      = input.bool(true,  "Use H1 Trend Bias",         group=grp_htf)
+htfEmaFast      = input.int(21,     "H1 EMA Fast",               group=grp_htf)
+htfEmaSlow      = input.int(50,     "H1 EMA Slow",               group=grp_htf)
+
+grp_risk = "=== Risk Management ==="
+atrLen          = input.int(14,     "ATR Period",                 group=grp_risk)
+riskPct         = input.float(0.5,  "Risk % per Trade",          group=grp_risk, step=0.1, minval=0.1, maxval=2.0)
+slBuffer        = input.float(0.2,  "SL Buffer (ATR mult)",      group=grp_risk, step=0.1)
+rrRatio         = input.float(2.5,  "Min R:R Ratio",             group=grp_risk, step=0.1, minval=1.0)
+useTrailBE      = input.bool(true,  "Trail to Breakeven at 1R",  group=grp_risk)
+useTrailATR     = input.bool(true,  "ATR Trailing after 2R",     group=grp_risk)
+trailATRMult    = input.float(1.5,  "Trail ATR Multiplier",      group=grp_risk, step=0.1)
+
+grp_ftmo = "=== FTMO Limits ==="
+maxDailyDD      = input.float(4.0,  "Max Daily DD % (stop EA)",  group=grp_ftmo, step=0.5)
+maxTotalDD      = input.float(8.0,  "Max Total DD % (stop EA)",  group=grp_ftmo, step=0.5)
+maxTradesDay    = input.int(3,      "Max Trades Per Day",        group=grp_ftmo)
+minBarsCooldown = input.int(5,      "Min Bars Between Trades",   group=grp_ftmo)
+
+grp_session = "=== Session Filter ==="
+useLondon       = input.bool(true,  "Trade London Session",      group=grp_session)
+useNY           = input.bool(true,  "Trade New York Session",    group=grp_session)
+londonStart     = input.int(7,      "London Start (UTC)",        group=grp_session)
+londonEnd       = input.int(12,     "London End (UTC)",          group=grp_session)
+nyStart         = input.int(13,     "NY Start (UTC)",            group=grp_session)
+nyEnd           = input.int(20,     "NY End (UTC)",              group=grp_session)
+fridayStop      = input.int(14,     "Friday Stop Hour (UTC)",    group=grp_session)
+
+// ================================================================
+// INDICATORS
+// ================================================================
+
+atrVal = ta.atr(atrLen)
+
+// HTF Bias
+h1EmaF  = request.security(syminfo.tickerid, "60", ta.ema(close, htfEmaFast), lookahead=barmerge.lookahead_off)
+h1EmaS  = request.security(syminfo.tickerid, "60", ta.ema(close, htfEmaSlow), lookahead=barmerge.lookahead_off)
+h1Close = request.security(syminfo.tickerid, "60", close[1], lookahead=barmerge.lookahead_off)
+
+htfBullish = not useHTFBias or (h1EmaF > h1EmaS and h1Close > h1EmaS)
+htfBearish = not useHTFBias or (h1EmaF < h1EmaS and h1Close < h1EmaS)
+
+// ================================================================
+// SWING HIGH / LOW DETECTION (Liquidity Pools)
+// ================================================================
+
+swingHigh = ta.pivothigh(high, swingLen, swingLen)
+swingLow  = ta.pivotlow(low, swingLen, swingLen)
+
+var float lastSwingHigh = na
+var float lastSwingLow  = na
+var int   swingHighBar  = na
+var int   swingLowBar   = na
+
+if not na(swingHigh)
+    lastSwingHigh := swingHigh
+    swingHighBar  := bar_index - swingLen
+
+if not na(swingLow)
+    lastSwingLow := swingLow
+    swingLowBar  := bar_index - swingLen
+
+// ================================================================
+// LIQUIDITY SWEEP DETECTION
+// ================================================================
+
+// Bearish sweep: wick above swing high then close below it
+sweepHigh = false
+for i = 1 to sweepLookback
+    if not na(lastSwingHigh) and high[i] > lastSwingHigh and close[i] < lastSwingHigh
+        if (high[i] - lastSwingHigh) >= sweepWickMin * atrVal
+            sweepHigh := true
+            break
+
+// Bullish sweep: wick below swing low then close above it
+sweepLow = false
+for i = 1 to sweepLookback
+    if not na(lastSwingLow) and low[i] < lastSwingLow and close[i] > lastSwingLow
+        if (lastSwingLow - low[i]) >= sweepWickMin * atrVal
+            sweepLow := true
+            break
+
+// ================================================================
+// FVG (Fair Value Gap) DETECTION
+// ================================================================
+
+// Bullish FVG: gap between bar[2].high and bar[0].low (bar[1] body is in between)
+bullFVG     = low > high[2] and (low - high[2]) >= fvgMinSize * atrVal
+bullFVGTop  = low
+bullFVGBot  = high[2]
+
+// Bearish FVG: gap between bar[0].high and bar[2].low
+bearFVG     = high < low[2] and (low[2] - high) >= fvgMinSize * atrVal
+bearFVGTop  = low[2]
+bearFVGBot  = high
+
+// ================================================================
+// ENGULFING PATTERN (Alternative confirmation)
+// ================================================================
+
+bullEngulf = useEngulfing and close > open and close > high[1] and open < low[1] and (close - open) > (high[1] - low[1]) * 0.5
+bearEngulf = useEngulfing and close < open and close < low[1] and open > high[1] and (open - close) > (high[1] - low[1]) * 0.5
+
+// ================================================================
+// SESSION FILTER
+// ================================================================
+
+hourUTC   = hour(time, "UTC")
+dayOfWeek = dayofweek(time, "UTC")
+
+isFriday   = (dayOfWeek == 6)
+isWeekend  = (dayOfWeek == 7 or dayOfWeek == 1)
+
+inLondon = useLondon and hourUTC >= londonStart and hourUTC < londonEnd
+inNY     = useNY     and hourUTC >= nyStart     and hourUTC < nyEnd
+inSession = not isWeekend and (inLondon or inNY) and not (isFriday and hourUTC >= fridayStop)
+
+// ================================================================
+// DAILY TRACKING & FTMO LIMITS
+// ================================================================
+
+isNewDay = ta.change(time("D")) != 0
+
+var int   tradesToday    = 0
+var float dayStartEquity = strategy.initial_capital
+var float peakEquity     = strategy.initial_capital
+
+if isNewDay
+    tradesToday    := 0
+    dayStartEquity := strategy.equity
+
+peakEquity := math.max(peakEquity, strategy.equity)
+
+dailyDD  = dayStartEquity > 0 ? (dayStartEquity - strategy.equity) / dayStartEquity * 100 : 0
+totalDD  = peakEquity > 0 ? (peakEquity - strategy.equity) / peakEquity * 100 : 0
+
+ftmoDailyOK = dailyDD < maxDailyDD
+ftmoTotalOK = totalDD < maxTotalDD
+tradeCountOK = tradesToday < maxTradesDay
+
+// Count entries
+if strategy.position_size[1] == 0 and strategy.position_size != 0
+    tradesToday += 1
+
+// Cooldown
+var int barsSinceTrade = 999
+if strategy.position_size[1] == 0 and strategy.position_size != 0
+    barsSinceTrade := 0
+else
+    barsSinceTrade += 1
+
+cooldownOK = barsSinceTrade >= minBarsCooldown
+
+// ================================================================
+// ENTRY SIGNALS
+// ================================================================
+
+noPos = strategy.position_size == 0
+
+// Bullish: sweep below swing low + FVG or engulfing + HTF bullish
+bullConfirm = bullFVG or bullEngulf
+longSignal  = sweepLow and bullConfirm and htfBullish
+           and inSession and ftmoDailyOK and ftmoTotalOK
+           and tradeCountOK and cooldownOK and noPos
+
+// Bearish: sweep above swing high + FVG or engulfing + HTF bearish
+bearConfirm = bearFVG or bearEngulf
+shortSignal = sweepHigh and bearConfirm and htfBearish
+            and inSession and ftmoDailyOK and ftmoTotalOK
+            and tradeCountOK and cooldownOK and noPos
+
+// ================================================================
+// ENTRY & EXIT
+// ================================================================
+
+var float entryPrice = na
+var float slLevel    = na
+var float tpLevel    = na
+var float beLevel    = na
+var bool  trailingOn = false
+
+if longSignal
+    float sweepLowPrice = na
+    for i = 1 to sweepLookback
+        if not na(lastSwingLow) and low[i] < lastSwingLow
+            sweepLowPrice := low[i]
+            break
+    if not na(sweepLowPrice)
+        entryPrice := close
+        slLevel    := sweepLowPrice - slBuffer * atrVal
+        float slDist = entryPrice - slLevel
+        tpLevel    := entryPrice + slDist * rrRatio
+        beLevel    := entryPrice
+        trailingOn := false
+        if slDist > 0
+            strategy.entry("Long", strategy.long)
+            strategy.exit("Long Exit", "Long", stop=slLevel, limit=tpLevel)
+
+if shortSignal
+    float sweepHighPrice = na
+    for i = 1 to sweepLookback
+        if not na(lastSwingHigh) and high[i] > lastSwingHigh
+            sweepHighPrice := high[i]
+            break
+    if not na(sweepHighPrice)
+        entryPrice := close
+        slLevel    := sweepHighPrice + slBuffer * atrVal
+        float slDist = slLevel - entryPrice
+        tpLevel    := entryPrice - slDist * rrRatio
+        beLevel    := entryPrice
+        trailingOn := false
+        if slDist > 0
+            strategy.entry("Short", strategy.short)
+            strategy.exit("Short Exit", "Short", stop=slLevel, limit=tpLevel)
+
+// ================================================================
+// TRAILING STOP MANAGEMENT
+// ================================================================
+
+if strategy.position_size > 0 and not na(entryPrice) and not na(slLevel)
+    float curProfit = close - entryPrice
+    float slDist    = entryPrice - slLevel
+    // Move to BE at 1R
+    if useTrailBE and curProfit >= slDist and not trailingOn
+        float newSL = entryPrice + syminfo.mintick * 10
+        strategy.exit("Long Exit", "Long", stop=newSL, limit=tpLevel)
+        slLevel    := newSL
+        trailingOn := true
+    // ATR trailing after 2R
+    if useTrailATR and trailingOn and curProfit >= slDist * 2
+        float trailSL = close - trailATRMult * atrVal
+        if trailSL > slLevel
+            strategy.exit("Long Exit", "Long", stop=trailSL, limit=tpLevel)
+            slLevel := trailSL
+
+if strategy.position_size < 0 and not na(entryPrice) and not na(slLevel)
+    float curProfit = entryPrice - close
+    float slDist    = slLevel - entryPrice
+    // Move to BE at 1R
+    if useTrailBE and curProfit >= slDist and not trailingOn
+        float newSL = entryPrice - syminfo.mintick * 10
+        strategy.exit("Short Exit", "Short", stop=newSL, limit=tpLevel)
+        slLevel    := newSL
+        trailingOn := true
+    // ATR trailing after 2R
+    if useTrailATR and trailingOn and curProfit >= slDist * 2
+        float trailSL = close + trailATRMult * atrVal
+        if trailSL < slLevel
+            strategy.exit("Short Exit", "Short", stop=trailSL, limit=tpLevel)
+            slLevel := trailSL
+
+// ================================================================
+// VISUALS
+// ================================================================
+
+// Swing levels
+plot(lastSwingHigh, "Swing High", color=color.new(color.red, 50), linewidth=1, style=plot.style_stepline)
+plot(lastSwingLow,  "Swing Low",  color=color.new(color.green, 50), linewidth=1, style=plot.style_stepline)
+
+// HTF EMAs
+plot(useHTFBias ? h1EmaF : na, "H1 EMA Fast", color=color.new(color.aqua, 30), linewidth=2, style=plot.style_stepline)
+plot(useHTFBias ? h1EmaS : na, "H1 EMA Slow", color=color.new(color.orange, 30), linewidth=2, style=plot.style_stepline)
+
+// Entry signals
+plotshape(longSignal,  "Buy Signal",  shape.labelup,   location.belowbar, color.new(#089981, 0), text="SWEEP", textcolor=color.white, size=size.small)
+plotshape(shortSignal, "Sell Signal", shape.labeldown, location.abovebar, color.new(#F23645, 0), text="SWEEP", textcolor=color.white, size=size.small)
+
+// FVG zones
+bgcolor(bullFVG ? color.new(#089981, 90) : na, title="Bullish FVG")
+bgcolor(bearFVG ? color.new(#F23645, 90) : na, title="Bearish FVG")
+
+// Liquidity sweeps
+plotshape(sweepLow,  "Sweep Low",  shape.circle, location.belowbar, color.new(color.lime, 30),   size=size.tiny)
+plotshape(sweepHigh, "Sweep High", shape.circle, location.abovebar, color.new(color.fuchsia, 30), size=size.tiny)
+
+// Session background
+bgcolor(inSession ? color.new(color.blue, 97) : na, title="Trading Session")
+
+// FTMO warning zones
+bgcolor(not ftmoDailyOK ? color.new(color.red, 85) : na, title="Daily DD Limit!")
+bgcolor(not ftmoTotalOK ? color.new(color.maroon, 80) : na, title="Total DD Limit!")
+
+// ================================================================
+// INFO TABLE
+// ================================================================
+
+var table infoTable = table.new(position.top_right, 2, 10, bgcolor=color.new(#1a1a2e, 10), border_width=1, border_color=color.new(color.gray, 70))
+
+if barstate.islast
+    table.cell(infoTable, 0, 0, "Bounce FTMO EA",    text_color=#e94560,   text_size=size.small)
+    table.cell(infoTable, 1, 0, syminfo.ticker,       text_color=color.white, text_size=size.small)
+
+    table.cell(infoTable, 0, 1, "H1 Bias",            text_color=color.gray, text_size=size.small)
+    h1Bias = h1EmaF > h1EmaS ? "BULL" : "BEAR"
+    table.cell(infoTable, 1, 1, h1Bias,
+         text_color = h1EmaF > h1EmaS ? #089981 : #F23645, text_size=size.small)
+
+    table.cell(infoTable, 0, 2, "ATR",                text_color=color.gray, text_size=size.small)
+    table.cell(infoTable, 1, 2, str.tostring(atrVal, "#.##"), text_color=color.white, text_size=size.small)
+
+    table.cell(infoTable, 0, 3, "Swing H",            text_color=color.gray, text_size=size.small)
+    table.cell(infoTable, 1, 3, str.tostring(lastSwingHigh, "#.##"), text_color=#F23645, text_size=size.small)
+
+    table.cell(infoTable, 0, 4, "Swing L",            text_color=color.gray, text_size=size.small)
+    table.cell(infoTable, 1, 4, str.tostring(lastSwingLow, "#.##"), text_color=#089981, text_size=size.small)
+
+    table.cell(infoTable, 0, 5, "Session",            text_color=color.gray, text_size=size.small)
+    table.cell(infoTable, 1, 5, inSession ? "ACTIVE" : "CLOSED",
+         text_color = inSession ? #089981 : #F23645, text_size=size.small)
+
+    table.cell(infoTable, 0, 6, "Trades Today",       text_color=color.gray, text_size=size.small)
+    table.cell(infoTable, 1, 6, str.tostring(tradesToday) + "/" + str.tostring(maxTradesDay),
+         text_color=color.white, text_size=size.small)
+
+    table.cell(infoTable, 0, 7, "Daily DD",           text_color=color.gray, text_size=size.small)
+    table.cell(infoTable, 1, 7, str.tostring(dailyDD, "#.##") + "% / " + str.tostring(maxDailyDD) + "%",
+         text_color = ftmoDailyOK ? #089981 : #F23645, text_size=size.small)
+
+    table.cell(infoTable, 0, 8, "Total DD",           text_color=color.gray, text_size=size.small)
+    table.cell(infoTable, 1, 8, str.tostring(totalDD, "#.##") + "% / " + str.tostring(maxTotalDD) + "%",
+         text_color = ftmoTotalOK ? #089981 : #F23645, text_size=size.small)
+
+    table.cell(infoTable, 0, 9, "Position",           text_color=color.gray, text_size=size.small)
+    posText = strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : "FLAT"
+    posClr  = strategy.position_size > 0 ? #089981 : strategy.position_size < 0 ? #F23645 : color.gray
+    table.cell(infoTable, 1, 9, posText, text_color=posClr, text_size=size.small)
+
+// ================================================================
+// ALERTS
+// ================================================================
+
+alertcondition(longSignal,  title="Bounce FTMO: Long Signal",  message="BOUNCE FTMO: Bullish Sweep + FVG confirmed on {{ticker}} @ {{close}}")
+alertcondition(shortSignal, title="Bounce FTMO: Short Signal", message="BOUNCE FTMO: Bearish Sweep + FVG confirmed on {{ticker}} @ {{close}}")
+alertcondition(not ftmoDailyOK, title="Bounce FTMO: Daily DD Limit", message="WARNING: Daily drawdown limit approaching on {{ticker}}!")
+alertcondition(not ftmoTotalOK, title="Bounce FTMO: Total DD Limit", message="CRITICAL: Total drawdown limit approaching on {{ticker}}!")

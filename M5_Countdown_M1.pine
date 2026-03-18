@@ -1,0 +1,108 @@
+//@version=6
+indicator(
+     title     = "M5 Open Arrow + Countdown",
+     shorttitle = "M5 Countdown",
+     overlay   = true,
+     max_labels_count = 500)
+
+// ================================================================
+// OPIS:
+//   - Koristi se na M1 chartu (BTCUSD ili bilo koji par)
+//   - Svaka 5. minuta (početak M5 svijeće) prikazuje plavu strelicu
+//   - Countdown box: odbrojava do sljedeće M5 svijeće + prikazuje cijenu
+// ================================================================
+
+// ================================================================
+// INPUTS
+// ================================================================
+
+grp1 = "=== Arrow Settings ==="
+arrowColor   = input.color(color.new(#2196F3, 0), "Arrow Color", group=grp1)
+arrowSize    = input.string("small", "Arrow Size", options=["tiny", "small", "normal"], group=grp1)
+arrowOffset  = input.float(0.3, "Arrow Offset (ATR mult)", group=grp1, step=0.1)
+
+grp2 = "=== Countdown Box ==="
+showBox      = input.bool(true,  "Show Countdown Box",   group=grp2)
+boxBgColor   = input.color(color.new(#1a1a2e, 10), "Box Background", group=grp2)
+boxTextColor = input.color(color.new(#2196F3, 0),  "Timer Text Color", group=grp2)
+priceColor   = input.color(color.new(color.white, 0), "Price Text Color", group=grp2)
+
+// ================================================================
+// M5 CANDLE OPEN DETECTION
+// ================================================================
+
+// Dohvati vrijeme M5 svijeće — kad se promijeni, nova M5 svijeća je počela
+m5Time    = request.security(syminfo.tickerid, "5", time, lookahead=barmerge.lookahead_off)
+isNewM5   = ta.change(m5Time) != 0
+
+// ATR za dinamičan offset strelice
+atrVal = ta.atr(14)
+
+// ================================================================
+// ARROW PLOTTING
+// ================================================================
+
+sz = switch arrowSize
+    "tiny"   => size.tiny
+    "small"  => size.small
+    "normal" => size.normal
+    => size.small
+
+plotshape(
+     isNewM5,
+     title    = "M5 Open",
+     style    = shape.triangledown,
+     location = location.abovebar,
+     color    = arrowColor,
+     size     = sz,
+     text     = "",
+     offset   = 0)
+
+// ================================================================
+// COUNTDOWN TIMER + PRICE BOX
+// ================================================================
+
+var label countdownLabel = na
+
+if showBox and barstate.islast
+    // Izračunaj koliko je prošlo od zadnjeg M5 otvaranja
+    int currentMinute = minute(time)
+    int minuteInM5    = currentMinute % 5
+    int secondsNow    = second(time)
+
+    // Preostalo vrijeme do sljedeće M5 svijeće
+    int remainMin  = 4 - minuteInM5
+    int remainSec  = 60 - secondsNow
+    if remainSec == 60
+        remainSec := 0
+    else
+        remainMin := remainMin > 0 ? remainMin - 1 : 4
+
+    // Ako smo točno na početku M5
+    if minuteInM5 == 0 and secondsNow == 0
+        remainMin := 5
+        remainSec := 0
+
+    string timerText = str.format("{0,number,0}:{1,number,00}", remainMin, remainSec)
+    string priceText = str.tostring(close, format.mintick)
+    string fullText  = "Next M5: " + timerText + "\n" + syminfo.ticker + ": " + priceText
+
+    // Boja timera: crvena kad < 30 sekundi
+    color timerClr = (remainMin == 0 and remainSec < 30) ? color.new(#F23645, 0) : boxTextColor
+
+    label.delete(countdownLabel)
+    countdownLabel := label.new(
+         x          = bar_index + 3,
+         y          = high + arrowOffset * atrVal * 2,
+         text       = fullText,
+         style      = label.style_label_lower_left,
+         color      = boxBgColor,
+         textcolor  = timerClr,
+         size       = size.normal,
+         textalign  = text.align_left)
+
+// ================================================================
+// ALERTS
+// ================================================================
+
+alertcondition(isNewM5, title="New M5 Candle", message="New M5 candle opened on {{ticker}} @ {{close}}")
