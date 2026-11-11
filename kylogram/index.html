@@ -140,6 +140,7 @@
   .galbar{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
   .galbar .tabs{flex:1;margin-bottom:0}
   .galscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 2px 24px}
+  .stat b small{font-size:14px;font-weight:600}
   .stats.chg{grid-template-columns:repeat(3,1fr)}
   .stats.chg .stat b{font-size:20px}
   html[data-theme="90"] #calWho,html[data-theme="90"] .calkey{color:#fff}
@@ -424,7 +425,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:34</div>
+  <div class="ver">verzija 11.11. 23:36</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -539,7 +540,7 @@
     if(state.goal){var rem=last.w-state.goal;$('sTrendL').textContent=rem>0?'do cilja (kg)':rem<0?'ispod cilja (kg)':'cilj dosegnut';$('sTrend').textContent=f1(Math.abs(rem))}
     else{var mn=Math.min.apply(null,s.map(function(e){return e.w}));$('sTrendL').textContent='najniža (kg)';$('sTrend').textContent=f1(mn)}
     var tot=last.w-s[0].w;
-    if(s.length>1){$('sChg').textContent=(tot>0?'+':'')+f1(tot);$('sChg').style.color=tot<0?'var(--gr)':tot>0?'var(--mg)':''}
+    if(s.length>1){var tp=tot/s[0].w*100;$('sChg').innerHTML=(tot>0?'+':'')+f1(tot)+' <small>('+(tp>0?'+':'')+f1(tp)+'%)</small>';$('sChg').style.color=tot<0?'var(--gr)':tot>0?'var(--mg)':''}
     else{$('sChg').textContent='–';$('sChg').style.color=''}
     setChg('c7','',s,7);setChg('c15','',s,15);setChg('c30','',s,30);
   }
