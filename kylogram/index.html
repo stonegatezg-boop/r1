@@ -117,7 +117,6 @@
   html[data-theme="80"] .trenddot{background:linear-gradient(90deg,#00e5ff,var(--acc),#ff3df2)}
   html[data-theme="80"] .cur{display:inline}
   html[data-theme="m"] #tg stop,html[data-theme="ml"] #tg stop,html:not([data-theme]) #tg stop{stop-color:var(--acc)}
-  #goalLbl{color:var(--mute)}
   .camrow{display:flex;gap:8px;margin-top:10px}
   #camInfo{font-size:14px;color:var(--mute);margin-top:8px;line-height:1.3}
   .ver{text-align:center;color:var(--mute);font-size:12px;margin-top:14px;opacity:.7}
@@ -125,14 +124,17 @@
   .camwrap button{width:100%}
   .fover{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;font-size:100px;padding:0;border:0;margin:0}
   .camrow svg{vertical-align:-3px;margin-right:6px}
-  #pbwrap{flex:0 0 100%;display:flex;align-items:center;gap:10px;color:var(--mute)}
-  #pbwrap input{flex:1}
+  #pbwrap,#pgwrap{flex:0 0 100%;display:flex;align-items:center;gap:10px;color:var(--mute)}
+  #pbwrap input,#pgwrap input{flex:1}
   #pmsg{flex:0 0 100%;min-height:0}
+  #delDay{line-height:1.3}
+  html[data-theme="80"] #delDay{font-size:13px}
+  .row2{display:flex;gap:8px}
+  .row2 button{flex:1 1 0;min-width:0;padding:12px 6px;font-size:15px}
   .galhead{font-weight:700;margin-bottom:10px}
   html[data-theme="90"] .galhead{display:none}
-  html[data-theme="90"] .wrap>.card:nth-of-type(7)::before{content:'Galerija'}
-  html[data-theme="90"] .wrap>.card:nth-of-type(9)::before{content:'Kalendar'}
-  html[data-theme="80"] .wrap>.card:nth-of-type(7){border-color:var(--cy);box-shadow:0 0 14px rgba(0,229,255,.25),inset 0 0 0 1px #000}
+  html[data-theme="90"] #galCard::before{content:'Galerija i kalendar'}
+  html[data-theme="80"] #galCard{border-color:var(--cy);box-shadow:0 0 14px rgba(0,229,255,.25),inset 0 0 0 1px #000}
   .gal{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
   .gal .thumb{cursor:pointer}
   .gal .thumb img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;background:#222}
@@ -228,20 +230,16 @@
   html[data-theme="80"] body{background:radial-gradient(ellipse at 50% 0%,#241247 0%,rgba(0,0,0,0) 55%) fixed,radial-gradient(ellipse at 50% 110%,rgba(255,61,242,.22) 0%,rgba(0,0,0,0) 55%) fixed,var(--bg)}
   html[data-theme="80"] .brand h1{background:linear-gradient(90deg,#00e5ff,var(--acc) 50%,#ff3df2);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--acc) 55%,transparent)) drop-shadow(3px 3px 0 #6a1b9a)}
   html[data-theme="80"] .brand h1 .cur{color:var(--mg);-webkit-text-fill-color:var(--mg)}
-  html[data-theme="80"] .wrap>.card:nth-of-type(2){border-color:var(--cy);box-shadow:0 0 14px rgba(0,229,255,.25),inset 0 0 0 1px #000}
-  html[data-theme="80"] .wrap>.card:nth-of-type(4){border-color:var(--mg);box-shadow:0 0 16px rgba(255,61,242,.28),inset 0 0 0 1px #000}
-  html[data-theme="80"] .wrap>.card:nth-of-type(5){border-color:var(--warn);box-shadow:0 0 14px rgba(255,154,31,.25),inset 0 0 0 1px #000}
-  html[data-theme="80"] .wrap>.card:nth-of-type(6){border-color:var(--gr);box-shadow:0 0 14px rgba(57,255,20,.2),inset 0 0 0 1px #000}
-  html[data-theme="80"] .stats .stat:nth-child(1){border-color:var(--acc);box-shadow:0 0 12px color-mix(in srgb,var(--acc) 25%,transparent)}
+  html[data-theme="80"] #cardNew{border-color:var(--cy);box-shadow:0 0 14px rgba(0,229,255,.25),inset 0 0 0 1px #000}
+  html[data-theme="80"] #cardChart{border-color:var(--mg);box-shadow:0 0 16px rgba(255,61,242,.28),inset 0 0 0 1px #000}
+      html[data-theme="80"] .stats .stat:nth-child(1){border-color:var(--acc);box-shadow:0 0 12px color-mix(in srgb,var(--acc) 25%,transparent)}
   html[data-theme="80"] .stats .stat:nth-child(2){border-color:var(--cy);box-shadow:0 0 12px rgba(0,229,255,.25)}
   html[data-theme="80"] .stats .stat:nth-child(3){border-color:var(--mg);box-shadow:0 0 12px rgba(255,61,242,.25)}
   html[data-theme="80"] #sCur{color:var(--acc);text-shadow:0 0 10px color-mix(in srgb,var(--acc) 70%,transparent)}
   html[data-theme="80"] #sTrend{color:var(--cy);text-shadow:0 0 10px rgba(0,229,255,.7)}
   html[data-theme="80"] #sChg{color:var(--mg);text-shadow:0 0 10px rgba(255,61,242,.7)}
-  html[data-theme="80"] .wrap>.card:nth-of-type(2) input:focus{border-color:var(--cy);box-shadow:0 0 10px rgba(0,229,255,.6)}
+  html[data-theme="80"] #cardNew input:focus{border-color:var(--cy);box-shadow:0 0 10px rgba(0,229,255,.6)}
   html[data-theme="80"] button.ghost.on{color:var(--cy);border-color:var(--cy);box-shadow:0 0 8px rgba(0,229,255,.6)}
-  html[data-theme="80"] .wrap>.card:nth-of-type(5) input{color:var(--warn);border-color:#6b4210}
-  html[data-theme="80"] .wrap>.card:nth-of-type(5) span{color:var(--warn)}
   html[data-theme="80"] .glow{filter:drop-shadow(0 0 4px rgba(0,229,255,.7)) drop-shadow(0 0 8px rgba(255,61,242,.55))}
   html[data-theme="80"] #tip{color:var(--cy)}
   html[data-theme="80"] .foot button.ghost{border-color:var(--mg);color:var(--mg)}
@@ -255,10 +253,8 @@
     box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #dfdfdf,inset -2px -2px 0 #808080,inset 2px 2px 0 #fff,3px 3px 0 #004040}
   html[data-theme="90"] .card::before{display:block;margin:-8px -8px 10px;padding:3px 6px;color:#fff;font-weight:700;font-size:16px;letter-spacing:.3px;background:linear-gradient(90deg,var(--pcd,#000080),var(--pc,#1084d0))}
   html[data-theme="90"] .card::after{position:absolute;right:6px;top:-1px;color:#000;font-weight:700;font-size:12px;letter-spacing:2px;content:"";background:#c0c0c0;width:16px;height:14px;text-align:center;line-height:13px;box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #fff,inset -2px -2px 0 #808080;margin-top:6px}
-  html[data-theme="90"] .wrap>.card:nth-of-type(2)::before{content:'Novo vaganje'}
-  html[data-theme="90"] .wrap>.card:nth-of-type(4)::before{content:'Graf težine'}
-  html[data-theme="90"] .wrap>.card:nth-of-type(5)::before{content:'Ciljna težina'}
-  html[data-theme="90"] .wrap>.card:nth-of-type(6)::before{content:'Povijest unosa'}
+  html[data-theme="90"] #cardNew::before{content:'Novo vaganje'}
+  html[data-theme="90"] #cardChart::before{content:'Graf težine'}
   html[data-theme="90"] .card::after{content:"x"}
   html[data-theme="90"] .stat{background:#c0c0c0;border:0;border-radius:0;padding:8px;box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #dfdfdf,inset -2px -2px 0 #808080,inset 2px 2px 0 #fff,3px 3px 0 #004040}
   html[data-theme="90"] .stat b{display:block;background:#fff;color:#000;font:700 26px/1.1 'Pixelify',sans-serif;padding:4px 6px;box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff,inset 2px 2px 0 #000,inset -2px -2px 0 #dfdfdf}
@@ -308,12 +304,13 @@
     <button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button>
   </div>
 
-  <div class="card">
+  <div class="card" id="cardNew">
     <div class="people" id="people"></div>
     <div id="pform">
       <input id="pname" maxlength="24" placeholder="Ime osobe">
       <div id="pswatch"></div>
       <label id="pbwrap">Rođen/a (nije obavezno) <input type="date" id="pbirth"></label>
+      <label id="pgwrap">Ciljna težina (nije obavezno) <input type="number" id="pgoal" inputmode="decimal" step="0.1" placeholder="kg"></label>
       <div class="msg" id="pmsg"></div>
       <button id="pok" type="button">Dodaj</button>
       <button class="ghost" id="pdel" type="button">Obriši</button>
@@ -348,7 +345,7 @@
     <div class="stat"><b id="c30">–</b><span id="c30l">30 d</span></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="cardChart">
     <div class="tabs" id="mtabs">
       <button class="ghost" data-m="w">Težina</button>
       <button class="ghost" data-m="h">Visina</button>
@@ -372,25 +369,13 @@
     </div>
   </div>
 
-  <div class="card" id="goalCard">
-    <div class="row">
-      <span id="goalLbl">Ciljna težina</span>
-      <input type="number" id="goal" inputmode="decimal" enterkeyhint="done" step="0.1" placeholder="kg" style="max-width:120px;margin-left:auto">
-      <button id="goalOk" type="button">OK</button>
-    </div>
-  </div>
-
   <div class="card" id="galCard">
-    <div class="galhead">Galerija</div>
-    <button class="ghost" id="galOpen" type="button" style="width:100%">Otvori galeriju</button>
+    <div class="galhead">Galerija i kalendar</div>
+    <div class="row2"><button class="ghost" id="galOpen" type="button">Galerija</button><button class="ghost" id="calOpen" type="button">Kalendar</button></div>
   </div>
   <div id="galOv" style="display:none">
     <div class="galbar"><div class="tabs" id="galTabs"></div><button class="ghost" id="galClose" type="button">Zatvori</button></div>
     <div class="galscroll"><div class="gal" id="gal"></div></div>
-  </div>
-  <div class="card" id="calCard">
-    <div class="galhead">Kalendar</div>
-    <button class="ghost" id="calOpen" type="button" style="width:100%">Otvori kalendar</button>
   </div>
   <div id="calOv" style="display:none">
     <div class="galbar"><b id="calWho" style="flex:1;padding-top:8px"></b><button class="ghost" id="calClose" type="button">Zatvori</button></div>
@@ -425,7 +410,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:36</div>
+  <div class="ver">verzija 11.11. 23:40</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -599,7 +584,7 @@
     var step=niceStep((left.hi-left.lo)/((sw&&left===sw&&state.goal)?8:4));
     for(var v=Math.ceil(left.lo/step)*step;v<=left.hi;v+=step){
       g+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+Y(left,v)+'" y2="'+Y(left,v)+'" stroke="var(--line)" stroke-dasharray="2 5"/>';
-      if(!leftIsH)g+='<text x="'+(padL-6)+'" y="'+(Y(left,v)+4)+'" text-anchor="end" font-size="11"'+lst+'>'+(+v.toFixed(2))+'</text>';
+      if(!leftIsH&&!(state.goal&&sw&&left===sw&&Math.abs(Y(left,v)-Y(sw,state.goal))<14))g+='<text x="'+(padL-6)+'" y="'+(Y(left,v)+4)+'" text-anchor="end" font-size="11"'+lst+'>'+(+v.toFixed(2))+'</text>';
     }
     function ruler(x,dir){
       var major=niceStep((sh.hi-sh.lo)/4),minor=major/5,a=Math.ceil(sh.lo/minor-1e-9),b=Math.floor(sh.hi/minor+1e-9);
@@ -624,7 +609,11 @@
       var dd=d0+(d1-d0)*(n?i/n:0);
       g+='<text x="'+X(dd)+'" y="'+(H-6)+'" text-anchor="'+(i===0?'start':i===n?'end':'middle')+'" font-size="11">'+fmtShort(Math.round(dd))+'</text>';
     }
-    if(state.goal&&sw){g+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+Y(sw,state.goal)+'" y2="'+Y(sw,state.goal)+'" stroke="var(--warn)" stroke-dasharray="5 4"/>'}
+    if(state.goal&&sw){
+      var gy=Y(sw,state.goal),gt=(+state.goal.toFixed(1)+'').replace('.',',');
+      g+='<line x1="'+(padL-4)+'" x2="'+(W-padR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="5 4"/>';
+      g+='<circle cx="19" cy="'+gy+'" r="16" style="fill:var(--warn)"/><text x="19" y="'+(gy+5)+'" text-anchor="middle" font-size="'+(gt.length>3?12:14)+'" font-weight="700" style="fill:'+(S.theme==='90'?'#fff':'var(--navy)')+'">'+gt+'</text>';
+    }
     if(sh){
       var hp=vh.map(function(e){return [X(e.d),Y(sh,e.h)]});
       if(hp.length>1)g+='<path d="'+smoothPath(hp)+'" fill="none" style="stroke:var(--hc)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -766,14 +755,12 @@
     for(q=0;q<lw.length;q++)lw[q].style.display=mm==='h'?'none':'';
     for(q=0;q<lh.length;q++)lh[q].style.display=mm==='w'?'none':'';
     document.querySelector('.legend').style.display=all?'none':'';
-    document.querySelector('.stats').style.display=all?'none':'';$('chg').style.display=all?'none':'';$('calCard').style.display=all?'none':'';
+    document.querySelector('.stats').style.display=all?'none':'';$('chg').style.display=all?'none':'';$('galCard').style.display='';
     $('entry').style.display=all?'none':'';
     $('allHint').style.display=all?'block':'none';
-    $('goalCard').style.display=all?'none':'';
     $('who').textContent=all?'Svi':P().name;
     var tabs=$('tabs').children;
     for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle('on',+tabs[i].dataset.r===state.range);
-    $('goal').value=state.goal||'';
     renderGallery();
   }
 
@@ -798,10 +785,6 @@
   $('kg').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
   $('cm').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
   $('mtabs').onclick=function(e){var m=e.target.dataset&&e.target.dataset.m;if(!m)return;S.metric=m;persist();render()};
-  function saveGoal(){var g=parseKg($('goal').value);state.goal=(g>=20&&g<=400)?g:null;persist();render()}
-  $('goal').onchange=saveGoal;
-  $('goal').addEventListener('keydown',function(e){if(e.key==='Enter'||e.keyCode===13){e.preventDefault();this.blur()}});
-  $('goalOk').onclick=function(){$('goal').blur();saveGoal()};
   $('tabs').onclick=function(e){var r=e.target.dataset&&e.target.dataset.r;if(r===undefined)return;state.range=+r;persist();render()};
   var backup=null,undoT;
   function snap(txt){
@@ -849,17 +832,19 @@
     var b=e.target.closest?e.target.closest('button'):null;if(!b)return;
     if(b.id==='pall'){S.all=true;pmode=null;dropUndo();persist();render();return}
     if(b.dataset.p){S.active=b.dataset.p;S.all=false;pmode=null;dropUndo();persist();render();return}
-    if(b.id==='padd'){pmode='add';pcolor=nextColor();renderPeople();$('pbirth').value='';$('pmsg').textContent='';$('pname').value='';$('pname').focus()}
-    else if(b.id==='pedit'){pmode='edit';pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
+    if(b.id==='padd'){pmode='add';pcolor=nextColor();renderPeople();$('pbirth').value='';$('pgoal').value='';$('pmsg').textContent='';$('pname').value='';$('pname').focus()}
+    else if(b.id==='pedit'){pmode='edit';pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal||'';$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
   };
   $('pok').onclick=function(){savePerson()};
   function savePerson(){
     var n=$('pname').value.trim().slice(0,24);if(!n){$('pmsg').textContent='Upiši ime.';return false}
     var bd=$('pbirth').value;
     if(bd&&(bd>today()||bd<'1900-01-01')){$('pmsg').textContent='Datum rođenja nije ispravan.';return false}
+    var gv=$('pgoal').value.trim(),gl=null;
+    if(gv!==''){gl=parseKg(gv);if(!(gl>=20&&gl<=400)){$('pmsg').textContent='Ciljna težina mora biti između 20 i 400 kg.';return false}gl=Math.round(gl*10)/10}
     $('pmsg').textContent='';
-    if(pmode==='add'){var id='p'+Date.now().toString(36);S.people.push({id:id,name:n,birth:bd||null,color:pcolor,entries:{},heights:{},goal:null});S.active=id;S.all=false;dropUndo()}
-    else if(pmode==='edit'){P().name=n;P().color=pcolor;P().birth=bd||null}
+    if(pmode==='add'){var id='p'+Date.now().toString(36);S.people.push({id:id,name:n,birth:bd||null,color:pcolor,entries:{},heights:{},goal:gl});S.active=id;S.all=false;dropUndo()}
+    else if(pmode==='edit'){P().name=n;P().color=pcolor;P().birth=bd||null;P().goal=gl}
     pmode=null;persist();render();return true;
   }
   $('pname').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
@@ -999,7 +984,7 @@
     var ids={};S.people.forEach(function(p){ids[p.id]=1});
     if(galSel!=='all'&&!ids[galSel])galSel=S.all?'all':S.active;
     var n=photos.filter(function(r){return ids[r.pid]}).length;
-    $('galOpen').textContent='Otvori galeriju ('+n+' slika'+')';
+    $('galOpen').textContent='Galerija ('+n+')';
     var tb='<button class="ghost'+(galSel==='all'?' on':'')+'" data-g="all">Svi</button>'+S.people.map(function(p){return '<button class="ghost'+(galSel===p.id?' on':'')+'" data-g="'+esc(p.id)+'">'+esc(p.name)+'</button>'}).join('');
     $('galTabs').innerHTML=tb;
     var list=photos.filter(function(r){return galSel==='all'?ids[r.pid]:r.pid===galSel});
