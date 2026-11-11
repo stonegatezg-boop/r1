@@ -483,7 +483,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 00:47</div>
+  <div class="ver"><span>verzija</span> 12.11. 00:58</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1029,6 +1029,12 @@
   }
   ['fbn','fbb','fbs'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
   $('sndBtn').onclick=function(){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true)};
+  document.addEventListener('click',function(e){
+    if(!openSub)return;
+    var t=e.target;if(!t||!t.closest)return;
+    if(t.closest('.foot,#sub-b,#sub-s,#sub-n,#bell'))return;
+    showSub(openSub);
+  });
   $('sub-t').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(b&&b.id==='sndBtn'){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true);return}if(!b||!b.dataset.th)return;S.theme=b.dataset.th;persist();applyTheme();render()};
 
   /* ---- podsjetnici ---- */
