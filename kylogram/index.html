@@ -152,6 +152,7 @@
   .cd{aspect-ratio:1/1.08;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;background:color-mix(in srgb,var(--text) 5%,var(--card))}
   .cd u{text-decoration:none;font-size:11px;color:var(--mute);line-height:1.1}
   .cd span{font-size:12px;font-weight:700;line-height:1.1;color:var(--text)}
+  .cd em{font-style:normal;font-size:9.5px;line-height:1.1;color:var(--hc);font-weight:600}
   .cd.has{background:color-mix(in srgb,var(--text) 12%,var(--card))}
   .cd.dn{background:color-mix(in srgb,var(--gr) 30%,var(--card))}
   .cd.up{background:color-mix(in srgb,var(--mg) 30%,var(--card))}
@@ -413,7 +414,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:27</div>
+  <div class="ver">verzija 11.11. 23:30</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -805,7 +806,7 @@
   function updDel(){
     var d=$('date').value,b=$('delDay');
     var has=d&&(state.entries[d]!==undefined||state.heights[d]!==undefined);
-    b.style.display=has?'':'none';if(has)b.textContent='Obriši mjerenje '+fmtDate(d);
+    b.style.display=has?'':'none';if(has){var hw=state.entries[d]!==undefined,hh=state.heights[d]!==undefined;b.textContent='Obriši '+(hw&&hh?'težinu i visinu':hw?'težinu':'visinu')+' '+fmtDate(d)}
   }
   $('date').addEventListener('change',updDel);$('date').addEventListener('input',updDel);
   $('delDay').onclick=function(){
@@ -1166,9 +1167,10 @@
       for(d=0;d<off;d++)cells+='<i></i>';
       for(d=1;d<=dim;d++){
         var k=y+'-'+pad(m)+'-'+pad(d),w=e[k],cls='cd';
-        if(w!==undefined){vals.push(w);var pv=prev[k];cls+=pv===null?' has':w<pv?' dn':w>pv?' up':' has'}
+        var hv=state.heights[k];
+        if(w!==undefined){vals.push(w);var pv=prev[k];cls+=pv===null?' has':w<pv?' dn':w>pv?' up':' has'}else if(hv!==undefined)cls+=' has';
         if(k===t)cls+=' tod';
-        cells+='<div class="'+cls+'" data-k="'+k+'"><u>'+d+'</u>'+(w!==undefined?'<span>'+f1(w)+'</span>':'')+'</div>';
+        cells+='<div class="'+cls+'" data-k="'+k+'"><u>'+d+'</u>'+(w!==undefined?'<span>'+f1(w)+'</span>':'')+(hv!==undefined?'<em>'+(+hv.toFixed(1)+'').replace('.',',')+' cm</em>':'')+'</div>';
       }
       var sum='';
       if(vals.length){var av=vals.reduce(function(a,b){return a+b},0)/vals.length,ch=vals[vals.length-1]-vals[0];
@@ -1183,9 +1185,9 @@
   $('calBody').onclick=function(ev){
     var c=ev.target.closest?ev.target.closest('.cd'):null;if(!c)return;
     var k=c.dataset.k,w=state.entries[k];
-    $('date').value=k;$('kg').value=w!==undefined?String(w):'';updDel();
+    $('date').value=k;$('kg').value=w!==undefined?String(w):'';$('cm').value=state.heights[k]!==undefined?String(state.heights[k]):'';updDel();
     $('calOv').style.display='none';window.scrollTo(0,0);
-    msg('Odabran datum '+fmtDate(k)+(w!==undefined?' – promijeni težinu pa Spremi.':' – upiši težinu pa Spremi.'));
+    msg('Odabran datum '+fmtDate(k)+(w!==undefined||state.heights[k]!==undefined?' – promijeni pa Spremi, ili obriši ispod.':' – upiši težinu pa Spremi.'));
   };
   openDb(function(){loadPhotos(function(){renderGallery()})});
 })();
