@@ -94,7 +94,7 @@
   html[data-theme="90"] #remBanner .rb,html[data-theme="90"] #remOk.rb{background:#ffffe1;color:#000;border:1px solid #000;border-radius:0;box-shadow:3px 3px 0 #004040}
   html[data-theme="90"] #rlist .ritem{color:#000}
   html[data-theme="80"] #remBanner .rb,html[data-theme="80"] #remOk.rb{border-radius:0;border-color:var(--mg)}
-  #undo{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--acc);color:var(--navy);border-radius:12px;padding:10px 14px;display:none;gap:14px;align-items:center;font-weight:600;box-shadow:0 6px 20px #0008;z-index:9}
+  #undo{z-index:400;position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--acc);color:var(--navy);border-radius:12px;padding:10px 14px;display:none;gap:14px;align-items:center;font-weight:600;box-shadow:0 6px 20px #0008;z-index:9}
   #undo button{background:var(--navy);color:var(--acc);padding:6px 12px;font-size:14px}
   .empty{color:var(--mute);text-align:center;padding:60px 0}
 
@@ -143,6 +143,15 @@
   .stats.chg{grid-template-columns:repeat(3,1fr)}
   .stats.chg .stat b{font-size:20px}
   html[data-theme="90"] #calWho,html[data-theme="90"] .calkey{color:#fff}
+  #daySheet{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:20px}
+  .dscard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;width:100%;max-width:360px;color:var(--text)}
+  .dtitle{font-weight:700;font-size:18px;margin-bottom:8px}
+  .drow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .drow span{color:var(--mute);width:62px;font-size:14px}
+  .drow b{flex:1;font-size:20px}
+  .dnone{color:var(--mute);padding:10px 0;border-top:1px solid var(--line)}
+  .dbtns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .dbtns button{flex:1 1 0;min-width:0;padding:10px 6px}
   .calkey{font-size:12px;color:var(--mute);margin:0 2px 6px}
   .calm{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:12px}
   .calt{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 2px 8px;font-weight:700;text-transform:capitalize}
@@ -386,6 +395,7 @@
     <div class="galbar"><b id="calWho" style="flex:1;padding-top:8px"></b><button class="ghost" id="calClose" type="button">Zatvori</button></div>
     <div class="calkey">Zeleno = niže od prethodnog mjerenja · crveno = više · dodir na dan ga otvara za unos</div>
     <div class="galscroll" id="calScroll"><div id="calBody"></div></div>
+    <div id="daySheet"><div class="dscard" id="dayCard"></div></div>
   </div>
 
   <div class="foot">
@@ -414,7 +424,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:30</div>
+  <div class="ver">verzija 11.11. 23:34</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -801,7 +811,7 @@
   function dropUndo(){backup=null;clearTimeout(undoT);$('undo').style.display='none'}
   $('undoBtn').onclick=function(){
     if(!backup)return;S=sane(JSON.parse(backup));backup=null;
-    $('undo').style.display='none';persist();applyTheme();render();
+    $('undo').style.display='none';persist();applyTheme();render();if($('calOv').style.display==='flex')renderCal();
   };
   function updDel(){
     var d=$('date').value,b=$('delDay');
@@ -1181,13 +1191,36 @@
     $('calBody').innerHTML=h;
   }
   $('calOpen').onclick=function(){$('calWho').textContent=P().name;renderCal();$('calOv').style.display='flex';$('calScroll').scrollTop=0};
-  $('calClose').onclick=function(){$('calOv').style.display='none'};
+  $('calClose').onclick=function(){closeDay();$('calOv').style.display='none'};
+  var dayK=null;
+  function showDay(k){
+    dayK=k;var w=state.entries[k],h=state.heights[k],c='<div class="dtitle">'+fmtDate(k)+'</div>';
+    if(w!==undefined)c+='<div class="drow"><span>Težina</span><b>'+f1(w)+' kg</b><button class="ghost" data-x="w">Obriši</button></div>';
+    if(h!==undefined)c+='<div class="drow"><span>Visina</span><b>'+f1(h)+' cm</b><button class="ghost" data-x="h">Obriši</button></div>';
+    if(w===undefined&&h===undefined)c+='<div class="dnone">Nema unosa za ovaj dan.</div>';
+    c+='<div class="dbtns">'+(w!==undefined&&h!==undefined?'<button class="ghost" data-x="all">Obriši sve</button>':'')+'<button data-x="edit">'+(w===undefined&&h===undefined?'Dodaj unos':'Uredi')+'</button><button class="ghost" data-x="close">Zatvori</button></div>';
+    $('dayCard').innerHTML=c;$('daySheet').style.display='flex';
+  }
+  function closeDay(){$('daySheet').style.display='none';dayK=null}
   $('calBody').onclick=function(ev){
-    var c=ev.target.closest?ev.target.closest('.cd'):null;if(!c)return;
-    var k=c.dataset.k,w=state.entries[k];
-    $('date').value=k;$('kg').value=w!==undefined?String(w):'';$('cm').value=state.heights[k]!==undefined?String(state.heights[k]):'';updDel();
-    $('calOv').style.display='none';window.scrollTo(0,0);
-    msg('Odabran datum '+fmtDate(k)+(w!==undefined||state.heights[k]!==undefined?' – promijeni pa Spremi, ili obriši ispod.':' – upiši težinu pa Spremi.'));
+    var c=ev.target.closest?ev.target.closest('.cd'):null;if(!c)return;showDay(c.dataset.k);
+  };
+  $('daySheet').onclick=function(ev){
+    if(ev.target===this){closeDay();return}
+    var b=ev.target.closest?ev.target.closest('[data-x]'):null;if(!b||!dayK)return;
+    var x=b.dataset.x,k=dayK;
+    if(x==='close'){closeDay();return}
+    if(x==='edit'){
+      var w=state.entries[k];
+      $('date').value=k;$('kg').value=w!==undefined?String(w):'';$('cm').value=state.heights[k]!==undefined?String(state.heights[k]):'';updDel();
+      closeDay();$('calOv').style.display='none';window.scrollTo(0,0);
+      msg('Odabran datum '+fmtDate(k)+' – promijeni pa Spremi.');return;
+    }
+    snap('Obrisano '+fmtDate(k));
+    if(x==='w'||x==='all')delete state.entries[k];
+    if(x==='h'||x==='all')delete state.heights[k];
+    persist();render();renderCal();
+    if(state.entries[k]===undefined&&state.heights[k]===undefined)closeDay();else showDay(k);
   };
   openDb(function(){loadPhotos(function(){renderGallery()})});
 })();
