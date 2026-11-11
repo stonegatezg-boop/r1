@@ -335,7 +335,8 @@
   <div class="card" id="goalCard">
     <div class="row">
       <span id="goalLbl">Ciljna težina</span>
-      <input type="number" id="goal" inputmode="decimal" step="0.1" placeholder="kg" style="max-width:120px;margin-left:auto">
+      <input type="number" id="goal" inputmode="decimal" enterkeyhint="done" step="0.1" placeholder="kg" style="max-width:120px;margin-left:auto">
+      <button id="goalOk" type="button">OK</button>
     </div>
   </div>
 
@@ -373,7 +374,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 22:19</div>
+  <div class="ver">verzija 11.11. 22:26</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -504,7 +505,7 @@
     var padL=leftIsH?50:40,padR=two?50:12,padT=28,padB=26,iw=W-padL-padR,ih=H-padT-padB;
     var wv=[];vw.forEach(function(e){wv.push(e.w,e.t)});
     if(state.goal&&vw.length)wv.push(state.goal);
-    var sw=vw.length?scaleOf(wv,0.5):null,sh=vh.length?scaleOf(vh.map(function(e){return e.h}),1):null;
+    var sw=vw.length?(state.goal?{lo:Math.min.apply(null,wv)-3,hi:Math.max.apply(null,wv)+2}:scaleOf(wv,0.5)):null,sh=vh.length?scaleOf(vh.map(function(e){return e.h}),1):null;
     var all=vw.concat(vh),ds=all.map(function(e){return e.d});
     var d0=Math.min.apply(null,ds),d1=Math.max.apply(null,ds);
     if(d1===d0){d0-=1;d1+=1}
@@ -512,7 +513,7 @@
     function Y(sc,v){return padT+(sc.hi-v)/(sc.hi-sc.lo)*ih}
     var left=sw||sh,lst=sw?' style="fill:var(--acc)"':' style="fill:var(--hc)"';
     var g='<defs><linearGradient id="tg" gradientUnits="userSpaceOnUse" x1="'+padL+'" y1="0" x2="'+(W-padR)+'" y2="0"><stop offset="0" stop-color="#00e5ff"/><stop offset=".5" stop-color="#e3ff00"/><stop offset="1" stop-color="#ff3df2"/></linearGradient></defs>';
-    var step=niceStep((left.hi-left.lo)/4);
+    var step=niceStep((left.hi-left.lo)/((sw&&left===sw&&state.goal)?8:4));
     for(var v=Math.ceil(left.lo/step)*step;v<=left.hi;v+=step){
       g+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+Y(left,v)+'" y2="'+Y(left,v)+'" stroke="var(--line)" stroke-dasharray="2 5"/>';
       if(!leftIsH)g+='<text x="'+(padL-6)+'" y="'+(Y(left,v)+4)+'" text-anchor="end" font-size="11"'+lst+'>'+(+v.toFixed(2))+'</text>';
@@ -725,7 +726,10 @@
   $('kg').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
   $('cm').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
   $('mtabs').onclick=function(e){var m=e.target.dataset&&e.target.dataset.m;if(!m)return;S.metric=m;persist();render()};
-  $('goal').onchange=function(){var g=parseKg(this.value);state.goal=(g>=20&&g<=400)?g:null;persist();render()};
+  function saveGoal(){var g=parseKg($('goal').value);state.goal=(g>=20&&g<=400)?g:null;persist();render()}
+  $('goal').onchange=saveGoal;
+  $('goal').addEventListener('keydown',function(e){if(e.key==='Enter'||e.keyCode===13){e.preventDefault();this.blur()}});
+  $('goalOk').onclick=function(){$('goal').blur();saveGoal()};
   $('tabs').onclick=function(e){var r=e.target.dataset&&e.target.dataset.r;if(r===undefined)return;state.range=+r;persist();render()};
   var backup=null,undoT;
   function snap(txt){
