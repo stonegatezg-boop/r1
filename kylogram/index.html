@@ -84,8 +84,8 @@
   #remOk{margin-top:12px}
   #remBanner .rb,#remOk.rb{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--acc);border-radius:12px;padding:10px 12px;margin-bottom:8px}
   #remBanner .rb span,#remOk.rb span{flex:1}
-  .foot{display:flex;gap:6px;flex-wrap:wrap}
-  .foot button{flex:1 1 calc(50% - 6px);min-width:0;padding-left:4px!important;padding-right:4px!important;line-height:1.2;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px}
+  .foot{display:flex;gap:6px;flex-wrap:nowrap}
+  .foot button{flex:1 1 0;min-width:0;padding-left:4px!important;padding-right:4px!important;line-height:1.2;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px}
   .foot button::after{content:'\25BE';font-size:17px;font-family:system-ui,sans-serif;text-shadow:none}
   html[data-theme="80"] .foot button{font-size:7px}
   html[data-theme="80"] .sub button{font-size:8px}
@@ -149,7 +149,6 @@
   .lr .lw{font-weight:700;font-size:17px}
   .lr .lcm{color:var(--hc);font-size:13px}
   .lr .lch{min-width:96px;text-align:right;font-weight:600;font-size:14px}
-  #sub-t{flex-wrap:wrap}#sub-t button{flex:1 1 28%}
   #selBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 2px 8px;color:var(--text);font-size:14px}
   #selTxt{flex:1 1 100%;font-weight:600}
   #selBtn.on{color:var(--text);border-color:var(--acc)}
@@ -184,7 +183,18 @@
   .stat b small{font-size:14px;font-weight:600}
   .stats.chg{grid-template-columns:repeat(3,1fr)}
   .stats.nh .stat:nth-child(3){grid-column:1/-1}
-  #sub-s{flex-wrap:wrap}#sub-s button{flex:1 1 40%}
+  #sub-s{flex-direction:column;gap:6px}
+  #sub-s.open{display:flex}
+  #sub-s .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #sub-s .langrow{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}
+  #sub-s .langrow .tile{flex:0 0 calc(50% - 4px);scroll-snap-align:start}
+  #sub-s .tl{padding:10px 12px;min-height:56px;justify-content:center}
+  #sub-s .tl .ic{width:38px;height:38px;margin-bottom:6px;font-weight:700;font-size:13px}
+  #sub-s .tl.wide,#sub-s #sndBtn{text-align:center;align-items:center;font-size:15px}
+  #sub-s .tl.on{border-color:var(--acc)!important;box-shadow:0 0 0 1px var(--acc)}
+  #sub-s .ic.flag{background:none!important;overflow:hidden}
+  #sub-s #sndBtn{grid-column:1/-1}
+  html[data-theme="90"] .slab{color:#fff}
   .slab{flex:1 1 100%;font-size:13px;color:var(--mute);margin-top:4px}
   .stats.chg .stat b{font-size:20px}
   html[data-theme="90"] #calWho,html[data-theme="90"] .calkey{color:#fff}
@@ -437,7 +447,6 @@
   <div class="foot">
     <button class="ghost" id="fbn" type="button" data-m="n">Obavijesti</button>
     <button class="ghost" id="fbb" type="button" data-m="b">Backup</button>
-    <button class="ghost" id="theme" type="button" data-m="t">Tema</button>
     <button class="ghost" id="fbs" type="button" data-m="s">Postavke</button>
     <input type="file" id="file" accept="application/json" hidden>
   </div>
@@ -445,23 +454,28 @@
     <button class="ghost" id="exp" type="button">Izvezi backup</button>
     <button class="ghost" id="imp" type="button">Uvezi backup</button>
   </div>
-  <div id="sub-t" class="sub">
-    <button class="ghost" type="button" data-th="m">Tamna</button>
-    <button class="ghost" type="button" data-th="ml">Svijetla</button>
-    <button class="ghost" type="button" data-th="mb">Crna</button>
-    <button class="ghost" type="button" data-th="90">90-e</button>
-    <button class="ghost" type="button" data-th="80">80-e</button>
-    <button class="ghost" type="button" id="sndBtn" style="flex:1 1 100%">Zvuk i vibracija skale: uključeno</button>
-  </div>
   <div id="sub-s" class="sub">
-    <div class="slab">Mjerne jedinice</div>
-    <button class="ghost" type="button" data-u="m">kg · cm</button>
-    <button class="ghost" type="button" data-u="i">lb · in</button>
-    <div class="slab">Visina</div>
-    <button class="ghost" type="button" id="hBtn" style="flex:1 1 100%">Praćenje visine: isključeno</button>
     <div class="slab">Jezik</div>
-    <button class="ghost" type="button" data-lang="hr">Hrvatski</button>
-    <button class="ghost" type="button" data-lang="en">English</button>
+    <div class="langrow">
+      <button class="tile tl" type="button" data-lang="hr"><span class="ic flag"><svg viewBox="0 0 38 38" width="38" height="38"><clipPath id="fc1"><circle cx="19" cy="19" r="19"/></clipPath><g clip-path="url(#fc1)"><rect width="38" height="13" fill="#d7141a"/><rect y="13" width="38" height="12" fill="#fff"/><rect y="25" width="38" height="13" fill="#171796"/><rect x="14" y="11" width="10" height="12" fill="#fff" stroke="#d7141a" stroke-width="1"/><path d="M14 11h5v4h-5zM19 15h5v4h-5zM14 19h5v4h-5z" fill="#d7141a"/></g></svg></span><b class="tn">Hrvatski</b></button>
+      <button class="tile tl" type="button" data-lang="en"><span class="ic flag"><svg viewBox="0 0 38 38" width="38" height="38"><clipPath id="fc2"><circle cx="19" cy="19" r="19"/></clipPath><g clip-path="url(#fc2)"><rect width="38" height="38" fill="#012169"/><path d="M0 0L38 38M38 0L0 38" stroke="#fff" stroke-width="7"/><path d="M0 0L38 38M38 0L0 38" stroke="#c8102e" stroke-width="2.4"/><path d="M19 0v38M0 19h38" stroke="#fff" stroke-width="11"/><path d="M19 0v38M0 19h38" stroke="#c8102e" stroke-width="6"/></g></svg></span><b class="tn">English</b></button>
+    </div>
+    <div class="slab">Mjerne jedinice</div>
+    <div class="grid2">
+      <button class="tile tl" type="button" data-u="m"><span class="ic">kg</span><b class="tn">Metrički</b><span class="tv">kg · cm</span></button>
+      <button class="tile tl" type="button" data-u="i"><span class="ic">lb</span><b class="tn">Američki</b><span class="tv">lb · in</span></button>
+    </div>
+    <div class="slab">Visina</div>
+    <button class="tile tl wide" type="button" id="hBtn">Praćenje visine: isključeno</button>
+    <div class="slab">Tema</div>
+    <div id="sub-t" class="grid2">
+      <button class="tile tl" type="button" data-th="m"><span class="ic" style="background:#0f1115;border:1px solid #888"></span><b class="tn">Tamna</b></button>
+      <button class="tile tl" type="button" data-th="ml"><span class="ic" style="background:#eef0f4;border:1px solid #888"></span><b class="tn">Svijetla</b></button>
+      <button class="tile tl" type="button" data-th="mb"><span class="ic" style="background:#000;border:1px solid #888"></span><b class="tn">Crna</b></button>
+      <button class="tile tl" type="button" data-th="90"><span class="ic" style="background:#008080;border:1px solid #888"></span><b class="tn">90-e</b></button>
+      <button class="tile tl" type="button" data-th="80"><span class="ic" style="background:#07060d;border:1px solid #888"></span><b class="tn">80-e</b></button>
+      <button class="tile tl" type="button" id="sndBtn">Zvuk i vibracija skale: uključeno</button>
+    </div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate"><input type="time" id="rtime" value="08:00"></div>
@@ -473,7 +487,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 00:22</div>
+  <div class="ver"><span>verzija</span> 12.11. 00:27</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -509,7 +523,7 @@
   'Ciljna težina mora biti između':'Goal weight must be between','i':'and','Pohrana nije dostupna – napravi backup.':'Storage is not available – make a backup.',
   'Pohrana nije dostupna u ovom pregledniku – napravi backup.':'Storage is not available in this browser – make a backup.',
   'Upiši ime.':'Enter a name.','Datum rođenja nije ispravan.':'Birth date is not valid.','Obrisano':'Deleted','Backup uvezen':'Backup imported','Neispravna backup datoteka.':'Invalid backup file.',
-  'Žuta':'Yellow','Zelena':'Green','Roza':'Pink','Plava':'Blue','Odaberi boju':'Pick a colour','uredi':'edit',
+  'Metrički':'Metric','Američki':'US customary','Žuta':'Yellow','Zelena':'Green','Roza':'Pink','Plava':'Blue','Odaberi boju':'Pick a colour','uredi':'edit',
   'Samo jednom':'Once only','Odaberi datum i sat.':'Pick a date and time.','Vaganje':'Weigh-in','Podsjetnik uključen:':'Reminder on:','Otvori preuzetu datoteku i spremi je u Kalendar.':'Open the downloaded file and save it to your calendar.','U redu':'OK',
   'Pravim sliku…':'Making the photo…','Slika se nije mogla obraditi.':'The photo could not be processed.','Slika nije trajno spremljena u ovom pregledniku – spremi je u galeriju mobitela.':'The photo was not saved permanently in this browser – save it to your phone gallery.',
   'Na slici nedostaje:':'Missing on the photo:','težinu':'weight','visinu':'height','Dodaj to pa u galeriji pritisni Osvježi.':'Add it, then press Refresh in the gallery.',
@@ -1013,12 +1027,12 @@
   var openSub=null;
   function showSub(m){
     openSub=(openSub===m)?null:m;
-    ['n','b','t','s'].forEach(function(k){$('sub-'+k).classList.toggle('open',openSub===k)});
-    ['fbn','fbb','theme','fbs'].forEach(function(id){var b=$(id);b.classList.toggle('on',openSub===b.dataset.m)});
+    ['n','b','s'].forEach(function(k){$('sub-'+k).classList.toggle('open',openSub===k)});
+    ['fbn','fbb','fbs'].forEach(function(id){var b=$(id);b.classList.toggle('on',openSub===b.dataset.m)});
     if(openSub==='n'){initRem()}
     if(openSub){try{$('sub-'+openSub).scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}}
   }
-  ['fbn','fbb','theme','fbs'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
+  ['fbn','fbb','fbs'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
   $('sub-t').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(b&&b.id==='sndBtn'){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true);return}if(!b||!b.dataset.th)return;S.theme=b.dataset.th;persist();applyTheme();render()};
 
   /* ---- podsjetnici ---- */
