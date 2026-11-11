@@ -353,7 +353,7 @@
     <div class="msg" id="rmsg"></div>
     <div id="rlist"></div>
   </div>
-  <div class="ver">verzija 11.11. 22:10</div>
+  <div class="ver">verzija 11.11. 22:25</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -370,7 +370,7 @@
 <script>
 (function(){
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
-  var PALETTE=[['#e3ff00','Žuta'],['#39ff14','Zelena'],['#ff2bd6','Roza'],['#2a7bff','Plava']],pcolor=null;
+  var PALETTE=[['#e3ff00','Žuta'],['#11b882','Zelena'],['#ff2bd6','Roza'],['#2a7bff','Plava']],pcolor=null;
   var THEMES=['m','90','80'],NAMES={'90':'90-e','80':'80-e','m':'Moderna'},TCOL={'90':'#008080','80':'#07060d','m':'#0f1115'};
   var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[]};
   function P(){for(var i=0;i<S.people.length;i++)if(S.people[i].id===S.active)return S.people[i];return S.people[0]}
@@ -383,7 +383,7 @@
   function sane(x){
     if(!x||!x.people||!x.people.length)throw 0;
     x.people=x.people.filter(function(p){return p&&p.entries&&typeof p.entries==='object'}).map(function(p,i){
-      return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?p.color:null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},goal:p.goal||null}});
+      return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?(p.color.toLowerCase()==='#39ff14'?'#11b882':p.color):null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},goal:p.goal||null}});
     if(!x.people.length)throw 0;
     if(!x.people.some(function(p){return p.id===x.active}))x.active=x.people[0].id;
     if(x.range===undefined)x.range=90;
