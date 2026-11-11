@@ -183,20 +183,19 @@
   .stat b small{font-size:14px;font-weight:600}
   .stats.chg{grid-template-columns:repeat(3,1fr)}
   .stats.nh .stat:nth-child(3){grid-column:1/-1}
-  #sub-s{flex-direction:column;gap:8px;margin-top:18px;padding:4px 2px 28px}
-  #sub-s .slab{margin-top:10px}
+  #sub-s{flex-direction:column;gap:0;margin-top:14px;padding:0 2px 24px}
   #sub-s.open{display:flex}
-  #sub-s .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  #sub-s .langrow{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;padding:6px 6px 8px;margin:-6px -6px 0;scroll-padding:0 6px}
-  #sub-s .langrow .tile{flex:0 0 calc(50% - 8px);scroll-snap-align:start}
-  #sub-s .tl{padding:10px 12px;min-height:56px;justify-content:center}
-  #sub-s .tl .ic{width:38px;height:38px;margin-bottom:6px;font-weight:700;font-size:13px}
-  #sub-s .tl.wide,#sub-s #sndBtn{text-align:center;align-items:center;font-size:15px}
-  #sub-s .tl.on{border-color:var(--acc)!important;box-shadow:0 0 0 1px var(--acc)}
-  #sub-s .ic.flag{background:none!important;overflow:hidden}
-  #sub-s #sndBtn{grid-column:1/-1}
-  #sub-s #sub-t{grid-template-columns:repeat(3,1fr);gap:6px}
-  #sub-s #sub-t .tl{padding:10px 8px}
+  #sub-s .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-bottom:1px solid var(--line)}
+  #sub-s .srow:last-child{border-bottom:0}
+  #sub-s .sl{font-size:15px;color:var(--text)}
+  #sub-s .seg{display:flex;gap:4px;overflow-x:auto;max-width:66%;padding:2px}
+  #sub-s .seg button{flex:0 0 auto;padding:6px 11px;font-size:14px;border-radius:10px;display:flex;align-items:center;gap:6px;min-width:0}
+  #sub-s .seg button b{font-weight:600}
+  #sub-s .seg button.on{border-color:var(--acc);color:var(--text);background:color-mix(in srgb,var(--acc) 16%,transparent)}
+  #sub-s .sw2{flex:none;width:46px;height:28px;padding:0;border-radius:14px;position:relative;background:color-mix(in srgb,var(--text) 18%,transparent);border:0}
+  #sub-s .sw2::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
+  #sub-s .sw2.on{background:var(--acc)}
+  #sub-s .sw2.on::after{transform:translateX(18px);background:var(--navy,#000)}
   html[data-theme="90"] .slab{color:#fff}
   .slab{flex:1 1 100%;font-size:13px;color:var(--mute);margin-top:4px}
   .stats.chg .stat b{font-size:20px}
@@ -458,25 +457,21 @@
     <button class="ghost" id="imp" type="button">Uvezi backup</button>
   </div>
   <div id="sub-s" class="sub">
-    <div class="slab">Jezik</div>
-    <div class="langrow">
-      <button class="tile tl" type="button" data-lang="hr"><span class="ic flag"><svg viewBox="0 0 38 38" width="38" height="38"><clipPath id="fc1"><circle cx="19" cy="19" r="19"/></clipPath><g clip-path="url(#fc1)"><rect width="38" height="13" fill="#d7141a"/><rect y="13" width="38" height="12" fill="#fff"/><rect y="25" width="38" height="13" fill="#171796"/><rect x="14" y="11" width="10" height="12" fill="#fff" stroke="#d7141a" stroke-width="1"/><path d="M14 11h5v4h-5zM19 15h5v4h-5zM14 19h5v4h-5z" fill="#d7141a"/></g></svg></span><b class="tn">Hrvatski</b></button>
-      <button class="tile tl" type="button" data-lang="en"><span class="ic flag"><svg viewBox="0 0 38 38" width="38" height="38"><clipPath id="fc2"><circle cx="19" cy="19" r="19"/></clipPath><g clip-path="url(#fc2)"><rect width="38" height="38" fill="#012169"/><path d="M0 0L38 38M38 0L0 38" stroke="#fff" stroke-width="7"/><path d="M0 0L38 38M38 0L0 38" stroke="#c8102e" stroke-width="2.4"/><path d="M19 0v38M0 19h38" stroke="#fff" stroke-width="11"/><path d="M19 0v38M0 19h38" stroke="#c8102e" stroke-width="6"/></g></svg></span><b class="tn">English</b></button>
-    </div>
-    <div class="slab">Mjerne jedinice</div>
-    <div class="grid2">
-      <button class="tile tl" type="button" data-u="m"><span class="ic">kg</span><b class="tn">Metrički</b><span class="tv">kg · cm</span></button>
-      <button class="tile tl" type="button" data-u="i"><span class="ic">lb</span><b class="tn">Američki</b><span class="tv">lb · in</span></button>
-    </div>
-    <div class="slab">Visina</div>
-    <button class="tile tl wide" type="button" id="hBtn">Praćenje visine: isključeno</button>
-    <div class="slab">Tema</div>
-    <div id="sub-t" class="grid2">
-      <button class="tile tl" type="button" data-th="m"><span class="ic" style="background:#0f1115;border:1px solid #888"></span><b class="tn">Tamna</b></button>
-      <button class="tile tl" type="button" data-th="ml"><span class="ic" style="background:#eef0f4;border:1px solid #888"></span><b class="tn">Svijetla</b></button>
-      <button class="tile tl" type="button" data-th="mb"><span class="ic" style="background:#000;border:1px solid #888"></span><b class="tn">Crna</b></button>
-      <button class="tile tl" type="button" id="sndBtn">Zvuk i vibracija skale: uključeno</button>
-    </div>
+    <div class="srow"><span class="sl">Jezik</span><div class="seg">
+      <button class="ghost" type="button" data-lang="hr"><svg viewBox="0 0 38 38" width="20" height="20"><clipPath id="fc1"><circle cx="19" cy="19" r="19"/></clipPath><g clip-path="url(#fc1)"><rect width="38" height="13" fill="#d7141a"/><rect y="13" width="38" height="12" fill="#fff"/><rect y="25" width="38" height="13" fill="#171796"/><rect x="14" y="11" width="10" height="12" fill="#fff" stroke="#d7141a" stroke-width="1"/><path d="M14 11h5v4h-5zM19 15h5v4h-5zM14 19h5v4h-5z" fill="#d7141a"/></g></svg><b>Hrvatski</b></button>
+      <button class="ghost" type="button" data-lang="en"><svg viewBox="0 0 38 38" width="20" height="20"><clipPath id="fc2"><circle cx="19" cy="19" r="19"/></clipPath><g clip-path="url(#fc2)"><rect width="20" height="20" fill="#012169"/><path d="M0 0L38 38M38 0L0 38" stroke="#fff" stroke-width="7"/><path d="M0 0L38 38M38 0L0 38" stroke="#c8102e" stroke-width="2.4"/><path d="M19 0v38M0 19h38" stroke="#fff" stroke-width="11"/><path d="M19 0v38M0 19h38" stroke="#c8102e" stroke-width="6"/></g></svg><b>English</b></button>
+    </div></div>
+    <div class="srow"><span class="sl">Mjerne jedinice</span><div class="seg">
+      <button class="ghost" type="button" data-u="m">kg · cm</button>
+      <button class="ghost" type="button" data-u="i">lb · in</button>
+    </div></div>
+    <div class="srow"><span class="sl">Praćenje visine</span><button class="sw2" type="button" id="hBtn" role="switch" aria-checked="false"></button></div>
+    <div class="srow"><span class="sl">Tema</span><div class="seg" id="sub-t">
+      <button class="ghost" type="button" data-th="m">Tamna</button>
+      <button class="ghost" type="button" data-th="ml">Svijetla</button>
+      <button class="ghost" type="button" data-th="mb">Crna</button>
+    </div></div>
+    <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate"><input type="time" id="rtime" value="08:00"></div>
@@ -488,7 +483,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 00:43</div>
+  <div class="ver"><span>verzija</span> 12.11. 00:47</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -628,8 +623,7 @@
     var rt=$('rtext');if(rt.value==='Vaganje'||rt.value==='Weigh-in')rt.value=T('Vaganje');
     var ub=document.querySelectorAll('#sub-s [data-u]');for(var i=0;i<ub.length;i++)ub[i].classList.toggle('on',ub[i].dataset.u===S.cfg.u);
     var lb=document.querySelectorAll('#sub-s [data-lang]');for(i=0;i<lb.length;i++)lb[i].classList.toggle('on',lb[i].dataset.lang===S.cfg.lang);
-    $('hBtn').textContent=T('Praćenje visine')+': '+T(ho?'uključeno':'isključeno');
-    $('hBtn').classList.toggle('on',ho);
+    $('hBtn').classList.toggle('on',ho);$('hBtn').setAttribute('aria-checked',ho?'true':'false');
     sndLabel();fillRep();renderRem();
   }
   $('sub-s').onclick=function(e){
@@ -1034,6 +1028,7 @@
     if(openSub){try{$('sub-'+openSub).scrollIntoView({block:openSub==='s'?'end':'nearest',behavior:'smooth'})}catch(e){}}
   }
   ['fbn','fbb','fbs'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
+  $('sndBtn').onclick=function(){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true)};
   $('sub-t').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(b&&b.id==='sndBtn'){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true);return}if(!b||!b.dataset.th)return;S.theme=b.dataset.th;persist();applyTheme();render()};
 
   /* ---- podsjetnici ---- */
@@ -1317,7 +1312,7 @@
   svg.addEventListener('pointerdown',function(e){if(e.target.closest&&e.target.closest('#gdrag'))return;pick(e)});
   svg.addEventListener('pointermove',function(e){if(gdrag)return;if(e.buttons||e.pointerType==='mouse')pick(e)});
   var snd=(function(){try{return localStorage.getItem('kilogram.snd')!=='off'}catch(e){return true}})(),ac=null,gstep=0;
-  function sndLabel(){$('sndBtn').textContent=T('Zvuk i vibracija skale')+': '+T(snd?'uključeno':'isključeno')}
+  function sndLabel(){$('sndBtn').classList.toggle('on',snd);$('sndBtn').setAttribute('aria-checked',snd?'true':'false')}
   function tick(strong){
     if(!snd)return;
     try{if(navigator.vibrate)navigator.vibrate(strong?16:5)}catch(e){}
