@@ -65,9 +65,10 @@
   #rlist .ritem{display:flex;gap:6px;align-items:center;padding:6px 0;border-top:1px dashed var(--line);font-size:14px}
   #rlist .ritem span{flex:1;min-width:0}
   #rlist .ritem button{flex:none;padding:6px 10px;font-size:13px}
-  #remBanner{display:none;margin-bottom:12px}
-  #remBanner .rb{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--acc);border-radius:12px;padding:10px 12px;margin-bottom:8px}
-  #remBanner .rb span{flex:1}
+  #remBanner{display:none;margin-top:12px}
+  #remOk{margin-top:12px}
+  #remBanner .rb,#remOk.rb{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--acc);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+  #remBanner .rb span,#remOk.rb span{flex:1}
   .foot{display:flex;gap:6px;flex-wrap:nowrap}
   .foot button{flex:1 1 0;min-width:0;padding-left:4px!important;padding-right:4px!important;line-height:1.2;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px}
   .foot button::after{content:'\25BE';font-size:12px;font-family:system-ui,sans-serif;text-shadow:none}
@@ -76,9 +77,9 @@
   html[data-theme="80"] select{border-radius:0;border:2px solid var(--line);font-family:'VT323',monospace;font-size:24px;padding:8px 10px;color:var(--acc)}
   html[data-theme="80"] #rlist .ritem{font-size:18px}
   html[data-theme="90"] select{background:#fff;color:#000;border:0;border-radius:0;font:400 18px 'Pixelify',sans-serif;padding:8px;box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff,inset 2px 2px 0 #000,inset -2px -2px 0 #dfdfdf;color-scheme:light}
-  html[data-theme="90"] #remBanner .rb{background:#ffffe1;color:#000;border:1px solid #000;border-radius:0;box-shadow:3px 3px 0 #004040}
+  html[data-theme="90"] #remBanner .rb,html[data-theme="90"] #remOk.rb{background:#ffffe1;color:#000;border:1px solid #000;border-radius:0;box-shadow:3px 3px 0 #004040}
   html[data-theme="90"] #rlist .ritem{color:#000}
-  html[data-theme="80"] #remBanner .rb{border-radius:0;border-color:var(--mg)}
+  html[data-theme="80"] #remBanner .rb,html[data-theme="80"] #remOk.rb{border-radius:0;border-color:var(--mg)}
   #undo{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--acc);color:var(--navy);border-radius:12px;padding:10px 14px;display:none;gap:14px;align-items:center;font-weight:600;box-shadow:0 6px 20px #0008;z-index:9}
   #undo button{background:var(--navy);color:var(--acc);padding:6px 12px;font-size:14px}
   .empty{color:var(--mute);text-align:center;padding:60px 0}
@@ -256,7 +257,6 @@
 </svg>
     <h1>kylogram<span class="cur">_</span></h1>
   </div>
-  <div id="remBanner" style="display:none"></div>
 
   <div class="card">
     <div class="people" id="people"></div>
@@ -356,7 +356,9 @@
     <div class="msg" id="rmsg"></div>
     <div id="rlist"></div>
   </div>
-  <div class="ver">verzija 11.11. 23:00</div>
+  <div id="remOk" class="rb" style="display:none"></div>
+  <div id="remBanner" style="display:none"></div>
+  <div class="ver">verzija 11.11. 23:20</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -839,7 +841,10 @@
     $('rmsg').textContent='';
     var r={id:'r'+Date.now().toString(36),date:d,time:t,rep:$('rrep').value,text:($('rtext').value.trim()||'Vaganje').slice(0,60),dis:''};
     if(!S.reminders)S.reminders=[];S.reminders.push(r);persist();renderRem();checkRem();
-    $('rmsg').textContent='Spremljeno. Otvori datoteku i spremi u Kalendar da te telefon podsjeti.';
+    showSub('n');
+    var ok=$('remOk');ok.innerHTML='<span>✓ Podsjetnik uključen: '+esc(remDesc(r))+'. Otvori preuzetu datoteku i spremi je u Kalendar.</span>';ok.style.display='flex';
+    try{ok.scrollIntoView({block:'end',behavior:'smooth'})}catch(e){}
+    clearTimeout(window._okT);window._okT=setTimeout(function(){ok.style.display='none'},15000);
     exportIcs(r);
   };
   $('rlist').onclick=function(e){
