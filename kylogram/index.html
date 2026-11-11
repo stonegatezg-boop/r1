@@ -434,7 +434,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:54</div>
+  <div class="ver">verzija 11.11. 23:58</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -584,7 +584,9 @@
   function hseries(){var o=state.heights,ks=Object.keys(o).sort();return ks.map(function(k){return {k:k,d:toDay(k),h:o[k]}})}
   var geo=null;
   function scaleOf(vals,minM){var lo=Math.min.apply(null,vals),hi=Math.max.apply(null,vals),mm=Math.max(minM,(hi-lo)*0.12);return {lo:lo-mm,hi:hi+mm}}
+  var gm=null,gdrag=false,gval=null;
   function chart(s,hs){
+    gm=null;
     var m=S.metric||'b';
     var svg=$('chart'),W=svg.clientWidth||320,H=300;
     svg.setAttribute('viewBox','0 0 '+W+' '+H);
@@ -635,8 +637,9 @@
     }
     if(state.goal&&sw){
       var gy=Y(sw,state.goal),gt=(+state.goal.toFixed(1)+'').replace('.',',');
-      g+='<line x1="'+(padL-4)+'" x2="'+(W-padR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="5 4"/>';
-      g+='<circle cx="19" cy="'+gy+'" r="16" style="fill:var(--warn)"/><text x="19" y="'+(gy+5)+'" text-anchor="middle" font-size="'+(gt.length>3?12:14)+'" font-weight="700" style="fill:'+(S.theme==='90'?'#fff':'var(--navy)')+'">'+gt+'</text>';
+      gm={padT:padT,ih:ih,hi:sw.hi,lo:sw.lo,gy0:gy};
+      g+='<line id="gline" x1="'+(padL-4)+'" x2="'+(W-padR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="5 4"/>';
+      g+='<g id="gdrag" style="cursor:ns-resize"><circle cx="19" cy="'+gy+'" r="26" fill="transparent"/><circle cx="19" cy="'+gy+'" r="16" style="fill:var(--warn)"/><text id="gtxt" x="19" y="'+(gy+5)+'" text-anchor="middle" font-size="'+(gt.length>3?12:14)+'" font-weight="700" style="fill:'+(S.theme==='90'?'#fff':'var(--navy)')+';pointer-events:none">'+gt+'</text></g>';
     }
     if(sh){
       var hp=vh.map(function(e){return [X(e.d),Y(sh,e.h)]});
@@ -1155,7 +1158,30 @@
   };
 
   var svg=$('chart');
-  svg.addEventListener('pointerdown',pick);svg.addEventListener('pointermove',function(e){if(e.buttons||e.pointerType==='mouse')pick(e)});
+  svg.addEventListener('pointerdown',function(e){if(e.target.closest&&e.target.closest('#gdrag'))return;pick(e)});
+  svg.addEventListener('pointermove',function(e){if(gdrag)return;if(e.buttons||e.pointerType==='mouse')pick(e)});
+  function gMove(cy){
+    if(!gdrag||!gm)return;
+    var sv=$('chart'),r=sv.getBoundingClientRect(),y=(cy-r.top)*(sv.viewBox.baseVal.height/r.height);
+    var v=gm.hi-(y-gm.padT)/gm.ih*(gm.hi-gm.lo);
+    v=Math.round(v*10)/10;v=Math.max(Math.max(gm.lo,20),Math.min(Math.min(gm.hi,400),v));gval=v;
+    var gy=gm.padT+(gm.hi-v)/(gm.hi-gm.lo)*gm.ih;
+    var ln=$('gline');if(ln){ln.setAttribute('y1',gy);ln.setAttribute('y2',gy)}
+    var gd=$('gdrag');if(gd)gd.setAttribute('transform','translate(0,'+(gy-gm.gy0)+')');
+    var tx=$('gtxt');if(tx){var t=(+v.toFixed(1)+'').replace('.',',');tx.textContent=t;tx.setAttribute('font-size',t.length>3?12:14)}
+    $('tip').textContent='Cilj: '+f1(v)+' kg';
+  }
+  function gEnd(){
+    if(!gdrag)return;gdrag=false;
+    if(gval!==null&&gval>=20&&gval<=400){state.goal=gval;persist()}
+    gval=null;render();
+  }
+  svg.addEventListener('touchstart',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;e.preventDefault()}},{passive:false});
+  document.addEventListener('touchmove',function(e){if(gdrag){e.preventDefault();gMove(e.touches[0].clientY)}},{passive:false});
+  document.addEventListener('touchend',gEnd);document.addEventListener('touchcancel',gEnd);
+  svg.addEventListener('mousedown',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;e.preventDefault()}});
+  document.addEventListener('mousemove',function(e){if(gdrag)gMove(e.clientY)});
+  document.addEventListener('mouseup',gEnd);
 
   $('exp').onclick=function(){
     var blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
