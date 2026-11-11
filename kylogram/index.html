@@ -150,6 +150,10 @@
   .lr .lcm{color:var(--hc);font-size:13px}
   .lr .lch{min-width:96px;text-align:right;font-weight:600;font-size:14px}
   #sub-t{flex-wrap:wrap}#sub-t button{flex:1 1 28%}
+  #selBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 2px 8px;color:var(--text);font-size:14px}
+  #selTxt{flex:1 1 100%;font-weight:600}
+  #selBtn.on{color:var(--text);border-color:var(--acc)}
+  #selDel{color:#ff5a5a;border-color:#ff5a5a}
   #cmpBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 2px 8px;color:var(--text);font-size:14px}
   #cmpTxt{flex:1 1 100%;font-weight:600}
   .cmpbtns{display:flex;gap:6px;flex-wrap:wrap}
@@ -415,7 +419,8 @@
     </div>
   </div>
   <div id="galOv" style="display:none">
-    <div class="galbar"><div class="tabs" id="galTabs"></div><button class="ghost" id="cmpBtn" type="button">Usporedi</button><button class="ghost" id="galClose" type="button">Zatvori</button></div>
+    <div class="galbar"><div class="tabs" id="galTabs"></div><button class="ghost" id="cmpBtn" type="button">Usporedi</button><button class="ghost" id="selBtn" type="button">Označi</button><button class="ghost" id="galClose" type="button">Zatvori</button></div>
+    <div id="selBar" style="display:none"><span id="selTxt"></span><span class="cmpbtns"><button class="ghost" id="selAll" type="button">Sve</button><button class="ghost" id="selDel" type="button">Obriši</button><button class="ghost" id="selCancel" type="button">Odustani</button></span></div>
     <div id="cmpBar" style="display:none"><span id="cmpTxt"></span><span class="cmpbtns"><button class="ghost" id="cmpAuto" type="button">Zadnja ↔ prije mjesec dana</button><button class="ghost" id="cmpCancel" type="button">Odustani</button></span></div>
     <div class="galscroll"><div class="gal" id="gal"></div></div>
   </div>
@@ -454,7 +459,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 12.11. 00:09</div>
+  <div class="ver">verzija 12.11. 00:15</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1027,7 +1032,7 @@
     if(mv.length>1){var ch=mv[mv.length-1]-mv[0];tc.textContent=(ch>0?'+':'')+f1(ch)+' kg ovaj mj.';tc.style.color=ch<0?'var(--gr)':ch>0?'var(--mg)':''}
     else{tc.textContent='';tc.style.color=''}
   }
-  var galSel=null,cmpMode=false,cmpSel=[];
+  var galSel=null,cmpMode=false,cmpSel=[],selMode=false,selDelArr=[],selDelT;
   function renderGallery(){
     var el=$('gal');if(!el)return;
     updTiles();
@@ -1038,10 +1043,10 @@
     $('galTabs').innerHTML=tb;
     var list=photos.filter(function(r){return galSel==='all'?ids[r.pid]:r.pid===galSel});
     if(!list.length){el.innerHTML='<div class="galempty">Još nema slika. Slikaj ili odaberi sliku.</div>';return}
-    el.innerHTML=list.map(function(r){var si=cmpSel.indexOf(r.id);return '<div class="thumb'+(si>=0?' sel':'')+'" data-id="'+r.id+'"><img alt="" loading="lazy" src="'+urlOf(r)+'">'+(si>=0?'<span class="nb">'+(si+1)+'</span>':'')+'</div>'}).join('');
+    el.innerHTML=list.map(function(r){var si=cmpSel.indexOf(r.id),di=selDelArr.indexOf(r.id);return '<div class="thumb'+(si>=0||di>=0?' sel':'')+'" data-id="'+r.id+'"><img alt="" loading="lazy" src="'+urlOf(r)+'">'+(si>=0?'<span class="nb">'+(si+1)+'</span>':di>=0?'<span class="nb">✓</span>':'')+'</div>'}).join('');
   }
   $('galOpen').onclick=function(){galSel=S.all?'all':S.active;renderGallery();$('galOv').style.display='flex';$('galOv').querySelector('.galscroll').scrollTop=0};
-  $('galClose').onclick=function(){cmpOff();$('galOv').style.display='none'};
+  $('galClose').onclick=function(){cmpOff();selOff();$('galOv').style.display='none'};
   $('galTabs').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b)return;galSel=b.dataset.g;renderGallery();$('galOv').querySelector('.galscroll').scrollTop=0};
   function plural(n,a,b,c){var m10=n%10,m100=n%100;if(m10===1&&m100!==11)return a;if(m10>=2&&m10<=4&&(m100<12||m100>14))return b;return c}
   function ageText(birth,on){
@@ -1145,6 +1150,7 @@
   $('gal').onclick=function(e){
     var t=e.target.closest?e.target.closest('.thumb'):null;if(!t)return;
     var id=t.dataset.id;
+    if(selMode){var dx=selDelArr.indexOf(id);if(dx>=0)selDelArr.splice(dx,1);else selDelArr.push(id);selUpd();renderGallery();return}
     if(cmpMode){var ix=cmpSel.indexOf(id);if(ix>=0)cmpSel.splice(ix,1);else cmpSel.push(id);if(cmpSel.length>2)cmpSel.shift();cmpUpd();renderGallery();if(cmpSel.length===2)openCmp(cmpSel[0],cmpSel[1]);return}
     for(var i=0;i<photos.length;i++)if(photos[i].id===id){openLb(photos[i]);return}
   };
@@ -1258,8 +1264,34 @@
     $('cmpBar').style.display=cmpMode?'flex':'none';
     $('cmpTxt').textContent='Odaberi dvije slike ('+cmpSel.length+'/2)';
   }
+  function selUpd(){
+    $('selBtn').classList.toggle('on',selMode);
+    $('selBar').style.display=selMode?'flex':'none';
+    $('selTxt').textContent='Označeno: '+selDelArr.length;
+    $('selDel').textContent='Obriši'+(selDelArr.length?' ('+selDelArr.length+')':'');
+    $('selDel').disabled=!selDelArr.length;
+  }
+  function selOff(){selMode=false;selDelArr=[];clearTimeout(selDelT);selUpd();renderGallery()}
+  $('selBtn').onclick=function(){if(selMode){selOff();return}cmpOff();selMode=true;selDelArr=[];selUpd();renderGallery()};
+  $('selCancel').onclick=selOff;
+  $('selAll').onclick=function(){
+    var pid=galSel;
+    var l=photos.filter(function(r){return pid==='all'||r.pid===pid});
+    selDelArr=selDelArr.length===l.length?[]:l.map(function(r){return r.id});selUpd();renderGallery();
+  };
+  $('selDel').onclick=function(){
+    if(!selDelArr.length)return;
+    var b=$('selDel'),n=selDelArr.length;
+    if(!b.dataset.c){b.dataset.c='1';b.textContent='Sigurno? ('+n+')';clearTimeout(selDelT);selDelT=setTimeout(function(){delete b.dataset.c;selUpd()},3000);return}
+    delete b.dataset.c;clearTimeout(selDelT);
+    var ids=selDelArr.slice(),left=ids.length;
+    ids.forEach(function(id){removePhoto(id,function(){
+      if(urls[id]){URL.revokeObjectURL(urls[id]);delete urls[id]}
+      if(--left===0){photos=photos.filter(function(r){return ids.indexOf(r.id)<0});selOff();updTiles()}
+    })});
+  };
   function cmpOff(){cmpMode=false;cmpSel=[];cmpUpd();renderGallery()}
-  $('cmpBtn').onclick=function(){if(cmpMode){cmpOff();return}cmpMode=true;cmpSel=[];cmpUpd();renderGallery()};
+  $('cmpBtn').onclick=function(){if(cmpMode){cmpOff();return}selOff();cmpMode=true;cmpSel=[];cmpUpd();renderGallery()};
   $('cmpCancel').onclick=cmpOff;
   $('cmpAuto').onclick=function(){
     var pid=galSel!=='all'?galSel:P().id;
