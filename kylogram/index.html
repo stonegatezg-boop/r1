@@ -183,7 +183,8 @@
   .stat b small{font-size:14px;font-weight:600}
   .stats.chg{grid-template-columns:repeat(3,1fr)}
   .stats.nh .stat:nth-child(3){grid-column:1/-1}
-  #sub-s{flex-direction:column;gap:6px}
+  #sub-s{flex-direction:column;gap:8px;margin-top:18px;padding:4px 2px 28px}
+  #sub-s .slab{margin-top:10px}
   #sub-s.open{display:flex}
   #sub-s .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   #sub-s .langrow{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}
@@ -487,7 +488,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 00:39</div>
+  <div class="ver"><span>verzija</span> 12.11. 00:40</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1030,7 +1031,7 @@
     ['n','b','s'].forEach(function(k){$('sub-'+k).classList.toggle('open',openSub===k)});
     ['fbn','fbb','fbs'].forEach(function(id){var b=$(id);b.classList.toggle('on',openSub===b.dataset.m)});
     if(openSub==='n'){initRem()}
-    if(openSub){try{$('sub-'+openSub).scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}}
+    if(openSub){try{$('sub-'+openSub).scrollIntoView({block:openSub==='s'?'end':'nearest',behavior:'smooth'})}catch(e){}}
   }
   ['fbn','fbb','fbs'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
   $('sub-t').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(b&&b.id==='sndBtn'){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true);return}if(!b||!b.dataset.th)return;S.theme=b.dataset.th;persist();applyTheme();render()};
