@@ -55,9 +55,29 @@
   td.r{text-align:right}
   td button{padding:4px 9px;font-size:13px}
   .msg{color:var(--warn);font-size:13px;min-height:18px;margin-top:6px}
+  .sub{display:none;gap:6px;margin-top:8px;flex-wrap:nowrap}
+  .sub.open{display:flex}
+  .sub button{flex:1 1 0;min-width:0}
+  .subn{flex-direction:column;gap:8px}
+  .subn button#rsave{flex:none}
+  .rrow{display:flex;gap:8px}.rrow input{flex:1;min-width:0}
+  select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;min-width:0;width:100%}
+  #rlist .ritem{display:flex;gap:6px;align-items:center;padding:6px 0;border-top:1px dashed var(--line);font-size:14px}
+  #rlist .ritem span{flex:1;min-width:0}
+  #rlist .ritem button{flex:none;padding:6px 10px;font-size:13px}
+  #remBanner{display:none;margin-bottom:12px}
+  #remBanner .rb{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--acc);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+  #remBanner .rb span{flex:1}
   .foot{display:flex;gap:6px;flex-wrap:nowrap}
   .foot button{flex:1 1 0;min-width:0;padding-left:4px!important;padding-right:4px!important;line-height:1.2;overflow-wrap:anywhere}
   html[data-theme="80"] .foot button{font-size:7px}
+  html[data-theme="80"] .sub button{font-size:8px}
+  html[data-theme="80"] select{border-radius:0;border:2px solid var(--line);font-family:'VT323',monospace;font-size:24px;padding:8px 10px;color:var(--acc)}
+  html[data-theme="80"] #rlist .ritem{font-size:18px}
+  html[data-theme="90"] select{background:#fff;color:#000;border:0;border-radius:0;font:400 18px 'Pixelify',sans-serif;padding:8px;box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff,inset 2px 2px 0 #000,inset -2px -2px 0 #dfdfdf;color-scheme:light}
+  html[data-theme="90"] #remBanner .rb{background:#ffffe1;color:#000;border:1px solid #000;border-radius:0;box-shadow:3px 3px 0 #004040}
+  html[data-theme="90"] #rlist .ritem{color:#000}
+  html[data-theme="80"] #remBanner .rb{border-radius:0;border-color:var(--mg)}
   #undo{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--acc);color:var(--navy);border-radius:12px;padding:10px 14px;display:none;gap:14px;align-items:center;font-weight:600;box-shadow:0 6px 20px #0008;z-index:9}
   #undo button{background:var(--navy);color:var(--acc);padding:6px 12px;font-size:14px}
   .empty{color:var(--mute);text-align:center;padding:60px 0}
@@ -233,6 +253,7 @@
 </svg>
     <h1>kylogram<span class="cur">_</span></h1>
   </div>
+  <div id="remBanner" style="display:none"></div>
 
   <div class="card">
     <div class="people" id="people"></div>
@@ -310,12 +331,29 @@
   </div>
 
   <div class="foot">
-    <button class="ghost" id="exp">Izvezi backup</button>
-    <button class="ghost" id="imp">Uvezi backup</button>
-    <button class="ghost" id="theme" type="button" title="Promijeni temu">Tema</button>
+    <button class="ghost" id="fbn" type="button" data-m="n">Obavijesti ▾</button>
+    <button class="ghost" id="fbb" type="button" data-m="b">Backup ▾</button>
+    <button class="ghost" id="theme" type="button" data-m="t">Tema ▾</button>
     <input type="file" id="file" accept="application/json" hidden>
   </div>
-  <div class="ver">verzija 11.11. 21:45</div>
+  <div id="sub-b" class="sub">
+    <button class="ghost" id="exp" type="button">Izvezi backup</button>
+    <button class="ghost" id="imp" type="button">Uvezi backup</button>
+  </div>
+  <div id="sub-t" class="sub">
+    <button class="ghost" type="button" data-th="m">Moderna</button>
+    <button class="ghost" type="button" data-th="90">90-e</button>
+    <button class="ghost" type="button" data-th="80">80-e</button>
+  </div>
+  <div id="sub-n" class="sub subn">
+    <div class="rrow"><input type="date" id="rdate"><input type="time" id="rtime" value="08:00"></div>
+    <select id="rrep" aria-label="Ponavljanje"></select>
+    <input id="rtext" maxlength="60" placeholder="Naziv" value="Vaganje">
+    <button id="rsave" type="button">Spremi i dodaj u kalendar</button>
+    <div class="msg" id="rmsg"></div>
+    <div id="rlist"></div>
+  </div>
+  <div class="ver">verzija 11.11. 22:10</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -334,7 +372,7 @@
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
   var PALETTE=[['#e3ff00','Žuta'],['#39ff14','Zelena'],['#ff2bd6','Roza'],['#2a7bff','Plava']],pcolor=null;
   var THEMES=['m','90','80'],NAMES={'90':'90-e','80':'80-e','m':'Moderna'},TCOL={'90':'#008080','80':'#07060d','m':'#0f1115'};
-  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b'};
+  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[]};
   function P(){for(var i=0;i<S.people.length;i++)if(S.people[i].id===S.active)return S.people[i];return S.people[0]}
   var state={};
   Object.defineProperty(state,'entries',{get:function(){return P().entries},set:function(v){P().entries=v}});
@@ -351,6 +389,7 @@
     if(x.range===undefined)x.range=90;
     if(['w','h','b'].indexOf(x.metric)<0)x.metric='b';
     x.all=!!x.all&&x.people.length>1;
+    x.reminders=(Array.isArray(x.reminders)?x.reminders:[]).filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time)&&['once','day','week','month','first','year'].indexOf(r.rep)>=0}).slice(0,50).map(function(r,i){return {id:String(r.id||('r'+i+Date.now().toString(36))),date:r.date,time:r.time,rep:r.rep,text:String(r.text||'Vaganje').slice(0,60),dis:(typeof r.dis==='string'?r.dis:'')}});
     if(THEMES.indexOf(x.theme)<0)x.theme='m';
     return x;
   }
@@ -378,7 +417,8 @@
   function applyTheme(){
     document.documentElement.setAttribute('data-theme',S.theme);
     $('tc').setAttribute('content',TCOL[S.theme]);
-    $('theme').textContent='Tema: '+NAMES[S.theme];
+    $('theme').textContent='Tema: '+NAMES[S.theme]+' ▾';
+    var tb=document.querySelectorAll('#sub-t [data-th]');for(var i=0;i<tb.length;i++)tb[i].classList.toggle('on',tb[i].dataset.th===S.theme);
     applyColor();
   }
   function $(id){return document.getElementById(id)}
@@ -730,7 +770,91 @@
   function nextColor(){for(var i=0;i<PALETTE.length;i++){var c=PALETTE[i][0];if(!S.people.some(function(p){return p.color===c}))return c}return null}
   $('pswatch').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b)return;pcolor=b.dataset.c||null;renderPeople()};
   $('pcancel').onclick=function(){pmode=null;renderPeople()};
-  $('theme').onclick=function(){S.theme=THEMES[(THEMES.indexOf(S.theme)+1)%THEMES.length];persist();applyTheme();render()};
+  var openSub=null;
+  function showSub(m){
+    openSub=(openSub===m)?null:m;
+    ['n','b','t'].forEach(function(k){$('sub-'+k).classList.toggle('open',openSub===k)});
+    ['fbn','fbb','theme'].forEach(function(id){var b=$(id);b.classList.toggle('on',openSub===b.dataset.m)});
+    if(openSub==='n'){initRem()}
+    if(openSub){try{$('sub-'+openSub).scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}}
+  }
+  ['fbn','fbb','theme'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
+  $('sub-t').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b||!b.dataset.th)return;S.theme=b.dataset.th;persist();applyTheme();render()};
+
+  /* ---- podsjetnici ---- */
+  var WD=['nedjelju','ponedjeljak','utorak','srijedu','četvrtak','petak','subotu'],WDN=['nedjelja','ponedjeljak','utorak','srijeda','četvrtak','petak','subota'];
+  var WDACC=['svaku nedjelju','svaki ponedjeljak','svaki utorak','svaku srijedu','svaki četvrtak','svaki petak','svaku subotu'];
+  function pd(s){var a=s.split('-');return new Date(+a[0],+a[1]-1,+a[2])}
+  function repLabel(rep,d){
+    var o=pd(d),dn=o.getDate(),mn=o.getMonth()+1;
+    return {once:'Samo jednom ('+dn+'.'+mn+'.)',day:'Svaki dan',week:'Svaki tjedan – '+WDACC[o.getDay()],month:'Svaki mjesec – svakog '+dn+'.',first:'Početkom mjeseca – svakog 1.',year:'Svake godine – '+dn+'.'+mn+'.'}[rep];
+  }
+  function fillRep(){
+    var d=$('rdate').value||today(),sel=$('rrep').value||'day',h='';
+    ['once','day','week','month','first','year'].forEach(function(k){h+='<option value="'+k+'"'+(k===sel?' selected':'')+'>'+repLabel(k,d)+'</option>'});
+    $('rrep').innerHTML=h;
+  }
+  function initRem(){
+    if(!$('rdate').value)$('rdate').value=$('date').value||today();
+    fillRep();renderRem();
+  }
+  $('rdate').addEventListener('change',fillRep);
+  function occursOn(r,d){
+    if(d<r.date)return false;
+    var a=pd(r.date),b=pd(d);
+    switch(r.rep){case 'once':return r.date===d;case 'day':return true;case 'week':return a.getDay()===b.getDay();
+      case 'month':return a.getDate()===b.getDate();case 'first':return b.getDate()===1;
+      case 'year':return a.getDate()===b.getDate()&&a.getMonth()===b.getMonth()}
+    return false;
+  }
+  function remDesc(r){return r.text+' · '+r.time+' · '+repLabel(r.rep,r.date)}
+  function icsEsc(t){return String(t).replace(/[\\;,]/g,function(m){return '\\'+m}).replace(/\n/g,'\\n')}
+  function makeIcs(r){
+    var p=function(n){return n<10?'0'+n:''+n},o=pd(r.date),ds=o.getFullYear()+p(o.getMonth()+1)+p(o.getDate())+'T'+r.time.replace(':','')+'00';
+    var rule={once:'',day:'RRULE:FREQ=DAILY',week:'RRULE:FREQ=WEEKLY;BYDAY='+['SU','MO','TU','WE','TH','FR','SA'][o.getDay()],
+      month:'RRULE:FREQ=MONTHLY;BYMONTHDAY='+o.getDate(),first:'RRULE:FREQ=MONTHLY;BYMONTHDAY=1',year:'RRULE:FREQ=YEARLY'}[r.rep];
+    var L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//kylogram//HR','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+r.id+'@kylogram','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z','DTSTART:'+ds,'DURATION:PT10M','SUMMARY:'+icsEsc(r.text)];
+    if(rule)L.push(rule);
+    L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(r.text),'TRIGGER:PT0S','END:VALARM','END:VEVENT','END:VCALENDAR');
+    return L.join('\r\n')+'\r\n';
+  }
+  function exportIcs(r){
+    var blob=new Blob([makeIcs(r)],{type:'text/calendar'}),name='kylogram-podsjetnik-'+r.date+'.ics';
+    try{var f=new File([blob],name,{type:'text/calendar'});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(function(){});return}}catch(e){}
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+  }
+  function renderRem(){
+    var h='';(S.reminders||[]).forEach(function(r){
+      h+='<div class="ritem"><span>'+esc(remDesc(r))+'</span><button class="ghost" type="button" data-ics="'+esc(r.id)+'">Kalendar</button><button class="ghost" type="button" data-rdel="'+esc(r.id)+'">×</button></div>'});
+    $('rlist').innerHTML=h;
+  }
+  $('rsave').onclick=function(){
+    var d=$('rdate').value,t=$('rtime').value;
+    if(!d||!t){$('rmsg').textContent='Odaberi datum i sat.';return}
+    $('rmsg').textContent='';
+    var r={id:'r'+Date.now().toString(36),date:d,time:t,rep:$('rrep').value,text:($('rtext').value.trim()||'Vaganje').slice(0,60),dis:''};
+    if(!S.reminders)S.reminders=[];S.reminders.push(r);persist();renderRem();checkRem();
+    $('rmsg').textContent='Spremljeno. Otvori datoteku i spremi u Kalendar da te telefon podsjeti.';
+    exportIcs(r);
+  };
+  $('rlist').onclick=function(e){
+    var b=e.target.closest?e.target.closest('button'):null;if(!b)return;
+    if(b.dataset.ics){var r=S.reminders.filter(function(x){return x.id===b.dataset.ics})[0];if(r)exportIcs(r)}
+    if(b.dataset.rdel){S.reminders=S.reminders.filter(function(x){return x.id!==b.dataset.rdel});persist();renderRem();checkRem()}
+  };
+  function checkRem(){
+    var d=today(),n=new Date(),hm=pad(n.getHours())+':'+pad(n.getMinutes()),h='';
+    (S.reminders||[]).forEach(function(r){
+      if(occursOn(r,d)&&r.dis!==d&&hm>=r.time)h+='<div class="rb"><span>🔔 '+esc(r.text)+' ('+r.time+')</span><button class="ghost" type="button" data-dis="'+esc(r.id)+'">U redu</button></div>';
+    });
+    var el=$('remBanner');el.innerHTML=h;el.style.display=h?'block':'none';
+  }
+  $('remBanner').onclick=function(e){
+    var b=e.target.closest?e.target.closest('button'):null;if(!b||!b.dataset.dis)return;
+    (S.reminders||[]).forEach(function(r){if(r.id===b.dataset.dis)r.dis=today()});persist();checkRem();
+  };
+  setInterval(checkRem,60000);document.addEventListener('visibilitychange',function(){if(!document.hidden)checkRem()});
   // ===== Polaroid + gallery (IndexedDB) =====
   var db=null,photos=[],urls={},lbRec=null,lbDelT=null;
   function openDb(cb){
@@ -922,7 +1046,7 @@
 
   if('serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js')}catch(e){}}
   window.addEventListener('resize',render);
-  load();applyTheme();$('date').value=today();render();
+  load();applyTheme();$('date').value=today();render();checkRem();
   openDb(function(){loadPhotos(function(){renderGallery()})});
 })();
 </script>
