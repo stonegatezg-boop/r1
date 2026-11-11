@@ -84,8 +84,8 @@
   #remOk{margin-top:12px}
   #remBanner .rb,#remOk.rb{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--acc);border-radius:12px;padding:10px 12px;margin-bottom:8px}
   #remBanner .rb span,#remOk.rb span{flex:1}
-  .foot{display:flex;gap:6px;flex-wrap:nowrap}
-  .foot button{flex:1 1 0;min-width:0;padding-left:4px!important;padding-right:4px!important;line-height:1.2;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px}
+  .foot{display:flex;gap:6px;flex-wrap:wrap}
+  .foot button{flex:1 1 calc(50% - 6px);min-width:0;padding-left:4px!important;padding-right:4px!important;line-height:1.2;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px}
   .foot button::after{content:'\25BE';font-size:17px;font-family:system-ui,sans-serif;text-shadow:none}
   html[data-theme="80"] .foot button{font-size:7px}
   html[data-theme="80"] .sub button{font-size:8px}
@@ -172,7 +172,7 @@
   .row2 button{flex:1 1 0;min-width:0}
   .galhead{font-weight:700;margin-bottom:10px}
   html[data-theme="90"] .galhead{display:none}
-  html[data-theme="90"] #galCard::before{content:'Galerija i kalendar'}
+  html[data-theme="90"] #galCard::before{content:attr(data-t)}
   html[data-theme="80"] #galCard{border-color:var(--cy);box-shadow:0 0 14px rgba(0,229,255,.25),inset 0 0 0 1px #000}
   .gal{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
   .gal .thumb{cursor:pointer}
@@ -183,6 +183,9 @@
   .galscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 2px 24px}
   .stat b small{font-size:14px;font-weight:600}
   .stats.chg{grid-template-columns:repeat(3,1fr)}
+  .stats.nh .stat:nth-child(3){grid-column:1/-1}
+  #sub-s{flex-wrap:wrap}#sub-s button{flex:1 1 40%}
+  .slab{flex:1 1 100%;font-size:13px;color:var(--mute);margin-top:4px}
   .stats.chg .stat b{font-size:20px}
   html[data-theme="90"] #calWho,html[data-theme="90"] .calkey{color:#fff}
   #daySheet{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:20px}
@@ -292,8 +295,8 @@
     box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #dfdfdf,inset -2px -2px 0 #808080,inset 2px 2px 0 #fff,3px 3px 0 #004040}
   html[data-theme="90"] .card::before{display:block;margin:-8px -8px 10px;padding:3px 6px;color:#fff;font-weight:700;font-size:16px;letter-spacing:.3px;background:linear-gradient(90deg,var(--pcd,#000080),var(--pc,#1084d0))}
   html[data-theme="90"] .card::after{position:absolute;right:6px;top:-1px;color:#000;font-weight:700;font-size:12px;letter-spacing:2px;content:"";background:#c0c0c0;width:16px;height:14px;text-align:center;line-height:13px;box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #fff,inset -2px -2px 0 #808080;margin-top:6px}
-  html[data-theme="90"] #cardNew::before{content:'Novo vaganje'}
-  html[data-theme="90"] #cardChart::before{content:'Graf težine'}
+  html[data-theme="90"] #cardNew::before{content:attr(data-t)}
+  html[data-theme="90"] #cardChart::before{content:attr(data-t)}
   html[data-theme="90"] .card::after{content:"x"}
   html[data-theme="90"] .stat{background:#c0c0c0;border:0;border-radius:0;padding:8px;box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #dfdfdf,inset -2px -2px 0 #808080,inset 2px 2px 0 #fff,3px 3px 0 #004040}
   html[data-theme="90"] .stat b{display:block;background:#fff;color:#000;font:700 26px/1.1 'Pixelify',sans-serif;padding:4px 6px;box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff,inset 2px 2px 0 #000,inset -2px -2px 0 #dfdfdf}
@@ -372,10 +375,10 @@
   </div>
 
   <div class="stats">
-    <div class="stat t1"><b id="sCur">–</b><span>zadnja (kg)</span></div>
+    <div class="stat t1"><b id="sCur">–</b><span id="lCur">zadnja (kg)</span></div>
     <div class="stat t2"><b id="sTrend">–</b><span id="sTrendL">do cilja (kg)</span></div>
-    <div class="stat t3"><b id="sChg">–</b><span>ukupno (kg)</span></div>
-    <div class="stat t4"><b id="sH">–</b><span>visina (cm)</span></div>
+    <div class="stat t3"><b id="sChg">–</b><span id="lChg">ukupno (kg)</span></div>
+    <div class="stat t4"><b id="sH">–</b><span id="lH">visina (cm)</span></div>
   </div>
   <div class="stats chg" id="chg">
     <div class="stat t1"><b id="c7">–</b><span id="c7l">7 d</span></div>
@@ -435,6 +438,7 @@
     <button class="ghost" id="fbn" type="button" data-m="n">Obavijesti</button>
     <button class="ghost" id="fbb" type="button" data-m="b">Backup</button>
     <button class="ghost" id="theme" type="button" data-m="t">Tema</button>
+    <button class="ghost" id="fbs" type="button" data-m="s">Postavke</button>
     <input type="file" id="file" accept="application/json" hidden>
   </div>
   <div id="sub-b" class="sub">
@@ -449,6 +453,16 @@
     <button class="ghost" type="button" data-th="80">80-e</button>
     <button class="ghost" type="button" id="sndBtn" style="flex:1 1 100%">Zvuk i vibracija skale: uključeno</button>
   </div>
+  <div id="sub-s" class="sub">
+    <div class="slab">Mjerne jedinice</div>
+    <button class="ghost" type="button" data-u="m">kg · cm</button>
+    <button class="ghost" type="button" data-u="i">lb · in</button>
+    <div class="slab">Visina</div>
+    <button class="ghost" type="button" id="hBtn" style="flex:1 1 100%">Praćenje visine: isključeno</button>
+    <div class="slab">Jezik</div>
+    <button class="ghost" type="button" data-lang="hr">Hrvatski</button>
+    <button class="ghost" type="button" data-lang="en">English</button>
+  </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate"><input type="time" id="rtime" value="08:00"></div>
     <select id="rrep" aria-label="Ponavljanje"></select>
@@ -459,7 +473,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 12.11. 00:15</div>
+  <div class="ver"><span>verzija</span> 12.11. 00:22</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -478,7 +492,48 @@
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
   var PALETTE=[['#e3ff00','Žuta'],['#11b882','Zelena'],['#ff2bd6','Roza'],['#2a7bff','Plava']],pcolor=null;
   var THEMES=['m','ml','mb','90','80'],NAMES={'90':'90-e','80':'80-e','m':'Moderna tamna','ml':'Moderna svijetla','mb':'Moderna crna'},TCOL={'90':'#008080','80':'#07060d','m':'#0f1115','ml':'#eef0f4','mb':'#000000'};
-  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[]};
+  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[],cfg:{h:false,u:'m',lang:'hr'}};
+  var LANG='hr';
+  var EN={'Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
+  'Dodaj':'Add','Obriši':'Delete','Spremi':'Save','Slikaj':'Take photo','Odaberi sliku':'Choose photo','Prikaz svih osoba. Za unos odaberi osobu.':'Showing everyone. Pick a person to add entries.',
+  'zadnja':'latest','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
+  'Težina':'Weight','Visina':'Height','Oboje':'Both','Sve':'All','Svi':'All','1 god':'1 y','pad':'drop','rast':'gain','cilj':'goal','Cilj':'Goal',
+  'Usporedba':'Comparison','Zamijeni':'Swap','Zatvori':'Close','Galerija i kalendar':'Gallery & calendar','Galerija':'Gallery','Kalendar':'Calendar',
+  'Usporedi':'Compare','Označi':'Select','Odustani':'Cancel','Zadnja ↔ prije mjesec dana':'Latest ↔ a month earlier','Lista':'List',
+  '· zeleno = niže od prethodnog mjerenja, crveno = više · dodir na dan otvara detalje':'· green = lower than the previous weigh-in, red = higher · tap a day for details',
+  'Obavijesti':'Reminders','Backup':'Backup','Tema':'Theme','Postavke':'Settings','Izvezi backup':'Export backup','Uvezi backup':'Import backup',
+  'Tamna':'Dark','Svijetla':'Light','Crna':'Black','90-e':'90s','80-e':'80s','Spremi i dodaj u kalendar':'Save & add to calendar','Osvježi':'Refresh','Podijeli':'Share','Poništi':'Undo',
+  'verzija':'version','Ponavljanje':'Repeat','Naziv':'Title','Mjerne jedinice':'Units','Jezik':'Language','Novo vaganje':'New weigh-in','Graf težine':'Weight chart',
+  'Unesi prvu visinu':'Enter the first height','Unesi prvo vaganje':'Enter the first weigh-in','Nema podataka':'No data',
+  'Upiši težinu ili visinu.':'Enter a weight or height.','Upiši težinu.':'Enter a weight.','Odaberi datum.':'Pick a date.','Težina mora biti između':'Weight must be between','Visina mora biti između':'Height must be between',
+  'Ciljna težina mora biti između':'Goal weight must be between','i':'and','Pohrana nije dostupna – napravi backup.':'Storage is not available – make a backup.',
+  'Pohrana nije dostupna u ovom pregledniku – napravi backup.':'Storage is not available in this browser – make a backup.',
+  'Upiši ime.':'Enter a name.','Datum rođenja nije ispravan.':'Birth date is not valid.','Obrisano':'Deleted','Backup uvezen':'Backup imported','Neispravna backup datoteka.':'Invalid backup file.',
+  'Žuta':'Yellow','Zelena':'Green','Roza':'Pink','Plava':'Blue','Odaberi boju':'Pick a colour','uredi':'edit',
+  'Samo jednom':'Once only','Odaberi datum i sat.':'Pick a date and time.','Vaganje':'Weigh-in','Podsjetnik uključen:':'Reminder on:','Otvori preuzetu datoteku i spremi je u Kalendar.':'Open the downloaded file and save it to your calendar.','U redu':'OK',
+  'Pravim sliku…':'Making the photo…','Slika se nije mogla obraditi.':'The photo could not be processed.','Slika nije trajno spremljena u ovom pregledniku – spremi je u galeriju mobitela.':'The photo was not saved permanently in this browser – save it to your phone gallery.',
+  'Na slici nedostaje:':'Missing on the photo:','težinu':'weight','visinu':'height','Dodaj to pa u galeriji pritisni Osvježi.':'Add it, then press Refresh in the gallery.',
+  'Još nema slika. Slikaj ili odaberi sliku.':'No photos yet. Take or choose a photo.','Još nema unosa.':'No entries yet.',
+  'Odaberi dvije slike':'Choose two photos','Označeno:':'Selected:','Sigurno?':'Sure?','Treba barem dvije slike ove osobe.':'This person needs at least two photos.','isti dan':'same day','razlike':'apart',
+  'mjer.':'meas.','prosjek':'avg','u mjesecu':'this month','ovaj mj.':'this mo.','Nema unosa za ovaj dan.':'No entries for this day.','Obriši sve':'Delete all','Uredi':'Edit','Dodaj unos':'Add entry',
+  'Odabran datum':'Selected date','promijeni pa Spremi.':'change it, then Save.','Zvuk i vibracija skale':'Dial sound & vibration','uključeno':'on','isključeno':'off',
+  'isto kao prije':'same as before','od prije':'from before','još':'still','ispod za':'below by','upravo sada':'right now','Praćenje visine':'Height tracking'};
+  function T(s){return LANG==='en'&&EN.hasOwnProperty(s)?EN[s]:s}
+  var PL={'slika':['photo','photos'],'mjerenje':['measurement','measurements'],'godina':['year','years'],'mjesec':['month','months'],'dan':['day','days']};
+  var LB=2.2046226218,IN=0.3937007874;
+  function isUS(){return S.cfg.u==='i'}
+  function hOn(){return !!S.cfg.h}
+  function wu(){return isUS()?'lb':'kg'}
+  function hu(){return isUS()?'in':'cm'}
+  function dw(x){return isUS()?x*LB:x}
+  function uw(x){return isUS()?x/LB:x}
+  function dh(x){return isUS()?x*IN:x}
+  function uh(x){return isUS()?x/IN:x}
+  function rw(x){var k=isUS()?1000:10;return Math.round(x*k)/k}
+  function rh(x){var k=isUS()?100:10;return Math.round(x*k)/k}
+  function fd(x){var t=(+x.toFixed(1))+'';return LANG==='hr'?t.replace('.',','):t}
+  function nv(x){return String(+x.toFixed(1))}
+  function rng(a,b,k){var f=k==='w'?dw:dh;return fd(f(a))+' '+T('i')+' '+fd(f(b))+' '+(k==='w'?wu():hu())+'.'}
   function P(){for(var i=0;i<S.people.length;i++)if(S.people[i].id===S.active)return S.people[i];return S.people[0]}
   var state={};
   Object.defineProperty(state,'entries',{get:function(){return P().entries},set:function(v){P().entries=v}});
@@ -497,6 +552,8 @@
     x.all=!!x.all&&x.people.length>1;
     x.reminders=(Array.isArray(x.reminders)?x.reminders:[]).filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time)&&['once','day','week','month','first','year'].indexOf(r.rep)>=0}).slice(0,50).map(function(r,i){return {id:String(r.id||('r'+i+Date.now().toString(36))),date:r.date,time:r.time,rep:r.rep,text:String(r.text||'Vaganje').slice(0,60),dis:(typeof r.dis==='string'?r.dis:'')}});
     if(THEMES.indexOf(x.theme)<0)x.theme='m';
+    var cf=x.cfg||{},hadH=x.people.some(function(p){return p.heights&&Object.keys(p.heights).length});
+    x.cfg={h:cf.h===undefined?hadH:!!cf.h,u:cf.u==='i'?'i':'m',lang:cf.lang==='en'?'en':'hr'};
     return x;
   }
   function load(){
@@ -508,7 +565,7 @@
     }catch(e){memOnly=true;}
   }
   function persist(){
-    try{localStorage.setItem(KEY2,JSON.stringify(S));}catch(e){memOnly=true;msg('Pohrana nije dostupna u ovom pregledniku – napravi backup.');}
+    try{localStorage.setItem(KEY2,JSON.stringify(S));}catch(e){memOnly=true;msg(T('Pohrana nije dostupna u ovom pregledniku – napravi backup.'));}
   }
   function lum(hex){var n=parseInt(hex.slice(1),16);return (0.2126*(n>>16&255)+0.7152*(n>>8&255)+0.0722*(n&255))/255}
   function forLight(c){return lum(c)>0.6?shade(c,0.72):c}
@@ -522,6 +579,58 @@
     if(S.theme==='90'){st.setProperty('--acc',d);st.setProperty('--bg',shade(c,0.42));$('tc').setAttribute('content',shade(c,0.42))}
     else{st.setProperty('--acc',ca);st.removeProperty('--bg');$('tc').setAttribute('content',TCOL[S.theme])}
   }
+  var stN=null;
+  function collectStatic(){
+    stN=[];
+    var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){var q=n.parentNode.nodeName;if(q==='SCRIPT'||q==='STYLE')return NodeFilter.FILTER_REJECT;return n.nodeValue.trim()?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});
+    var n;while((n=w.nextNode()))stN.push([n,n.nodeValue]);
+    ['placeholder','aria-label','title'].forEach(function(a){var l=document.querySelectorAll('['+a+']');for(var i=0;i<l.length;i++)stN.push([l[i],l[i].getAttribute(a),a])});
+  }
+  function trStatic(){
+    if(!stN)collectStatic();
+    stN.forEach(function(r){
+      var o=r[1],a=r[2],t=o;
+      if(LANG==='en'){var k=o.trim();if(EN.hasOwnProperty(k))t=o.replace(k,EN[k])}
+      if(a){if(r[0].getAttribute(a)!==t)r[0].setAttribute(a,t)}
+      else if(r[0].parentNode&&r[0].nodeValue!==t)r[0].nodeValue=t;
+    });
+  }
+  function applyCfg(){
+    LANG=S.cfg.lang;document.documentElement.setAttribute('lang',LANG);
+    trStatic();
+    var ho=hOn();
+    $('kg').placeholder=wu();$('cm').placeholder=hu();$('pgoal').placeholder=wu();
+    $('cm').style.display=ho?'':'none';
+    $('sH').parentNode.style.display=ho?'':'none';
+    document.querySelector('.stats').classList.toggle('nh',!ho);
+    $('mtabs').style.display=ho?'':'none';
+    $('lCur').textContent=T('zadnja')+' ('+wu()+')';
+    $('lChg').textContent=T('ukupno')+' ('+wu()+')';
+    $('lH').textContent=T('visina')+' ('+hu()+')';
+    $('galCard').setAttribute('data-t',T('Galerija i kalendar'));
+    $('cardNew').setAttribute('data-t',T('Novo vaganje'));
+    $('cardChart').setAttribute('data-t',T('Graf težine'));
+    var rt=$('rtext');if(rt.value==='Vaganje'||rt.value==='Weigh-in')rt.value=T('Vaganje');
+    var ub=document.querySelectorAll('#sub-s [data-u]');for(var i=0;i<ub.length;i++)ub[i].classList.toggle('on',ub[i].dataset.u===S.cfg.u);
+    var lb=document.querySelectorAll('#sub-s [data-lang]');for(i=0;i<lb.length;i++)lb[i].classList.toggle('on',lb[i].dataset.lang===S.cfg.lang);
+    $('hBtn').textContent=T('Praćenje visine')+': '+T(ho?'uključeno':'isključeno');
+    $('hBtn').classList.toggle('on',ho);
+    sndLabel();fillRep();renderRem();
+  }
+  $('sub-s').onclick=function(e){
+    var b=e.target.closest?e.target.closest('button'):null;if(!b)return;
+    var kv=parseKg($('kg').value),cv=parseKg($('cm').value),gv0=parseKg($('pgoal').value);
+    var kk=isFinite(kv)?uw(kv):NaN,ck=isFinite(cv)?uh(cv):NaN,gk0=isFinite(gv0)?uw(gv0):NaN;
+    if(b.dataset.u)S.cfg.u=b.dataset.u;
+    else if(b.dataset.lang)S.cfg.lang=b.dataset.lang;
+    else if(b.id==='hBtn')S.cfg.h=!S.cfg.h;
+    else return;
+    persist();applyCfg();
+    if(isFinite(kk))$('kg').value=nv(dw(kk));
+    if(isFinite(ck))$('cm').value=nv(dh(ck));
+    if(isFinite(gk0))$('pgoal').value=nv(dw(gk0));
+    render();
+  };
   function applyTheme(){
     document.documentElement.setAttribute('data-theme',S.theme);
     $('tc').setAttribute('content',TCOL[S.theme]);
@@ -533,9 +642,10 @@
   function pad(n){return n<10?'0'+n:''+n}
   function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
   function toDay(s){var p=s.split('-');return Date.UTC(+p[0],+p[1]-1,+p[2])/86400000}
-  function fmtDate(s){var p=s.split('-');return +p[2]+'.'+ +p[1]+'.'+p[0]+'.'}
-  function fmtShort(day){var d=new Date(day*86400000);return d.getUTCDate()+'.'+(d.getUTCMonth()+1)+'.'}
-  function f1(x){return x.toFixed(1).replace('.',',')}
+  var MNS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function fmtDate(s){var p=s.split('-');return LANG==='en'?(+p[2]+' '+MNS[+p[1]-1]+' '+p[0]):(+p[2]+'.'+ +p[1]+'.'+p[0]+'.')}
+  function fmtShort(day){var d=new Date(day*86400000);return LANG==='en'?(d.getUTCDate()+' '+MNS[d.getUTCMonth()]):(d.getUTCDate()+'.'+(d.getUTCMonth()+1)+'.')}
+  function f1(x){var t=x.toFixed(1);return LANG==='hr'?t.replace('.',','):t}
 
   // time-aware exponential smoothing, tau = 8 days
   function series(){
@@ -563,18 +673,19 @@
     var last=s[s.length-1],base=s.length>1?trendAtDay(s,last.d-N):null,el=$(id),sp=$(id+'l');
     if(base===null||base<=0){el.textContent='–';el.style.color='';sp.textContent=N+' d';return}
     var c=last.w-base,p=c/base*100,sg=function(x){return (x>0?'+':'')+f1(x)};
-    el.textContent=sg(c)+' kg';el.style.color=c<-0.05?'var(--gr)':c>0.05?'var(--mg)':'';
+    el.textContent=sg(dw(c))+' '+wu();el.style.color=c<-0.05?'var(--gr)':c>0.05?'var(--mg)':'';
     sp.textContent=N+' d · '+sg(p)+'%';
   }
   function stats(s,hs){
-    $('sH').textContent=hs.length?f1(hs[hs.length-1].h):'–';
-    if(!s.length){$('sCur').textContent=$('sTrend').textContent=$('sChg').textContent='–';$('sTrendL').textContent=state.goal?'do cilja (kg)':'najniža (kg)';$('sChg').style.color='';['c7','c15','c30'].forEach(function(id,i){$(id).textContent='–';$(id).style.color='';$(id+'l').textContent=[7,15,30][i]+' d'});return}
+    var U=' ('+wu()+')';
+    $('sH').textContent=hs.length?f1(dh(hs[hs.length-1].h)):'–';
+    if(!s.length){$('sCur').textContent=$('sTrend').textContent=$('sChg').textContent='–';$('sTrendL').textContent=state.goal?T('do cilja')+U:T('najniža')+U;$('sChg').style.color='';['c7','c15','c30'].forEach(function(id,i){$(id).textContent='–';$(id).style.color='';$(id+'l').textContent=[7,15,30][i]+' d'});return}
     var last=s[s.length-1];
-    $('sCur').textContent=f1(last.w);
-    if(state.goal){var rem=last.w-state.goal;$('sTrendL').textContent=rem>0?'do cilja (kg)':rem<0?'ispod cilja (kg)':'cilj dosegnut';$('sTrend').textContent=f1(Math.abs(rem))}
-    else{var mn=Math.min.apply(null,s.map(function(e){return e.w}));$('sTrendL').textContent='najniža (kg)';$('sTrend').textContent=f1(mn)}
+    $('sCur').textContent=f1(dw(last.w));
+    if(state.goal){var rem=last.w-state.goal;$('sTrendL').textContent=rem>0?T('do cilja')+U:rem<0?T('ispod cilja')+U:T('cilj dosegnut');$('sTrend').textContent=f1(dw(Math.abs(rem)))}
+    else{var mn=Math.min.apply(null,s.map(function(e){return e.w}));$('sTrendL').textContent=T('najniža')+U;$('sTrend').textContent=f1(dw(mn))}
     var tot=last.w-s[0].w;
-    if(s.length>1){var tp=tot/s[0].w*100;$('sChg').innerHTML=(tot>0?'+':'')+f1(tot)+' <small>('+(tp>0?'+':'')+f1(tp)+'%)</small>';$('sChg').style.color=tot<0?'var(--gr)':tot>0?'var(--mg)':''}
+    if(s.length>1){var tp=tot/s[0].w*100;$('sChg').innerHTML=(tot>0?'+':'')+f1(dw(tot))+' <small>('+(tp>0?'+':'')+f1(tp)+'%)</small>';$('sChg').style.color=tot<0?'var(--gr)':tot>0?'var(--mg)':''}
     else{$('sChg').textContent='–';$('sChg').style.color=''}
     setChg('c7','',s,7);setChg('c15','',s,15);setChg('c30','',s,30);
   }
@@ -612,19 +723,19 @@
   var gm=null,gdrag=false,gval=null;
   function chart(s,hs){
     gm=null;
-    var m=S.metric||'b';
+    var m=hOn()?(S.metric||'b'):'w';
     var svg=$('chart'),W=svg.clientWidth||320,H=300;
     svg.setAttribute('viewBox','0 0 '+W+' '+H);
     var cut=state.range?toDay(today())-state.range:-1e9;
     var vw=m==='h'?[]:s.filter(function(e){return e.d>=cut});
     var vh=m==='w'?[]:hs.filter(function(e){return e.d>=cut});
-    if(!vw.length&&!vh.length){svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" text-anchor="middle" font-size="14">'+(m==='h'?'Unesi prvu visinu':'Unesi prvo vaganje')+'</text>';geo=null;return}
+    if(!vw.length&&!vh.length){svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" text-anchor="middle" font-size="14">'+T(m==='h'?'Unesi prvu visinu':'Unesi prvo vaganje')+'</text>';geo=null;return}
     var two=vw.length&&vh.length;
     var leftIsH=!vw.length;
     var padL=leftIsH?50:40,padR=two?50:12,padT=28,padB=26,iw=W-padL-padR,ih=H-padT-padB;
-    var wv=[];vw.forEach(function(e){wv.push(e.w)});
-    if(state.goal&&vw.length)wv.push(state.goal);
-    var sw=vw.length?(state.goal?{lo:Math.min.apply(null,wv)-3,hi:Math.max.apply(null,wv)+2}:scaleOf(wv,0.5)):null,sh=vh.length?scaleOf(vh.map(function(e){return e.h}),1):null;
+    var wv=[];vw.forEach(function(e){wv.push(dw(e.w))});
+    if(state.goal&&vw.length)wv.push(dw(state.goal));
+    var sw=vw.length?(state.goal?{lo:Math.min.apply(null,wv)-dw(3),hi:Math.max.apply(null,wv)+dw(2)}:scaleOf(wv,dw(0.5))):null,sh=vh.length?scaleOf(vh.map(function(e){return dh(e.h)}),dh(1)):null;
     var all=vw.concat(vh),ds=all.map(function(e){return e.d});
     var d0=Math.min.apply(null,ds),d1=Math.max.apply(null,ds);
     if(d1===d0){d0-=1;d1+=1}
@@ -635,7 +746,7 @@
     var step=niceStep((left.hi-left.lo)/((sw&&left===sw&&state.goal)?8:4));
     for(var v=Math.ceil(left.lo/step)*step;v<=left.hi;v+=step){
       g+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+Y(left,v)+'" y2="'+Y(left,v)+'" stroke="var(--line)" stroke-dasharray="2 5"/>';
-      if(!leftIsH&&!(state.goal&&sw&&left===sw&&Math.abs(Y(left,v)-Y(sw,state.goal))<14))g+='<text x="'+(padL-6)+'" y="'+(Y(left,v)+4)+'" text-anchor="end" font-size="11"'+lst+'>'+(+v.toFixed(2))+'</text>';
+      if(!leftIsH&&!(state.goal&&sw&&left===sw&&Math.abs(Y(left,v)-Y(sw,dw(state.goal)))<14))g+='<text x="'+(padL-6)+'" y="'+(Y(left,v)+4)+'" text-anchor="end" font-size="11"'+lst+'>'+(+v.toFixed(2))+'</text>';
     }
     function ruler(x,dir){
       var major=niceStep((sh.hi-sh.lo)/4),minor=major/5,a=Math.ceil(sh.lo/minor-1e-9),b=Math.floor(sh.hi/minor+1e-9);
@@ -650,10 +761,10 @@
     function icoKettle(x,y,c){return '<g transform="translate('+x+','+y+')" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:'+c+'"><path d="M4.5 6V4.5a3.5 3.5 0 0 1 7 0V6"/><circle cx="8" cy="11.5" r="5" style="fill:'+c+';stroke:'+c+'"/></g>'}
     function icoRuler(x,y,c){return '<g transform="translate('+x+','+y+')" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:'+c+'"><rect x="3.5" y="0.5" width="9" height="16" rx="1.5"/><path d="M3.5 4H8M3.5 8H10.5M3.5 12H8"/></g>'}
     if(sh){g+=ruler(leftIsH?padL:W-padR,leftIsH?-1:1)}
-    if(sw){g+=icoKettle(2,2,'var(--acc)')+'<text x="21" y="15" font-size="11" style="fill:var(--acc)">kg</text>'}
+    if(sw){g+=icoKettle(2,2,'var(--acc)')+'<text x="21" y="15" font-size="11" style="fill:var(--acc)">'+wu()+'</text>'}
     if(sh){
-      if(leftIsH)g+=icoRuler(2,2,'var(--hc)')+'<text x="21" y="15" font-size="11" style="fill:var(--hc)">cm</text>';
-      else g+=icoRuler(W-18,2,'var(--hc)')+'<text x="'+(W-22)+'" y="15" font-size="11" text-anchor="end" style="fill:var(--hc)">cm</text>';
+      if(leftIsH)g+=icoRuler(2,2,'var(--hc)')+'<text x="21" y="15" font-size="11" style="fill:var(--hc)">'+hu()+'</text>';
+      else g+=icoRuler(W-18,2,'var(--hc)')+'<text x="'+(W-22)+'" y="15" font-size="11" text-anchor="end" style="fill:var(--hc)">'+hu()+'</text>';
     }
     var n=all.length>1?4:1;
     for(var i=0;i<=n;i++){
@@ -661,25 +772,25 @@
       g+='<text x="'+X(dd)+'" y="'+(H-6)+'" text-anchor="'+(i===0?'start':i===n?'end':'middle')+'" font-size="11">'+fmtShort(Math.round(dd))+'</text>';
     }
     if(state.goal&&sw){
-      var gy=Y(sw,state.goal),gt=(+state.goal.toFixed(1)+'').replace('.',',');
-      gm={padT:padT,ih:ih,hi:sw.hi,lo:sw.lo,gy0:gy,W:W,padR:padR,last:vw[vw.length-1].w,orig:state.goal};
+      var gy=Y(sw,dw(state.goal)),gt=fd(dw(state.goal));
+      gm={padT:padT,ih:ih,hi:sw.hi,lo:sw.lo,gy0:gy,W:W,padR:padR,last:dw(vw[vw.length-1].w),orig:dw(state.goal)};
       g+='<line id="gline" x1="'+(padL-4)+'" x2="'+(W-padR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="5 4"/>';
       g+='<g id="gdrag" style="cursor:ns-resize"><circle cx="19" cy="'+gy+'" r="26" fill="transparent"/><circle cx="19" cy="'+gy+'" r="16" style="fill:var(--warn)"/><text id="gtxt" x="19" y="'+(gy+5)+'" text-anchor="middle" font-size="'+(gt.length>3?12:14)+'" font-weight="700" style="fill:'+(S.theme==='90'?'#fff':'var(--navy)')+';pointer-events:none">'+gt+'</text></g>';
     }
     if(sh){
-      var hp=vh.map(function(e){return [X(e.d),Y(sh,e.h)]});
+      var hp=vh.map(function(e){return [X(e.d),Y(sh,dh(e.h))]});
       if(hp.length>1)g+='<path d="'+smoothPath(hp)+'" fill="none" style="stroke:var(--hc)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
       hp.forEach(function(p){g+='<path d="M'+p[0]+','+(p[1]-5)+' L'+(p[0]+5)+','+p[1]+' L'+p[0]+','+(p[1]+5)+' L'+(p[0]-5)+','+p[1]+' Z" style="fill:var(--hc)"/>'});
     }
     if(sw){
-      var pts=vw.map(function(e){return [X(e.d),Y(sw,e.w)]}),bot=H-padB;
+      var pts=vw.map(function(e){return [X(e.d),Y(sw,dw(e.w))]}),bot=H-padB;
       if(pts.length>1){
         var lp=monoPath(pts);
         g+='<path d="'+lp+' L'+pts[pts.length-1][0]+','+bot+' L'+pts[0][0]+','+bot+' Z" fill="url(#ag)" stroke="none"/>';
         if(S.theme!=='90')g+='<path d="'+lp+'" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".38" filter="url(#gl)"/>';
         g+='<path d="'+lp+'" fill="none" stroke="var(--acc)" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" class="glow"/>';
       }
-      vw.forEach(function(e){g+='<rect x="'+(X(e.d)-3.5)+'" y="'+(Y(sw,e.w)-3.5)+'" width="7" height="7" rx="'+(S.theme==='90'?0:2)+'" style="fill:'+dotColor(e)+'"/>'});
+      vw.forEach(function(e){g+='<rect x="'+(X(e.d)-3.5)+'" y="'+(Y(sw,dw(e.w))-3.5)+'" width="7" height="7" rx="'+(S.theme==='90'?0:2)+'" style="fill:'+dotColor(e)+'"/>'});
     }
     g+='<line id="cur" x1="0" x2="0" y1="'+padT+'" y2="'+(H-padB)+'" stroke="var(--mute)" opacity="0"/>';
     svg.innerHTML=g;
@@ -696,19 +807,19 @@
   function lineCol(c){return S.theme==='90'?shade(c,0.7):S.theme==='ml'?forLight(c):c}
   function latest(o){var ks=Object.keys(o||{}).sort();return ks.length?{k:ks[ks.length-1],v:o[ks[ks.length-1]]}:null}
   function chartAll(){
-    var m=S.metric==='w'?'w':'h',unit=m==='h'?'cm':'kg';
+    var m=(!hOn()||S.metric==='w')?'w':'h',unit=m==='h'?hu():wu(),cv=m==='h'?dh:dw;
     var svg=$('chart'),W=svg.clientWidth||320,H=300;
     svg.setAttribute('viewBox','0 0 '+W+' '+H);
     var cut=state.range?toDay(today())-state.range:-1e9,cols=pcolors();
     var ds=S.people.map(function(p,i){
       var src=m==='h'?(p.heights||{}):p.entries;
-      var pts=Object.keys(src).sort().map(function(k){return {k:k,d:toDay(k),v:src[k]}}).filter(function(e){return e.d>=cut});
+      var pts=Object.keys(src).sort().map(function(k){return {k:k,d:toDay(k),v:cv(src[k])}}).filter(function(e){return e.d>=cut});
       return {name:p.name,col:lineCol(cols[i]),pts:pts,src:src};
     });
     var vis=ds.filter(function(x){return x.pts.length});
-    if(!vis.length){svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" text-anchor="middle" font-size="14">Nema podataka</text>';geo=null;return}
+    if(!vis.length){svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" text-anchor="middle" font-size="14">'+T('Nema podataka')+'</text>';geo=null;return}
     var vals=[],dd=[];vis.forEach(function(x){x.pts.forEach(function(e){vals.push(e.v);dd.push(e.d)})});
-    var sc=scaleOf(vals,m==='h'?1:0.5),d0=Math.min.apply(null,dd),d1=Math.max.apply(null,dd);
+    var sc=scaleOf(vals,m==='h'?dh(1):dw(0.5)),d0=Math.min.apply(null,dd),d1=Math.max.apply(null,dd);
     if(d1===d0){d0-=1;d1+=1}
     var padL=m==='h'?50:40,padR=72,padT=28,padB=26,iw=W-padL-padR,ih=H-padT-padB;
     function X(d){return padL+(d-d0)/(d1-d0)*iw}
@@ -726,9 +837,9 @@
         g+='<line x1="'+padL+'" x2="'+(padL-(isM?10:5))+'" y1="'+y+'" y2="'+y+'" stroke="var(--mute)" stroke-width="'+(isM?1.5:1)+'"/>';
         if(isM)g+='<text x="'+(padL-14)+'" y="'+(y+4)+'" text-anchor="end" font-size="11">'+(+vv.toFixed(2))+'</text>';
       }
-      g+='<g transform="translate(2,2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--mute)"><rect x="3.5" y="0.5" width="9" height="16" rx="1.5"/><path d="M3.5 4H8M3.5 8H10.5M3.5 12H8"/></g><text x="21" y="15" font-size="11">cm</text>';
+      g+='<g transform="translate(2,2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--mute)"><rect x="3.5" y="0.5" width="9" height="16" rx="1.5"/><path d="M3.5 4H8M3.5 8H10.5M3.5 12H8"/></g><text x="21" y="15" font-size="11">'+hu()+'</text>';
     }else{
-      g+='<g transform="translate(2,2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--mute)"><path d="M4.5 6V4.5a3.5 3.5 0 0 1 7 0V6"/><circle cx="8" cy="11.5" r="5" style="fill:var(--mute);stroke:var(--mute)"/></g><text x="21" y="15" font-size="11">kg</text>';
+      g+='<g transform="translate(2,2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--mute)"><path d="M4.5 6V4.5a3.5 3.5 0 0 1 7 0V6"/><circle cx="8" cy="11.5" r="5" style="fill:var(--mute);stroke:var(--mute)"/></g><text x="21" y="15" font-size="11">'+wu()+'</text>';
     }
     var n=3;
     for(var i=0;i<=n;i++){
@@ -750,7 +861,7 @@
     g+='<line id="cur" x1="0" x2="0" y1="'+padT+'" y2="'+(H-padB)+'" stroke="var(--mute)" opacity="0"/>';
     svg.innerHTML=g;
     var seen={},pts=[];vis.forEach(function(x){x.pts.forEach(function(e){if(!seen[e.k]){seen[e.k]=1;pts.push({k:e.k,d:e.d})}})});
-    geo={pts:pts,X:X,all:ds,unit:unit};
+    geo={pts:pts,X:X,all:ds,unit:unit,cv:cv};
   }
   function renderCmp(all){
     var el=$('cmp');
@@ -760,8 +871,8 @@
     var h='',prev=null;
     rows.forEach(function(r){
       var df='';
-      if(prev&&r.h&&prev.h){df='↓ '+f1(prev.h.v-r.h.v)+' cm'}
-      h+='<div class="cmprow"><i class="pdot" style="background:'+r.col+'"></i><span>'+esc(r.name)+'</span><span class="df">'+df+'</span><b>'+(r.h?f1(r.h.v)+' cm':'–')+'</b></div>';
+      if(prev&&r.h&&prev.h){df='↓ '+f1(dh(prev.h.v-r.h.v))+' '+hu()}
+      h+='<div class="cmprow"><i class="pdot" style="background:'+r.col+'"></i><span>'+esc(r.name)+'</span><span class="df">'+df+'</span><b>'+(r.h?f1(dh(r.h.v))+' '+hu():'–')+'</b></div>';
       if(r.h)prev=r;
     });
     el.innerHTML=h;el.style.display='block';
@@ -782,13 +893,13 @@
       var out=[fmtDate(best.k)];
       geo.all.forEach(function(x){
         var ks=Object.keys(x.src).sort().filter(function(k){return k<=best.k});
-        if(ks.length)out.push(x.name+' '+f1(x.src[ks[ks.length-1]])+' '+geo.unit);
+        if(ks.length)out.push(x.name+' '+f1(geo.cv(x.src[ks[ks.length-1]]))+' '+geo.unit);
       });
       $('tip').textContent=out.join('  ·  ');return;
     }
     var parts=[fmtDate(best.k)];
-    if(best.w!==undefined)parts.push(f1(best.w)+' kg');
-    if(best.h!==undefined)parts.push(f1(best.h)+' cm');
+    if(best.w!==undefined)parts.push(f1(dw(best.w))+' '+wu());
+    if(best.h!==undefined)parts.push(f1(dh(best.h))+' '+hu());
     $('tip').textContent=parts.join('  ·  ');
   }
 
@@ -796,11 +907,11 @@
     applyColor();
     renderPeople();
     if(S.all&&S.people.length<2)S.all=false;
-    var all=!!S.all,s=series(),hs=hseries();
+    var all=!!S.all,s=series(),hs=hOn()?hseries():[];
     stats(s,hs);
     if(all)chartAll();else chart(s,hs);
-    renderCmp(all);
-    var mm=all?(S.metric==='w'?'w':'h'):(S.metric||'b');
+    renderCmp(all&&hOn());
+    var mm=!hOn()?'w':all?(S.metric==='w'?'w':'h'):(S.metric||'b');
     var mt=$('mtabs').children;
     for(var q=0;q<mt.length;q++){mt[q].classList.toggle('on',mt[q].dataset.m===mm);mt[q].style.display=(all&&mt[q].dataset.m==='b')?'none':''}
     var lw=document.querySelectorAll('.legend .lw'),lh=document.querySelectorAll('.legend .lh');
@@ -810,7 +921,7 @@
     document.querySelector('.stats').style.display=all?'none':'';$('chg').style.display=all?'none':'';$('galCard').style.display='';
     $('entry').style.display=all?'none':'';
     $('allHint').style.display=all?'block':'none';
-    $('who').textContent=all?'Svi':P().name;
+    $('who').textContent=all?T('Svi'):P().name;
     var tabs=$('tabs').children;
     for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle('on',+tabs[i].dataset.r===state.range);
     renderGallery();
@@ -820,19 +931,19 @@
 
   $('save').onclick=function(){
     if(pmode){
-      var kv0=$('kg').value.trim(),cv0=$('cm').value.trim();
+      var kv0=$('kg').value.trim(),cv0=hOn()?$('cm').value.trim():'';
       if(!savePerson())return;
       if(kv0===''&&cv0==='')return;
     }
     var d=$('date').value,kv=$('kg').value.trim(),cv=$('cm').value.trim();
-    var w=kv===''?null:parseKg(kv),h=cv===''?null:parseKg(cv);
-    if(!d){msg('Odaberi datum.');return}
-    if(w===null&&h===null){msg('Upiši težinu ili visinu.');return}
-    if(w!==null&&!(w>=2&&w<=400)){msg('Težina mora biti između 2 i 400 kg.');return}
-    if(h!==null&&!(h>=30&&h<=250)){msg('Visina mora biti između 30 i 250 cm.');return}
-    if(w!==null)state.entries[d]=Math.round(w*10)/10;
-    if(h!==null)state.heights[d]=Math.round(h*10)/10;
-    persist();$('kg').value='';$('cm').value='';msg(memOnly?'Pohrana nije dostupna – napravi backup.':'');render();
+    var w=kv===''?null:uw(parseKg(kv)),h=(cv===''||!hOn())?null:uh(parseKg(cv));
+    if(!d){msg(T('Odaberi datum.'));return}
+    if(w===null&&h===null){msg(T(hOn()?'Upiši težinu ili visinu.':'Upiši težinu.'));return}
+    if(w!==null&&!(w>=1.999&&w<=400.01)){msg(T('Težina mora biti između')+' '+rng(2,400,'w'));return}
+    if(h!==null&&!(h>=29.99&&h<=250.01)){msg(T('Visina mora biti između')+' '+rng(30,250,'h'));return}
+    if(w!==null)state.entries[d]=rw(w);
+    if(h!==null)state.heights[d]=rh(h);
+    persist();$('kg').value='';$('cm').value='';msg(memOnly?T('Pohrana nije dostupna – napravi backup.'):'');render();
   };
   $('kg').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
   $('cm').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
@@ -847,25 +958,25 @@
   function dropUndo(){backup=null;clearTimeout(undoT);$('undo').style.display='none'}
   $('undoBtn').onclick=function(){
     if(!backup)return;S=sane(JSON.parse(backup));backup=null;
-    $('undo').style.display='none';persist();applyTheme();render();if($('calOv').style.display==='flex')renderCalView();
+    $('undo').style.display='none';persist();applyTheme();applyCfg();render();if($('calOv').style.display==='flex')renderCalView();
   };
   function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
   var pmode=null;
   function renderPeople(){
     var h='';
     S.people.forEach(function(p){h+='<button type="button" class="ghost chip'+(p.id===S.active&&!S.all?' on':'')+'" data-p="'+esc(p.id)+'">'+(p.color?'<i class="pdot" style="background:'+p.color+'"></i>':'')+esc(p.name)+'</button>'});
-    if(S.people.length>1)h+='<button type="button" class="ghost chip'+(S.all?' on':'')+'" id="pall">Svi</button>';
-    h+='<button type="button" class="ghost chip" id="padd">+</button>'+(S.all?'':'<button type="button" class="ghost chip" id="pedit">uredi</button>');
+    if(S.people.length>1)h+='<button type="button" class="ghost chip'+(S.all?' on':'')+'" id="pall">'+T('Svi')+'</button>';
+    h+='<button type="button" class="ghost chip" id="padd">+</button>'+(S.all?'':'<button type="button" class="ghost chip" id="pedit">'+T('uredi')+'</button>');
     $('people').innerHTML=h;
     $('who').textContent=P().name;
     $('pform').style.display=pmode?'flex':'none';
     $('entry').style.display=(S.all&&!pmode)?'none':'';
     var cr=document.querySelector('.camrow');if(cr)cr.style.display=pmode?'none':'';
-    $('save').textContent=pmode==='add'?'Dodaj':'Spremi';
-    $('pok').textContent=pmode==='edit'?'Spremi':'Dodaj';
-    var sw='';PALETTE.forEach(function(c){sw+='<button type="button" class="sw'+(pcolor===c[0]?' on':'')+'" data-c="'+c[0]+'" style="background:'+c[0]+'" title="'+c[1]+'"></button>'});
+    $('save').textContent=T(pmode==='add'?'Dodaj':'Spremi');
+    $('pok').textContent=T(pmode==='edit'?'Spremi':'Dodaj');
+    var sw='';PALETTE.forEach(function(c){sw+='<button type="button" class="sw'+(pcolor===c[0]?' on':'')+'" data-c="'+c[0]+'" style="background:'+c[0]+'" title="'+T(c[1])+'"></button>'});
     var isCust=!!pcolor&&!PALETTE.some(function(c){return c[0]===pcolor});
-    sw+='<div class="sw cust'+(isCust?' on':'')+'" title="Odaberi boju" style="'+(isCust?'background:'+pcolor:'')+'"><input type="color" id="pcol" value="'+(pcolor||'#e3ff00')+'" aria-label="Odaberi boju"></div>';
+    sw+='<div class="sw cust'+(isCust?' on':'')+'" title="'+T('Odaberi boju')+'" style="'+(isCust?'background:'+pcolor:'')+'"><input type="color" id="pcol" value="'+(pcolor||'#e3ff00')+'" aria-label="'+T('Odaberi boju')+'"></div>';
     $('pswatch').innerHTML=sw;
     $('pcol').addEventListener('input',function(){pcolor=this.value;var sws=document.querySelectorAll('#pswatch .sw');for(var i=0;i<sws.length;i++)sws[i].classList.remove('on');var c=this.parentNode;c.classList.add('on');c.style.background=this.value});
     $('pdel').style.display=(pmode==='edit'&&S.people.length>1)?'':'none';
@@ -875,15 +986,15 @@
     if(b.id==='pall'){S.all=true;pmode=null;dropUndo();persist();render();return}
     if(b.dataset.p){S.active=b.dataset.p;S.all=false;pmode=null;dropUndo();persist();render();return}
     if(b.id==='padd'){pmode='add';pcolor=nextColor();renderPeople();$('pbirth').value='';$('pgoal').value='';$('pmsg').textContent='';$('pname').value='';$('pname').focus()}
-    else if(b.id==='pedit'){pmode='edit';pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal||'';$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
+    else if(b.id==='pedit'){pmode='edit';pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal?nv(dw(P().goal)):'';$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
   };
   $('pok').onclick=function(){savePerson()};
   function savePerson(){
-    var n=$('pname').value.trim().slice(0,24);if(!n){$('pmsg').textContent='Upiši ime.';return false}
+    var n=$('pname').value.trim().slice(0,24);if(!n){$('pmsg').textContent=T('Upiši ime.');return false}
     var bd=$('pbirth').value;
-    if(bd&&(bd>today()||bd<'1900-01-01')){$('pmsg').textContent='Datum rođenja nije ispravan.';return false}
+    if(bd&&(bd>today()||bd<'1900-01-01')){$('pmsg').textContent=T('Datum rođenja nije ispravan.');return false}
     var gv=$('pgoal').value.trim(),gl=null;
-    if(gv!==''){gl=parseKg(gv);if(!(gl>=20&&gl<=400)){$('pmsg').textContent='Ciljna težina mora biti između 20 i 400 kg.';return false}gl=Math.round(gl*10)/10}
+    if(gv!==''){gl=uw(parseKg(gv));if(!(gl>=19.99&&gl<=400.01)){$('pmsg').textContent=T('Ciljna težina mora biti između')+' '+rng(20,400,'w');return false}gl=rw(gl)}
     $('pmsg').textContent='';
     if(pmode==='add'){var id='p'+Date.now().toString(36);S.people.push({id:id,name:n,birth:bd||null,color:pcolor,entries:{},heights:{},goal:gl});S.active=id;S.all=false;dropUndo()}
     else if(pmode==='edit'){P().name=n;P().color=pcolor;P().birth=bd||null;P().goal=gl}
@@ -892,7 +1003,7 @@
   $('pname').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
   $('pdel').onclick=function(){
     if(S.people.length<2)return;
-    snap('Obrisano: '+P().name);
+    snap(T('Obrisano')+': '+P().name);
     var id=S.active;S.people=S.people.filter(function(p){return p.id!==id});S.active=S.people[0].id;
     pmode=null;persist();render();
   };
@@ -902,20 +1013,22 @@
   var openSub=null;
   function showSub(m){
     openSub=(openSub===m)?null:m;
-    ['n','b','t'].forEach(function(k){$('sub-'+k).classList.toggle('open',openSub===k)});
-    ['fbn','fbb','theme'].forEach(function(id){var b=$(id);b.classList.toggle('on',openSub===b.dataset.m)});
+    ['n','b','t','s'].forEach(function(k){$('sub-'+k).classList.toggle('open',openSub===k)});
+    ['fbn','fbb','theme','fbs'].forEach(function(id){var b=$(id);b.classList.toggle('on',openSub===b.dataset.m)});
     if(openSub==='n'){initRem()}
     if(openSub){try{$('sub-'+openSub).scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}}
   }
-  ['fbn','fbb','theme'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
+  ['fbn','fbb','theme','fbs'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
   $('sub-t').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(b&&b.id==='sndBtn'){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true);return}if(!b||!b.dataset.th)return;S.theme=b.dataset.th;persist();applyTheme();render()};
 
   /* ---- podsjetnici ---- */
   var WD=['nedjelju','ponedjeljak','utorak','srijedu','četvrtak','petak','subotu'],WDN=['nedjelja','ponedjeljak','utorak','srijeda','četvrtak','petak','subota'];
   var WDACC=['svaku nedjelju','svaki ponedjeljak','svaki utorak','svaku srijedu','svaki četvrtak','svaki petak','svaku subotu'];
   function pd(s){var a=s.split('-');return new Date(+a[0],+a[1]-1,+a[2])}
+  var WDEN=['every Sunday','every Monday','every Tuesday','every Wednesday','every Thursday','every Friday','every Saturday'];
   function repLabel(rep,d){
     var o=pd(d),dn=o.getDate(),mn=o.getMonth()+1;
+    if(LANG==='en')return {once:'Once only ('+MNS[mn-1]+' '+dn+')',day:'Every day',week:'Every week – '+WDEN[o.getDay()],month:'Every month – on day '+dn,first:'First day of every month',year:'Every year – '+MNS[mn-1]+' '+dn}[rep];
     return {once:'Samo jednom ('+dn+'.'+mn+'.)',day:'Svaki dan',week:'Svaki tjedan – '+WDACC[o.getDay()],month:'Svaki mjesec – svakog '+dn+'.',first:'Početkom mjeseca – svakog 1.',year:'Svake godine – '+dn+'.'+mn+'.'}[rep];
   }
   function fillRep(){
@@ -955,17 +1068,17 @@
   }
   function renderRem(){
     var h='';(S.reminders||[]).forEach(function(r){
-      h+='<div class="ritem"><span>'+esc(remDesc(r))+'</span><button class="ghost" type="button" data-ics="'+esc(r.id)+'">Kalendar</button><button class="ghost" type="button" data-rdel="'+esc(r.id)+'">×</button></div>'});
+      h+='<div class="ritem"><span>'+esc(remDesc(r))+'</span><button class="ghost" type="button" data-ics="'+esc(r.id)+'">'+T('Kalendar')+'</button><button class="ghost" type="button" data-rdel="'+esc(r.id)+'">×</button></div>'});
     $('rlist').innerHTML=h;
   }
   $('rsave').onclick=function(){
     var d=$('rdate').value,t=$('rtime').value;
-    if(!d||!t){$('rmsg').textContent='Odaberi datum i sat.';return}
+    if(!d||!t){$('rmsg').textContent=T('Odaberi datum i sat.');return}
     $('rmsg').textContent='';
-    var r={id:'r'+Date.now().toString(36),date:d,time:t,rep:$('rrep').value,text:($('rtext').value.trim()||'Vaganje').slice(0,60),dis:''};
+    var r={id:'r'+Date.now().toString(36),date:d,time:t,rep:$('rrep').value,text:($('rtext').value.trim()||T('Vaganje')).slice(0,60),dis:''};
     if(!S.reminders)S.reminders=[];S.reminders.push(r);persist();renderRem();checkRem();
     showSub('n');
-    var ok=$('remOk');ok.innerHTML='<span>✓ Podsjetnik uključen: '+esc(remDesc(r))+'. Otvori preuzetu datoteku i spremi je u Kalendar.</span>';ok.style.display='flex';
+    var ok=$('remOk');ok.innerHTML='<span>✓ '+T('Podsjetnik uključen:')+' '+esc(remDesc(r))+'. '+T('Otvori preuzetu datoteku i spremi je u Kalendar.')+'</span>';ok.style.display='flex';
     try{ok.scrollIntoView({block:'end',behavior:'smooth'})}catch(e){}
     clearTimeout(window._okT);window._okT=setTimeout(function(){ok.style.display='none'},15000);
     exportIcs(r);
@@ -984,7 +1097,7 @@
   function checkRem(){
     var d=today(),n=new Date(),hm=pad(n.getHours())+':'+pad(n.getMinutes()),h='';
     (S.reminders||[]).forEach(function(r){
-      if(occursOn(r,d)&&r.dis!==d&&hm>=r.time)h+='<div class="rb"><span>🔔 '+esc(r.text)+' ('+r.time+')</span><button class="ghost" type="button" data-dis="'+esc(r.id)+'">U redu</button></div>';
+      if(occursOn(r,d)&&r.dis!==d&&hm>=r.time)h+='<div class="rb"><span>🔔 '+esc(r.text)+' ('+r.time+')</span><button class="ghost" type="button" data-dis="'+esc(r.id)+'">'+T('U redu')+'</button></div>';
     });
     var el=$('remBanner');el.innerHTML=h;el.style.display=h?'block':'none';updateBell(!!h);
   }
@@ -1020,16 +1133,16 @@
     try{var tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(id);tx.oncomplete=cb;tx.onerror=cb}catch(e){cb()}
   }
   function urlOf(rec){return urls[rec.id]||(urls[rec.id]=URL.createObjectURL(rec.blob))}
-  function sd(k){var q=k.split('-');return +q[2]+'.'+ +q[1]+'.'}
+  function sd(k){return fmtShort(toDay(k))}
   function updTiles(){
     var ids={};S.people.forEach(function(p){ids[p.id]=1});
     var ph=photos.filter(function(r){return ids[r.pid]}).sort(function(a,b){return b.ts-a.ts}),n=ph.length;
     $('galTv').textContent=n+' '+plural(n,'slika','slike','slika');
-    $('galTc').textContent=n&&ph[0].date?'zadnja '+sd(ph[0].date):'';
+    $('galTc').textContent=n&&ph[0].date?T('zadnja')+' '+sd(ph[0].date):'';
     var e=P().entries||{},ks=Object.keys(e).sort(),c=ks.length;
     $('calTv').textContent=c+' '+plural(c,'mjerenje','mjerenja','mjerenja');
     var mk=today().slice(0,7),mv=ks.filter(function(k){return k.slice(0,7)===mk}).map(function(k){return e[k]}),tc=$('calTc');
-    if(mv.length>1){var ch=mv[mv.length-1]-mv[0];tc.textContent=(ch>0?'+':'')+f1(ch)+' kg ovaj mj.';tc.style.color=ch<0?'var(--gr)':ch>0?'var(--mg)':''}
+    if(mv.length>1){var ch=mv[mv.length-1]-mv[0];tc.textContent=(ch>0?'+':'')+f1(dw(ch))+' '+wu()+' '+T('ovaj mj.');tc.style.color=ch<0?'var(--gr)':ch>0?'var(--mg)':''}
     else{tc.textContent='';tc.style.color=''}
   }
   var galSel=null,cmpMode=false,cmpSel=[],selMode=false,selDelArr=[],selDelT;
@@ -1039,16 +1152,16 @@
     var ids={};S.people.forEach(function(p){ids[p.id]=1});
     if(galSel!=='all'&&!ids[galSel])galSel=S.all?'all':S.active;
     var n=photos.filter(function(r){return ids[r.pid]}).length;
-    var tb='<button class="ghost'+(galSel==='all'?' on':'')+'" data-g="all">Svi</button>'+S.people.map(function(p){return '<button class="ghost'+(galSel===p.id?' on':'')+'" data-g="'+esc(p.id)+'">'+esc(p.name)+'</button>'}).join('');
+    var tb='<button class="ghost'+(galSel==='all'?' on':'')+'" data-g="all">'+T('Svi')+'</button>'+S.people.map(function(p){return '<button class="ghost'+(galSel===p.id?' on':'')+'" data-g="'+esc(p.id)+'">'+esc(p.name)+'</button>'}).join('');
     $('galTabs').innerHTML=tb;
     var list=photos.filter(function(r){return galSel==='all'?ids[r.pid]:r.pid===galSel});
-    if(!list.length){el.innerHTML='<div class="galempty">Još nema slika. Slikaj ili odaberi sliku.</div>';return}
+    if(!list.length){el.innerHTML='<div class="galempty">'+T('Još nema slika. Slikaj ili odaberi sliku.')+'</div>';return}
     el.innerHTML=list.map(function(r){var si=cmpSel.indexOf(r.id),di=selDelArr.indexOf(r.id);return '<div class="thumb'+(si>=0||di>=0?' sel':'')+'" data-id="'+r.id+'"><img alt="" loading="lazy" src="'+urlOf(r)+'">'+(si>=0?'<span class="nb">'+(si+1)+'</span>':di>=0?'<span class="nb">✓</span>':'')+'</div>'}).join('');
   }
   $('galOpen').onclick=function(){galSel=S.all?'all':S.active;renderGallery();$('galOv').style.display='flex';$('galOv').querySelector('.galscroll').scrollTop=0};
   $('galClose').onclick=function(){cmpOff();selOff();$('galOv').style.display='none'};
   $('galTabs').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b)return;galSel=b.dataset.g;renderGallery();$('galOv').querySelector('.galscroll').scrollTop=0};
-  function plural(n,a,b,c){var m10=n%10,m100=n%100;if(m10===1&&m100!==11)return a;if(m10>=2&&m10<=4&&(m100<12||m100>14))return b;return c}
+  function plural(n,a,b,c){if(LANG==='en'&&PL[a])return PL[a][n===1?0:1];var m10=n%10,m100=n%100;if(m10===1&&m100!==11)return a;if(m10>=2&&m10<=4&&(m100<12||m100>14))return b;return c}
   function ageText(birth,on){
     var b=birth.split('-').map(Number),d=on.split('-').map(Number);
     var y=d[0]-b[0],m=d[1]-b[1],dd=d[2]-b[2];
@@ -1059,7 +1172,7 @@
     if(y>0)parts.push(y+' '+plural(y,'godina','godine','godina'));
     if(m>0)parts.push(m+' '+plural(m,'mjesec','mjeseca','mjeseci'));
     if(dd>0||!parts.length)parts.push(dd+' '+plural(dd,'dan','dana','dana'));
-    return parts.length>1?parts.slice(0,-1).join(', ')+' i '+parts[parts.length-1]:parts[0];
+    return parts.length>1?parts.slice(0,-1).join(', ')+' '+T('i')+' '+parts[parts.length-1]:parts[0];
   }
   function updateCamInfo(){
     var el=$('camInfo');if(!el)return;
@@ -1106,7 +1219,7 @@
       lines.push({t:fmtDate(date),w:'700',s:46,c:'#777'});
       if(person.birth){var at=ageText(person.birth,date);if(at)lines.push({t:at,w:'700',s:54,c:ink})}
       var kg=latestOn(person.entries,date),cm=latestOn(person.heights,date),ms=[];
-      if(kg!==null)ms.push(f1(kg)+' kg');if(cm!==null)ms.push(f1(cm)+' cm');
+      if(kg!==null)ms.push(f1(dw(kg))+' '+wu());if(cm!==null&&hOn())ms.push(f1(dh(cm))+' '+hu());
       if(ms.length)lines.push({t:ms.join('   ·   '),w:'700',s:58,c:col});
       var y=1016;
       lines.forEach(function(l){var s1=fitFont(x,l.t,l.w,l.s,780);x.font=l.w+' '+s1+'px Caveat, cursive';x.fillStyle=l.c;x.fillText(l.t,W/2,y);y+=60});
@@ -1118,28 +1231,28 @@
   }
   function handleFile(file){
     if(!file)return;
-    var p=P(),d=today();msg('Pravim sliku…');
-    var kv=$('kg').value.trim(),cv=$('cm').value.trim(),w=kv?parseKg(kv):null,h=cv?parseKg(cv):null,saved=false;
-    if(w!==null&&w>=2&&w<=400){state.entries[d]=Math.round(w*10)/10;saved=true;$('kg').value=''}
-    if(h!==null&&h>=30&&h<=250){state.heights[d]=Math.round(h*10)/10;saved=true;$('cm').value=''}
+    var p=P(),d=today();msg(T('Pravim sliku…'));
+    var kv=$('kg').value.trim(),cv=$('cm').value.trim(),w=kv?uw(parseKg(kv)):null,h=(cv&&hOn())?uh(parseKg(cv)):null,saved=false;
+    if(w!==null&&w>=1.999&&w<=400.01){state.entries[d]=rw(w);saved=true;$('kg').value=''}
+    if(h!==null&&h>=29.99&&h<=250.01){state.heights[d]=rh(h);saved=true;$('cm').value=''}
     if(saved){persist();render()}
     makePolaroid(file,p,d,function(blob,srcBlob){
-      if(!blob){msg('Slika se nije mogla obraditi.');return}
+      if(!blob){msg(T('Slika se nije mogla obraditi.'));return}
       var rec={id:'ph'+Date.now().toString(36),pid:p.id,ts:Date.now(),date:d,name:p.name,blob:blob,src:srcBlob};
       savePhoto(rec,function(ok){
         photos.unshift(rec);
         var miss=[];
-        if(latestOn(p.entries,d)===null)miss.push('težinu');
-        if(latestOn(p.heights,d)===null)miss.push('visinu');
-        var m=ok?'':'Slika nije trajno spremljena u ovom pregledniku – spremi je u galeriju mobitela. ';
-        if(miss.length)m+='Na slici nedostaje: '+miss.join(', ')+'. Dodaj to pa u galeriji pritisni Osvježi.';
+        if(latestOn(p.entries,d)===null)miss.push(T('težinu'));
+        if(hOn()&&latestOn(p.heights,d)===null)miss.push(T('visinu'));
+        var m=ok?'':T('Slika nije trajno spremljena u ovom pregledniku – spremi je u galeriju mobitela.')+' ';
+        if(miss.length)m+=T('Na slici nedostaje:')+' '+miss.join(', ')+'. '+T('Dodaj to pa u galeriji pritisni Osvježi.');
         msg(m);
         renderGallery();openLb(rec);
       });
     });
   }
   function openLb(rec){
-    lbRec=rec;$('lbRefresh').style.display=rec.src?'':'none';$('lbImg').src=urlOf(rec);$('lbDel').textContent='Obriši';$('lb').style.display='flex';
+    lbRec=rec;$('lbRefresh').style.display=rec.src?'':'none';$('lbImg').src=urlOf(rec);$('lbDel').textContent=T('Obriši');$('lb').style.display='flex';
     $('lbShare').style.display=(navigator.canShare&&navigator.canShare({files:[new File([rec.blob],'a.jpg',{type:'image/jpeg'})]}))?'':'none';
   }
   function closeLb(){$('lb').style.display='none';lbRec=null;clearTimeout(lbDelT)}
@@ -1159,7 +1272,7 @@
     var p=null;S.people.forEach(function(q){if(q.id===rec.pid)p=q});if(!p)return;
     $('lbRefresh').textContent='…';
     makePolaroid(rec.src,p,rec.date,function(blob){
-      $('lbRefresh').textContent='Osvježi';
+      $('lbRefresh').textContent=T('Osvježi');
       if(!blob)return;
       rec.blob=blob;rec.name=p.name;
       if(urls[rec.id]){URL.revokeObjectURL(urls[rec.id]);delete urls[rec.id]}
@@ -1176,7 +1289,7 @@
   };
   $('lbDel').onclick=function(){
     if(!lbRec)return;
-    if($('lbDel').textContent==='Obriši'){$('lbDel').textContent='Sigurno?';clearTimeout(lbDelT);lbDelT=setTimeout(function(){$('lbDel').textContent='Obriši'},3000);return}
+    if($('lbDel').textContent===T('Obriši')){$('lbDel').textContent=T('Sigurno?');clearTimeout(lbDelT);lbDelT=setTimeout(function(){$('lbDel').textContent=T('Obriši')},3000);return}
     var id=lbRec.id;
     removePhoto(id,function(){
       photos=photos.filter(function(r){return r.id!==id});
@@ -1189,7 +1302,7 @@
   svg.addEventListener('pointerdown',function(e){if(e.target.closest&&e.target.closest('#gdrag'))return;pick(e)});
   svg.addEventListener('pointermove',function(e){if(gdrag)return;if(e.buttons||e.pointerType==='mouse')pick(e)});
   var snd=(function(){try{return localStorage.getItem('kilogram.snd')!=='off'}catch(e){return true}})(),ac=null,gstep=0;
-  function sndLabel(){$('sndBtn').textContent='Zvuk i vibracija skale: '+(snd?'uključeno':'isključeno')}
+  function sndLabel(){$('sndBtn').textContent=T('Zvuk i vibracija skale')+': '+T(snd?'uključeno':'isključeno')}
   function tick(strong){
     if(!snd)return;
     try{if(navigator.vibrate)navigator.vibrate(strong?16:5)}catch(e){}
@@ -1209,25 +1322,25 @@
     var dy=(cy-gly)*k,dt=Math.max(now-glt,8);gly=cy;glt=now;
     var gain=Math.min(1.2,0.2+Math.abs(dy)/dt*1.1);
     gv+=-dy*(gm.hi-gm.lo)/gm.ih*gain;
-    var lo=Math.max(gm.lo,20),hi=Math.min(gm.hi,400);gv=Math.max(lo,Math.min(hi,gv));
+    var lo=Math.max(gm.lo,dw(20)),hi=Math.min(gm.hi,dw(400));gv=Math.max(lo,Math.min(hi,gv));
     var v=Math.round(gv*10)/10;gval=v;
     var st=Math.round(v*10);if(st!==gstep){gstep=st;tick(st%10===0)}
     var gy=gm.padT+(gm.hi-v)/(gm.hi-gm.lo)*gm.ih;
     var ln=$('gline');if(ln){ln.setAttribute('y1',gy);ln.setAttribute('y2',gy)}
     var gd=$('gdrag');if(gd)gd.setAttribute('transform','translate(0,'+(gy-gm.gy0)+')');
-    var tx=$('gtxt');if(tx){var t=(+v.toFixed(1)+'').replace('.',',');tx.textContent=t;tx.setAttribute('font-size',t.length>3?12:14)}
+    var tx=$('gtxt');if(tx){var t=fd(v);tx.textContent=t;tx.setAttribute('font-size',t.length>3?12:14)}
     var old=$('gread');if(old)old.remove();
     var rem=gm.last-v,w=118,h=62,x=gm.W-Math.max(gm.padR,12)-w-2,y=gy-h-12;if(y<gm.padT-14)y=gy+12;
-    var diff=v-gm.orig,dtxt=Math.abs(diff)<0.05?'isto kao prije':(diff>0?'+':'−')+f1(Math.abs(diff))+' od prije';
-    var ltxt=rem>0.049?'još '+f1(rem)+' kg':rem<-0.049?'ispod za '+f1(-rem)+' kg':'upravo sada';
+    var diff=v-gm.orig,dtxt=Math.abs(diff)<0.05?T('isto kao prije'):(diff>0?'+':'−')+f1(Math.abs(diff))+' '+T('od prije');
+    var ltxt=rem>0.049?T('još')+' '+f1(rem)+' '+wu():rem<-0.049?T('ispod za')+' '+f1(-rem)+' '+wu():T('upravo sada');
     var n=document.createElementNS('http://www.w3.org/2000/svg','g');n.setAttribute('id','gread');
-    n.innerHTML='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="12" style="fill:var(--card);stroke:var(--warn)" stroke-width="1.5"/><text x="'+(x+w/2)+'" y="'+(y+25)+'" text-anchor="middle" font-size="20" font-weight="700" style="fill:var(--text)">'+f1(v)+' kg</text><text x="'+(x+w/2)+'" y="'+(y+42)+'" text-anchor="middle" font-size="12" font-weight="600" style="fill:var(--warn)">'+ltxt+'</text><text x="'+(x+w/2)+'" y="'+(y+56)+'" text-anchor="middle" font-size="11" style="fill:var(--mute)">'+dtxt+'</text>';
+    n.innerHTML='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="12" style="fill:var(--card);stroke:var(--warn)" stroke-width="1.5"/><text x="'+(x+w/2)+'" y="'+(y+25)+'" text-anchor="middle" font-size="20" font-weight="700" style="fill:var(--text)">'+f1(v)+' '+wu()+'</text><text x="'+(x+w/2)+'" y="'+(y+42)+'" text-anchor="middle" font-size="12" font-weight="600" style="fill:var(--warn)">'+ltxt+'</text><text x="'+(x+w/2)+'" y="'+(y+56)+'" text-anchor="middle" font-size="11" style="fill:var(--mute)">'+dtxt+'</text>';
     sv.appendChild(n);
-    $('tip').textContent='Cilj: '+f1(v)+' kg';
+    $('tip').textContent=T('Cilj')+': '+f1(v)+' '+wu();
   }
   function gEnd(){
     if(!gdrag)return;gdrag=false;
-    if(gval!==null&&gval>=20&&gval<=400){state.goal=gval;persist()}
+    var gk=gval===null?NaN:uw(gval);if(gk>=19.99&&gk<=400.01){state.goal=rw(gk);persist()}
     gval=null;render();
   }
   svg.addEventListener('touchstart',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;gv=gm.orig;gstep=Math.round(gm.orig*10);if(snd&&!ac){try{var AC0=window.AudioContext||window.webkitAudioContext;if(AC0)ac=new AC0()}catch(x){}}gly=e.touches[0].clientY;glt=performance.now();e.preventDefault()}},{passive:false});
@@ -1246,29 +1359,28 @@
     var f=this.files[0];if(!f)return;var r=new FileReader();
     r.onload=function(){
       try{var s=JSON.parse(r.result);
-        if(s.people){var ns=sane(s);ns.theme=S.theme;snap('Backup uvezen');S=ns}
-        else if(s.entries&&typeof s.entries==='object'){snap('Backup uvezen');state.entries=s.entries;state.goal=s.goal||null}
+        if(s.people){var ns=sane(s);ns.theme=S.theme;var hh0=ns.people.some(function(q){return q.heights&&Object.keys(q.heights).length});ns.cfg=S.cfg;if(hh0)ns.cfg.h=true;snap(T('Backup uvezen'));S=ns}
+        else if(s.entries&&typeof s.entries==='object'){snap(T('Backup uvezen'));state.entries=s.entries;state.goal=s.goal||null}
         else throw 0;
         persist();render();
-      }catch(e){msg('Neispravna backup datoteka.')}
+      }catch(e){msg(T('Neispravna backup datoteka.'))}
     };r.readAsText(f);this.value='';
   };
 
   if('serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js')}catch(e){}}
   window.addEventListener('resize',render);
-  sndLabel();
-  load();applyTheme();$('date').value=today();render();checkRem();
+  load();applyTheme();collectStatic();applyCfg();$('date').value=today();render();checkRem();
   function recById(id){for(var i=0;i<photos.length;i++)if(photos[i].id===id)return photos[i];return null}
   function cmpUpd(){
     $('cmpBtn').classList.toggle('on',cmpMode);
     $('cmpBar').style.display=cmpMode?'flex':'none';
-    $('cmpTxt').textContent='Odaberi dvije slike ('+cmpSel.length+'/2)';
+    $('cmpTxt').textContent=T('Odaberi dvije slike')+' ('+cmpSel.length+'/2)';
   }
   function selUpd(){
     $('selBtn').classList.toggle('on',selMode);
     $('selBar').style.display=selMode?'flex':'none';
-    $('selTxt').textContent='Označeno: '+selDelArr.length;
-    $('selDel').textContent='Obriši'+(selDelArr.length?' ('+selDelArr.length+')':'');
+    $('selTxt').textContent=T('Označeno:')+' '+selDelArr.length;
+    $('selDel').textContent=T('Obriši')+(selDelArr.length?' ('+selDelArr.length+')':'');
     $('selDel').disabled=!selDelArr.length;
   }
   function selOff(){selMode=false;selDelArr=[];clearTimeout(selDelT);selUpd();renderGallery()}
@@ -1282,7 +1394,7 @@
   $('selDel').onclick=function(){
     if(!selDelArr.length)return;
     var b=$('selDel'),n=selDelArr.length;
-    if(!b.dataset.c){b.dataset.c='1';b.textContent='Sigurno? ('+n+')';clearTimeout(selDelT);selDelT=setTimeout(function(){delete b.dataset.c;selUpd()},3000);return}
+    if(!b.dataset.c){b.dataset.c='1';b.textContent=T('Sigurno?')+' ('+n+')';clearTimeout(selDelT);selDelT=setTimeout(function(){delete b.dataset.c;selUpd()},3000);return}
     delete b.dataset.c;clearTimeout(selDelT);
     var ids=selDelArr.slice(),left=ids.length;
     ids.forEach(function(id){removePhoto(id,function(){
@@ -1296,7 +1408,7 @@
   $('cmpAuto').onclick=function(){
     var pid=galSel!=='all'?galSel:P().id;
     var l=photos.filter(function(r){return r.pid===pid&&r.date}).sort(function(a,b){return toDay(b.date)-toDay(a.date)||b.ts-a.ts});
-    if(l.length<2){$('cmpTxt').textContent='Treba barem dvije slike ove osobe.';return}
+    if(l.length<2){$('cmpTxt').textContent=T('Treba barem dvije slike ove osobe.');return}
     var nw=l[0],target=toDay(nw.date)-30,best=null,bd=1e9;
     l.slice(1).forEach(function(r){var dd=Math.abs(toDay(r.date)-target);if(dd<bd){bd=dd;best=r}});
     cmpSel=[best.id,nw.id];openCmp(best.id,nw.id);
@@ -1309,12 +1421,12 @@
     cmpA=a;cmpB=b;
     var wa=cmpWeight(a),wb=cmpWeight(b),days=Math.abs(Math.round(toDay(b.date)-toDay(a.date)));
     if(toDay(a.date)>toDay(b.date)){var tw=wa;wa=wb;wb=tw}
-    function col(r,w){return '<div class="cm"><img alt="" src="'+urlOf(r)+'"><div class="cd2">'+fmtDate(r.date)+(w!==null?' · '+f1(w)+' kg':'')+'</div></div>'}
+    function col(r,w){return '<div class="cm"><img alt="" src="'+urlOf(r)+'"><div class="cd2">'+fmtDate(r.date)+(w!==null?' · '+f1(dw(w))+' '+wu():'')+'</div></div>'}
     $('cmpRow').innerHTML=col(a,cmpWeight(a))+col(b,cmpWeight(b));
     var sum='';
     if(a.pid===b.pid&&wa!==null&&wb!==null){var d=wb-wa,pc=d/wa*100,c=d<0?'var(--gr)':d>0?'var(--mg)':'var(--text)';
-      sum='<span style="color:'+c+'">'+(d>0?'+':'')+f1(d)+' kg ('+(pc>0?'+':'')+f1(pc)+'%)</span>'}
-    var dt=days===0?'isti dan':days+' '+plural(days,'dan','dana','dana')+' razlike';
+      sum='<span style="color:'+c+'">'+(d>0?'+':'')+f1(dw(d))+' '+wu()+' ('+(pc>0?'+':'')+f1(pc)+'%)</span>'}
+    var dt=days===0?T('isti dan'):days+' '+plural(days,'dan','dana','dana')+' '+T('razlike');
     $('cmpSum').innerHTML=(sum||'<span>'+dt+'</span>')+(sum?'<small>'+dt+'</small>':'');
     $('cmpOv').style.display='flex';
   }
@@ -1330,8 +1442,8 @@
       x.drawImage(im[0],10,10);x.drawImage(im[1],im[0].width+30,10);
       x.fillStyle='#fff';x.textAlign='center';x.textBaseline='alphabetic';
       var base=Math.max(im[0].height,im[1].height)+10,line='';
-      if(a.pid===b.pid&&wa!==null&&wb!==null){var d=wb-wa,pc=d/wa*100;line=(d>0?'+':'')+f1(d)+' kg ('+(pc>0?'+':'')+f1(pc)+'%)  ·  '+days+' '+plural(days,'dan','dana','dana')}
-      else line=days+' '+plural(days,'dan','dana','dana')+' razlike';
+      if(a.pid===b.pid&&wa!==null&&wb!==null){var d=wb-wa,pc=d/wa*100;line=(d>0?'+':'')+f1(dw(d))+' '+wu()+' ('+(pc>0?'+':'')+f1(pc)+'%)  ·  '+days+' '+plural(days,'dan','dana','dana')}
+      else line=days+' '+plural(days,'dan','dana','dana')+' '+T('razlike');
       x.font='700 76px system-ui,sans-serif';x.fillText(line,W/2,base+90);
       x.fillStyle='#8a8a8a';x.font='600 40px system-ui,sans-serif';x.fillText(fmtDate(a.date)+'   →   '+fmtDate(b.date)+'   ·   kylogram',W/2,base+160);
       c.toBlob(function(bl){
@@ -1339,6 +1451,9 @@
       },'image/jpeg',0.92);
     });
   };
+  var MNE=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  function mname(i){return LANG==='en'?MNE[i]:MN[i]}
+  function yname(y){return LANG==='en'?String(y):y+'.'}
   var MN=['siječanj','veljača','ožujak','travanj','svibanj','lipanj','srpanj','kolovoz','rujan','listopad','studeni','prosinac'];
   function renderCal(){
     var e=state.entries,keys=Object.keys(e).sort(),t=today(),ty=+t.slice(0,4),tm=+t.slice(5,7),sy=ty,sm=tm;
@@ -1351,37 +1466,37 @@
       for(d=0;d<off;d++)cells+='<i></i>';
       for(d=1;d<=dim;d++){
         var k=y+'-'+pad(m)+'-'+pad(d),w=e[k],cls='cd';
-        var hv=state.heights[k];
+        var hv=hOn()?state.heights[k]:undefined;
         if(w!==undefined){vals.push(w);var pv=prev[k];cls+=pv===null?' has':w<pv?' dn':w>pv?' up':' has'}else if(hv!==undefined)cls+=' has';
         if(k===t)cls+=' tod';
-        cells+='<div class="'+cls+'" data-k="'+k+'"><u>'+d+'</u>'+(w!==undefined?'<span>'+f1(w)+'</span>':'')+(hv!==undefined?'<em>'+(+hv.toFixed(1)+'').replace('.',',')+' cm</em>':'')+'</div>';
+        cells+='<div class="'+cls+'" data-k="'+k+'"><u>'+d+'</u>'+(w!==undefined?'<span>'+f1(dw(w))+'</span>':'')+(hv!==undefined?'<em>'+fd(dh(hv))+' '+hu()+'</em>':'')+'</div>';
       }
       var sum='';
       if(vals.length){var av=vals.reduce(function(a,b){return a+b},0)/vals.length,ch=vals[vals.length-1]-vals[0];
-        sum='<small>'+vals.length+' mjer. · prosjek '+f1(av)+(vals.length>1?' · '+(ch>0?'+':'')+f1(ch)+' kg':'')+'</small>'}
-      h+='<div class="calm"><div class="calt"><span>'+MN[m-1]+' '+y+'.</span>'+sum+'</div><div class="calw"><span>Po</span><span>Ut</span><span>Sr</span><span>Če</span><span>Pe</span><span>Su</span><span>Ne</span></div><div class="calg">'+cells+'</div></div>';
+        sum='<small>'+vals.length+' '+T('mjer.')+' · '+T('prosjek')+' '+f1(dw(av))+(vals.length>1?' · '+(ch>0?'+':'')+f1(dw(ch))+' '+wu():'')+'</small>'}
+      h+='<div class="calm"><div class="calt"><span>'+mname(m-1)+' '+yname(y)+'</span>'+sum+'</div><div class="calw">'+(LANG==='en'?['Mo','Tu','We','Th','Fr','Sa','Su']:['Po','Ut','Sr','Če','Pe','Su','Ne']).map(function(x){return '<span>'+x+'</span>'}).join('')+'</div><div class="calg">'+cells+'</div></div>';
       if(--m<1){m=12;y--}
     }
     $('calBody').innerHTML=h;
   }
   var calView=(function(){try{return localStorage.getItem('kilogram.calview')==='list'?'list':'cal'}catch(e){return 'cal'}})();
   function renderList(){
-    var e=state.entries,hh=state.heights,all={};Object.keys(e).forEach(function(k){all[k]=1});Object.keys(hh).forEach(function(k){all[k]=1});
+    var e=state.entries,hh=hOn()?state.heights:{},all={};Object.keys(e).forEach(function(k){all[k]=1});Object.keys(hh).forEach(function(k){all[k]=1});
     var keys=Object.keys(all).sort(),wk=Object.keys(e).sort(),prev={},pw=null;
     wk.forEach(function(k){prev[k]=pw;pw=e[k]});
-    if(!keys.length){$('calBody').innerHTML='<div class="galempty">Još nema unosa.</div>';return}
+    if(!keys.length){$('calBody').innerHTML='<div class="galempty">'+T('Još nema unosa.')+'</div>';return}
     var groups={},order=[];
     keys.slice().reverse().forEach(function(k){var m=k.slice(0,7);if(!groups[m]){groups[m]=[];order.push(m)}groups[m].push(k)});
     var h='';
     order.forEach(function(m){
       var ks=groups[m],ws=ks.filter(function(k){return e[k]!==undefined}).map(function(k){return e[k]}).reverse(),sum='';
-      if(ws.length>1){var ch=ws[ws.length-1]-ws[0];sum='<small style="color:'+(ch<0?'var(--gr)':ch>0?'var(--mg)':'var(--mute)')+'">'+(ch>0?'+':'')+f1(ch)+' kg u mjesecu</small>'}
+      if(ws.length>1){var ch=ws[ws.length-1]-ws[0];sum='<small style="color:'+(ch<0?'var(--gr)':ch>0?'var(--mg)':'var(--mute)')+'">'+(ch>0?'+':'')+f1(dw(ch))+' '+wu()+' '+T('u mjesecu')+'</small>'}
       var y=+m.slice(0,4),mo=+m.slice(5,7);
-      h+='<div class="calm"><div class="calt"><span>'+MN[mo-1]+' '+y+'.</span>'+sum+'</div>';
+      h+='<div class="calm"><div class="calt"><span>'+mname(mo-1)+' '+yname(y)+'</span>'+sum+'</div>';
       ks.forEach(function(k){
         var w=e[k],hv=hh[k],pv=prev[k],ch='',col='var(--mute)';
-        if(w!==undefined&&pv!==null&&pv!==undefined){var d=w-pv,pc=d/pv*100;ch=(d>0?'+':'')+f1(d)+' ('+(pc>0?'+':'')+f1(pc)+'%)';col=d<0?'var(--gr)':d>0?'var(--mg)':'var(--mute)'}
-        h+='<div class="lr" data-k="'+k+'"><span class="ld">'+fmtDate(k)+'</span>'+(w!==undefined?'<span class="lw">'+f1(w)+' kg</span>':'')+(hv!==undefined?'<span class="lcm">'+(+hv.toFixed(1)+'').replace('.',',')+' cm</span>':'')+'<span class="lch" style="color:'+col+'">'+ch+'</span></div>';
+        if(w!==undefined&&pv!==null&&pv!==undefined){var d=w-pv,pc=d/pv*100;ch=(d>0?'+':'')+f1(dw(d))+' ('+(pc>0?'+':'')+f1(pc)+'%)';col=d<0?'var(--gr)':d>0?'var(--mg)':'var(--mute)'}
+        h+='<div class="lr" data-k="'+k+'"><span class="ld">'+fmtDate(k)+'</span>'+(w!==undefined?'<span class="lw">'+f1(dw(w))+' '+wu()+'</span>':'')+(hv!==undefined?'<span class="lcm">'+fd(dh(hv))+' '+hu()+'</span>':'')+'<span class="lch" style="color:'+col+'">'+ch+'</span></div>';
       });
       h+='</div>';
     });
@@ -1398,11 +1513,11 @@
   $('calClose').onclick=function(){closeDay();$('calOv').style.display='none'};
   var dayK=null;
   function showDay(k){
-    dayK=k;var w=state.entries[k],h=state.heights[k],c='<div class="dtitle">'+fmtDate(k)+'</div>';
-    if(w!==undefined)c+='<div class="drow"><span>Težina</span><b>'+f1(w)+' kg</b><button class="ghost" data-x="w">Obriši</button></div>';
-    if(h!==undefined)c+='<div class="drow"><span>Visina</span><b>'+f1(h)+' cm</b><button class="ghost" data-x="h">Obriši</button></div>';
-    if(w===undefined&&h===undefined)c+='<div class="dnone">Nema unosa za ovaj dan.</div>';
-    c+='<div class="dbtns">'+(w!==undefined&&h!==undefined?'<button class="ghost" data-x="all">Obriši sve</button>':'')+'<button data-x="edit">'+(w===undefined&&h===undefined?'Dodaj unos':'Uredi')+'</button><button class="ghost" data-x="close">Zatvori</button></div>';
+    dayK=k;var w=state.entries[k],h=hOn()?state.heights[k]:undefined,c='<div class="dtitle">'+fmtDate(k)+'</div>';
+    if(w!==undefined)c+='<div class="drow"><span>'+T('Težina')+'</span><b>'+f1(dw(w))+' '+wu()+'</b><button class="ghost" data-x="w">'+T('Obriši')+'</button></div>';
+    if(h!==undefined)c+='<div class="drow"><span>'+T('Visina')+'</span><b>'+f1(dh(h))+' '+hu()+'</b><button class="ghost" data-x="h">'+T('Obriši')+'</button></div>';
+    if(w===undefined&&h===undefined)c+='<div class="dnone">'+T('Nema unosa za ovaj dan.')+'</div>';
+    c+='<div class="dbtns">'+(w!==undefined&&h!==undefined?'<button class="ghost" data-x="all">'+T('Obriši sve')+'</button>':'')+'<button data-x="edit">'+T(w===undefined&&h===undefined?'Dodaj unos':'Uredi')+'</button><button class="ghost" data-x="close">'+T('Zatvori')+'</button></div>';
     $('dayCard').innerHTML=c;$('daySheet').style.display='flex';
   }
   function closeDay(){$('daySheet').style.display='none';dayK=null}
@@ -1416,13 +1531,13 @@
     if(x==='close'){closeDay();return}
     if(x==='edit'){
       var w=state.entries[k];
-      $('date').value=k;$('kg').value=w!==undefined?String(w):'';$('cm').value=state.heights[k]!==undefined?String(state.heights[k]):'';
+      $('date').value=k;$('kg').value=w!==undefined?nv(dw(w)):'';$('cm').value=(hOn()&&state.heights[k]!==undefined)?nv(dh(state.heights[k])):'';
       closeDay();$('calOv').style.display='none';window.scrollTo(0,0);
-      msg('Odabran datum '+fmtDate(k)+' – promijeni pa Spremi.');return;
+      msg(T('Odabran datum')+' '+fmtDate(k)+' – '+T('promijeni pa Spremi.'));return;
     }
-    snap('Obrisano '+fmtDate(k));
+    snap(T('Obrisano')+' '+fmtDate(k));
     if(x==='w'||x==='all')delete state.entries[k];
-    if(x==='h'||x==='all')delete state.heights[k];
+    if(x==='h'||(x==='all'&&hOn()))delete state.heights[k];
     persist();render();renderCalView();
     if(state.entries[k]===undefined&&state.heights[k]===undefined)closeDay();else showDay(k);
   };
