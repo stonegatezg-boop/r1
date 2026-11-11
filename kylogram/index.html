@@ -423,6 +423,7 @@
     <button class="ghost" type="button" data-th="mb">Crna</button>
     <button class="ghost" type="button" data-th="90">90-e</button>
     <button class="ghost" type="button" data-th="80">80-e</button>
+    <button class="ghost" type="button" id="sndBtn" style="flex:1 1 100%">Zvuk i vibracija skale: uključeno</button>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate"><input type="time" id="rtime" value="08:00"></div>
@@ -434,7 +435,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 12.11. 00:01</div>
+  <div class="ver">verzija 12.11. 00:03</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -883,7 +884,7 @@
     if(openSub){try{$('sub-'+openSub).scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}}
   }
   ['fbn','fbb','theme'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
-  $('sub-t').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b||!b.dataset.th)return;S.theme=b.dataset.th;persist();applyTheme();render()};
+  $('sub-t').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(b&&b.id==='sndBtn'){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true);return}if(!b||!b.dataset.th)return;S.theme=b.dataset.th;persist();applyTheme();render()};
 
   /* ---- podsjetnici ---- */
   var WD=['nedjelju','ponedjeljak','utorak','srijedu','četvrtak','petak','subotu'],WDN=['nedjelja','ponedjeljak','utorak','srijeda','četvrtak','petak','subota'];
@@ -1160,6 +1161,20 @@
   var svg=$('chart');
   svg.addEventListener('pointerdown',function(e){if(e.target.closest&&e.target.closest('#gdrag'))return;pick(e)});
   svg.addEventListener('pointermove',function(e){if(gdrag)return;if(e.buttons||e.pointerType==='mouse')pick(e)});
+  var snd=(function(){try{return localStorage.getItem('kilogram.snd')!=='off'}catch(e){return true}})(),ac=null,gstep=0;
+  function sndLabel(){$('sndBtn').textContent='Zvuk i vibracija skale: '+(snd?'uključeno':'isključeno')}
+  function tick(strong){
+    if(!snd)return;
+    try{if(navigator.vibrate)navigator.vibrate(strong?16:5)}catch(e){}
+    try{
+      var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+      if(!ac)ac=new AC();if(ac.state==='suspended')ac.resume();
+      var t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+      o.type='triangle';o.frequency.value=strong?760:1700;
+      g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(strong?0.16:0.07,t+0.003);g.gain.exponentialRampToValueAtTime(0.0001,t+(strong?0.07:0.025));
+      o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+0.09);
+    }catch(e){}
+  }
   var gv=0,gly=0,glt=0;
   function gMove(cy){
     if(!gdrag||!gm)return;
@@ -1169,6 +1184,7 @@
     gv+=-dy*(gm.hi-gm.lo)/gm.ih*gain;
     var lo=Math.max(gm.lo,20),hi=Math.min(gm.hi,400);gv=Math.max(lo,Math.min(hi,gv));
     var v=Math.round(gv*10)/10;gval=v;
+    var st=Math.round(v*10);if(st!==gstep){gstep=st;tick(st%10===0)}
     var gy=gm.padT+(gm.hi-v)/(gm.hi-gm.lo)*gm.ih;
     var ln=$('gline');if(ln){ln.setAttribute('y1',gy);ln.setAttribute('y2',gy)}
     var gd=$('gdrag');if(gd)gd.setAttribute('transform','translate(0,'+(gy-gm.gy0)+')');
@@ -1187,10 +1203,10 @@
     if(gval!==null&&gval>=20&&gval<=400){state.goal=gval;persist()}
     gval=null;render();
   }
-  svg.addEventListener('touchstart',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;gv=gm.orig;gly=e.touches[0].clientY;glt=performance.now();e.preventDefault()}},{passive:false});
+  svg.addEventListener('touchstart',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;gv=gm.orig;gstep=Math.round(gm.orig*10);if(snd&&!ac){try{var AC0=window.AudioContext||window.webkitAudioContext;if(AC0)ac=new AC0()}catch(x){}}gly=e.touches[0].clientY;glt=performance.now();e.preventDefault()}},{passive:false});
   document.addEventListener('touchmove',function(e){if(gdrag){e.preventDefault();gMove(e.touches[0].clientY)}},{passive:false});
   document.addEventListener('touchend',gEnd);document.addEventListener('touchcancel',gEnd);
-  svg.addEventListener('mousedown',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;gv=gm.orig;gly=e.clientY;glt=performance.now();e.preventDefault()}});
+  svg.addEventListener('mousedown',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;gv=gm.orig;gstep=Math.round(gm.orig*10);gly=e.clientY;glt=performance.now();e.preventDefault()}});
   document.addEventListener('mousemove',function(e){if(gdrag)gMove(e.clientY)});
   document.addEventListener('mouseup',gEnd);
 
@@ -1213,6 +1229,7 @@
 
   if('serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js')}catch(e){}}
   window.addEventListener('resize',render);
+  sndLabel();
   load();applyTheme();$('date').value=today();render();checkRem();
   var MN=['siječanj','veljača','ožujak','travanj','svibanj','lipanj','srpanj','kolovoz','rujan','listopad','studeni','prosinac'];
   function renderCal(){
