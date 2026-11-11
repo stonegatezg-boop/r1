@@ -413,7 +413,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:23</div>
+  <div class="ver">verzija 11.11. 23:27</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1158,6 +1158,7 @@
   function renderCal(){
     var e=state.entries,keys=Object.keys(e).sort(),t=today(),ty=+t.slice(0,4),tm=+t.slice(5,7),sy=ty,sm=tm;
     if(keys.length){sy=+keys[0].slice(0,4);sm=+keys[0].slice(5,7)}
+    var mi=sy*12+sm-1,mn=ty*12+tm-1-11;if(mn<mi){sy=Math.floor(mn/12);sm=mn%12+1}
     var prev={},pw=null;keys.forEach(function(k){prev[k]=pw;pw=e[k]});
     var h='',y=ty,m=tm;
     while(y>sy||(y===sy&&m>=sm)){
