@@ -285,7 +285,7 @@
     <div id="pform">
       <input id="pname" maxlength="24" placeholder="Ime osobe">
       <div id="pswatch"></div>
-      <label id="pbwrap">Rođen/a <input type="date" id="pbirth"></label>
+      <label id="pbwrap">Rođen/a (nije obavezno) <input type="date" id="pbirth"></label>
       <div class="msg" id="pmsg"></div>
       <button id="pok" type="button">Dodaj</button>
       <button class="ghost" id="pdel" type="button">Obriši</button>
@@ -386,7 +386,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 22:59</div>
+  <div class="ver">verzija 11.11. 23:00</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -792,7 +792,6 @@
   function savePerson(){
     var n=$('pname').value.trim().slice(0,24);if(!n){$('pmsg').textContent='Upiši ime.';return false}
     var bd=$('pbirth').value;
-    if(pmode==='add'&&!bd){$('pmsg').textContent='Upiši datum rođenja.';return false}
     if(bd&&(bd>today()||bd<'1900-01-01')){$('pmsg').textContent='Datum rođenja nije ispravan.';return false}
     $('pmsg').textContent='';
     if(pmode==='add'){var id='p'+Date.now().toString(36);S.people.push({id:id,name:n,birth:bd||null,color:pcolor,entries:{},heights:{},goal:null});S.active=id;S.all=false;dropUndo()}
@@ -1027,7 +1026,6 @@
       savePhoto(rec,function(ok){
         photos.unshift(rec);
         var miss=[];
-        if(!p.birth)miss.push('datum rođenja (uredi → Rođen/a)');
         if(latestOn(p.entries,d)===null)miss.push('težinu');
         if(latestOn(p.heights,d)===null)miss.push('visinu');
         var m=ok?'':'Slika nije trajno spremljena u ovom pregledniku – spremi je u galeriju mobitela. ';
