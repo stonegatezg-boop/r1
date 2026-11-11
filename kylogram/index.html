@@ -31,7 +31,7 @@
   body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:env(safe-area-inset-top) 0 40px}
   .wrap{max-width:640px;margin:0 auto;padding:16px}
   .brand{display:flex;align-items:center;gap:9px;margin:2px 0 12px}
-  .brand svg{width:36px;height:36px;flex:none}
+  .brand>svg{width:36px;height:36px;flex:none}
   .brand h1{font:400 30px/1 'Modak',system-ui,sans-serif;margin:0;padding-top:6px;letter-spacing:.5px;color:var(--text)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
   .row{display:flex;gap:8px;align-items:center}
@@ -92,7 +92,13 @@
   html[data-theme="90"] .cur{color:#fff}
   html[data-theme="m"] .cur{display:none}
   .brand h1{white-space:nowrap}
-  .brand svg [style*="--logo"]{transition:none}
+  #bell{margin-left:auto;background:none;border:0;padding:6px;border-radius:10px;color:color-mix(in srgb,var(--mute) 55%,var(--bg));line-height:0;cursor:pointer}
+  #bell.due{color:var(--acc)}
+  html[data-theme="90"] #bell{color:#c0c0c0;background:none;box-shadow:none;padding:6px;filter:drop-shadow(1px 1px 0 #000)}
+  html[data-theme="90"] #bell.due{color:#ffff00;padding:6px;box-shadow:none}
+  html[data-theme="80"] #bell{color:color-mix(in srgb,var(--acc) 38%,var(--bg));box-shadow:none;padding:6px}
+  html[data-theme="80"] #bell.due{color:var(--acc)}
+  .brand>svg [style*="--logo"]{transition:none}
   .trenddot{background:var(--acc)}
   html[data-theme="80"] .trenddot{background:linear-gradient(90deg,#00e5ff,var(--acc),#ff3df2)}
   html[data-theme="80"] .cur{display:inline}
@@ -151,7 +157,7 @@
   html[data-theme="80"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.28) 3px);box-shadow:inset 0 0 120px rgba(0,0,0,.7)}
   html[data-theme="80"] .brand h1{font:400 20px/1 'PS2P',monospace;padding-top:0;color:var(--acc);text-shadow:0 0 8px var(--acc),0 0 22px color-mix(in srgb,var(--acc) 50%,transparent),3px 3px 0 #ff3df2;letter-spacing:0}
   html[data-theme="80"] .cur{animation:blink 1s steps(1) infinite}
-  html[data-theme="80"] .brand svg{filter:drop-shadow(0 0 6px var(--acc))}
+  html[data-theme="80"] .brand>svg{filter:drop-shadow(0 0 6px var(--acc))}
   html[data-theme="80"] .card,html[data-theme="80"] .stat{border-radius:0;border:2px solid var(--line);box-shadow:0 0 14px color-mix(in srgb,var(--acc) 8%,transparent),inset 0 0 0 1px #000}
   html[data-theme="80"] input{border-radius:0;border:2px solid var(--line);font-family:'VT323',monospace;font-size:26px;padding:8px 10px;color:var(--acc)}
   html[data-theme="80"] input[type=date]{font-size:19px;flex:none;width:158px;padding:8px 6px}
@@ -256,6 +262,7 @@
 <circle cx="79" cy="79" r="3.2" style="fill:var(--logo)" stroke="#17384a" stroke-width="2.6"/>
 </svg>
     <h1>kylogram<span class="cur">_</span></h1>
+    <button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button>
   </div>
 
   <div class="card">
@@ -358,7 +365,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:20</div>
+  <div class="ver">verzija 11.11. 23:40</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -852,12 +859,18 @@
     if(b.dataset.ics){var r=S.reminders.filter(function(x){return x.id===b.dataset.ics})[0];if(r)exportIcs(r)}
     if(b.dataset.rdel){S.reminders=S.reminders.filter(function(x){return x.id!==b.dataset.rdel});persist();renderRem();checkRem()}
   };
+  function updateBell(due){
+    var b=$('bell');if(!b)return;
+    b.style.display=(S.reminders&&S.reminders.length)?'':'none';
+    b.classList.toggle('due',!!due);
+  }
+  $('bell').onclick=function(){if(openSub!=='n')showSub('n');else try{$('sub-n').scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}};
   function checkRem(){
     var d=today(),n=new Date(),hm=pad(n.getHours())+':'+pad(n.getMinutes()),h='';
     (S.reminders||[]).forEach(function(r){
       if(occursOn(r,d)&&r.dis!==d&&hm>=r.time)h+='<div class="rb"><span>🔔 '+esc(r.text)+' ('+r.time+')</span><button class="ghost" type="button" data-dis="'+esc(r.id)+'">U redu</button></div>';
     });
-    var el=$('remBanner');el.innerHTML=h;el.style.display=h?'block':'none';
+    var el=$('remBanner');el.innerHTML=h;el.style.display=h?'block':'none';updateBell(!!h);
   }
   $('remBanner').onclick=function(e){
     var b=e.target.closest?e.target.closest('button'):null;if(!b||!b.dataset.dis)return;
