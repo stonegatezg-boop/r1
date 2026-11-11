@@ -55,6 +55,8 @@
   td.r{text-align:right}
   td button{padding:4px 9px;font-size:13px}
   .msg{color:var(--warn);font-size:13px;min-height:18px;margin-top:6px}
+  input[type=date]::-webkit-calendar-picker-indicator{margin-right:8px;margin-left:6px;padding:2px;cursor:pointer}
+  input[type=time]::-webkit-calendar-picker-indicator{margin-right:8px;margin-left:6px;padding:2px}
   .sub{display:none;gap:6px;margin-top:8px;flex-wrap:nowrap}
   .sub.open{display:flex}
   .sub button{flex:1 1 0;min-width:0}
@@ -71,7 +73,7 @@
   #remBanner .rb span,#remOk.rb span{flex:1}
   .foot{display:flex;gap:6px;flex-wrap:nowrap}
   .foot button{flex:1 1 0;min-width:0;padding-left:4px!important;padding-right:4px!important;line-height:1.2;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px}
-  .foot button::after{content:'\25BE';font-size:12px;font-family:system-ui,sans-serif;text-shadow:none}
+  .foot button::after{content:'\25BE';font-size:17px;font-family:system-ui,sans-serif;text-shadow:none}
   html[data-theme="80"] .foot button{font-size:7px}
   html[data-theme="80"] .sub button{font-size:8px}
   html[data-theme="80"] select{border-radius:0;border:2px solid var(--line);font-family:'VT323',monospace;font-size:24px;padding:8px 10px;color:var(--acc)}
@@ -365,7 +367,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:40</div>
+  <div class="ver">verzija 11.11. 23:55</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
