@@ -434,7 +434,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:58</div>
+  <div class="ver">verzija 12.11. 00:01</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -637,7 +637,7 @@
     }
     if(state.goal&&sw){
       var gy=Y(sw,state.goal),gt=(+state.goal.toFixed(1)+'').replace('.',',');
-      gm={padT:padT,ih:ih,hi:sw.hi,lo:sw.lo,gy0:gy};
+      gm={padT:padT,ih:ih,hi:sw.hi,lo:sw.lo,gy0:gy,W:W,padR:padR,last:vw[vw.length-1].w,orig:state.goal};
       g+='<line id="gline" x1="'+(padL-4)+'" x2="'+(W-padR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="5 4"/>';
       g+='<g id="gdrag" style="cursor:ns-resize"><circle cx="19" cy="'+gy+'" r="26" fill="transparent"/><circle cx="19" cy="'+gy+'" r="16" style="fill:var(--warn)"/><text id="gtxt" x="19" y="'+(gy+5)+'" text-anchor="middle" font-size="'+(gt.length>3?12:14)+'" font-weight="700" style="fill:'+(S.theme==='90'?'#fff':'var(--navy)')+';pointer-events:none">'+gt+'</text></g>';
     }
@@ -1160,15 +1160,26 @@
   var svg=$('chart');
   svg.addEventListener('pointerdown',function(e){if(e.target.closest&&e.target.closest('#gdrag'))return;pick(e)});
   svg.addEventListener('pointermove',function(e){if(gdrag)return;if(e.buttons||e.pointerType==='mouse')pick(e)});
+  var gv=0,gly=0,glt=0;
   function gMove(cy){
     if(!gdrag||!gm)return;
-    var sv=$('chart'),r=sv.getBoundingClientRect(),y=(cy-r.top)*(sv.viewBox.baseVal.height/r.height);
-    var v=gm.hi-(y-gm.padT)/gm.ih*(gm.hi-gm.lo);
-    v=Math.round(v*10)/10;v=Math.max(Math.max(gm.lo,20),Math.min(Math.min(gm.hi,400),v));gval=v;
+    var sv=$('chart'),r=sv.getBoundingClientRect(),k=sv.viewBox.baseVal.height/r.height,now=performance.now();
+    var dy=(cy-gly)*k,dt=Math.max(now-glt,8);gly=cy;glt=now;
+    var gain=Math.min(1.2,0.2+Math.abs(dy)/dt*1.1);
+    gv+=-dy*(gm.hi-gm.lo)/gm.ih*gain;
+    var lo=Math.max(gm.lo,20),hi=Math.min(gm.hi,400);gv=Math.max(lo,Math.min(hi,gv));
+    var v=Math.round(gv*10)/10;gval=v;
     var gy=gm.padT+(gm.hi-v)/(gm.hi-gm.lo)*gm.ih;
     var ln=$('gline');if(ln){ln.setAttribute('y1',gy);ln.setAttribute('y2',gy)}
     var gd=$('gdrag');if(gd)gd.setAttribute('transform','translate(0,'+(gy-gm.gy0)+')');
     var tx=$('gtxt');if(tx){var t=(+v.toFixed(1)+'').replace('.',',');tx.textContent=t;tx.setAttribute('font-size',t.length>3?12:14)}
+    var old=$('gread');if(old)old.remove();
+    var rem=gm.last-v,w=118,h=62,x=gm.W-Math.max(gm.padR,12)-w-2,y=gy-h-12;if(y<gm.padT-14)y=gy+12;
+    var diff=v-gm.orig,dtxt=Math.abs(diff)<0.05?'isto kao prije':(diff>0?'+':'−')+f1(Math.abs(diff))+' od prije';
+    var ltxt=rem>0.049?'još '+f1(rem)+' kg':rem<-0.049?'ispod za '+f1(-rem)+' kg':'upravo sada';
+    var n=document.createElementNS('http://www.w3.org/2000/svg','g');n.setAttribute('id','gread');
+    n.innerHTML='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="12" style="fill:var(--card);stroke:var(--warn)" stroke-width="1.5"/><text x="'+(x+w/2)+'" y="'+(y+25)+'" text-anchor="middle" font-size="20" font-weight="700" style="fill:var(--text)">'+f1(v)+' kg</text><text x="'+(x+w/2)+'" y="'+(y+42)+'" text-anchor="middle" font-size="12" font-weight="600" style="fill:var(--warn)">'+ltxt+'</text><text x="'+(x+w/2)+'" y="'+(y+56)+'" text-anchor="middle" font-size="11" style="fill:var(--mute)">'+dtxt+'</text>';
+    sv.appendChild(n);
     $('tip').textContent='Cilj: '+f1(v)+' kg';
   }
   function gEnd(){
@@ -1176,10 +1187,10 @@
     if(gval!==null&&gval>=20&&gval<=400){state.goal=gval;persist()}
     gval=null;render();
   }
-  svg.addEventListener('touchstart',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;e.preventDefault()}},{passive:false});
+  svg.addEventListener('touchstart',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;gv=gm.orig;gly=e.touches[0].clientY;glt=performance.now();e.preventDefault()}},{passive:false});
   document.addEventListener('touchmove',function(e){if(gdrag){e.preventDefault();gMove(e.touches[0].clientY)}},{passive:false});
   document.addEventListener('touchend',gEnd);document.addEventListener('touchcancel',gEnd);
-  svg.addEventListener('mousedown',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;e.preventDefault()}});
+  svg.addEventListener('mousedown',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;gv=gm.orig;gly=e.clientY;glt=performance.now();e.preventDefault()}});
   document.addEventListener('mousemove',function(e){if(gdrag)gMove(e.clientY)});
   document.addEventListener('mouseup',gEnd);
 
