@@ -131,14 +131,31 @@
   .galhead{font-weight:700;margin-bottom:10px}
   html[data-theme="90"] .galhead{display:none}
   html[data-theme="90"] .wrap>.card:nth-of-type(7)::before{content:'Galerija'}
+  html[data-theme="90"] .wrap>.card:nth-of-type(9)::before{content:'Kalendar'}
   html[data-theme="80"] .wrap>.card:nth-of-type(7){border-color:var(--cy);box-shadow:0 0 14px rgba(0,229,255,.25),inset 0 0 0 1px #000}
   .gal{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
   .gal .thumb{cursor:pointer}
   .gal .thumb img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;background:#222}
-  #galOv{position:fixed;inset:0;z-index:150;background:var(--bg);flex-direction:column;padding:12px 14px}
+  #galOv,#calOv{position:fixed;inset:0;z-index:150;background:var(--bg);flex-direction:column;padding:12px 14px}
   .galbar{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
   .galbar .tabs{flex:1;margin-bottom:0}
   .galscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 2px 24px}
+  .stats.chg{grid-template-columns:repeat(3,1fr)}
+  .stats.chg .stat b{font-size:20px}
+  html[data-theme="90"] #calWho,html[data-theme="90"] .calkey{color:#fff}
+  .calkey{font-size:12px;color:var(--mute);margin:0 2px 6px}
+  .calm{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:12px}
+  .calt{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 2px 8px;font-weight:700;text-transform:capitalize}
+  .calt small{font-weight:400;font-size:12px;color:var(--mute);text-transform:none;text-align:right}
+  .calw,.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .calw span{text-align:center;font-size:11px;color:var(--mute);padding-bottom:2px}
+  .cd{aspect-ratio:1/1.08;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;background:color-mix(in srgb,var(--text) 5%,var(--card))}
+  .cd u{text-decoration:none;font-size:11px;color:var(--mute);line-height:1.1}
+  .cd span{font-size:12px;font-weight:700;line-height:1.1;color:var(--text)}
+  .cd.has{background:color-mix(in srgb,var(--text) 12%,var(--card))}
+  .cd.dn{background:color-mix(in srgb,var(--gr) 30%,var(--card))}
+  .cd.up{background:color-mix(in srgb,var(--mg) 30%,var(--card))}
+  .cd.tod{outline:2px solid var(--acc);outline-offset:-1px}
   .galempty{grid-column:1/-1;text-align:center;color:var(--mute);padding:18px 0}
   #lb{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.9);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
   #lb img{max-width:92vw;max-height:72vh;box-shadow:0 8px 30px rgba(0,0,0,.6);background:#fff}
@@ -310,8 +327,13 @@
   <div class="stats">
     <div class="stat"><b id="sCur">–</b><span>zadnja (kg)</span></div>
     <div class="stat"><b id="sTrend">–</b><span>trend (kg)</span></div>
-    <div class="stat"><b id="sChg">–</b><span>7 dana (trend)</span></div>
+    <div class="stat"><b id="sChg">–</b><span>ukupno (kg)</span></div>
     <div class="stat"><b id="sH">–</b><span>visina (cm)</span></div>
+  </div>
+  <div class="stats chg" id="chg">
+    <div class="stat"><b id="c7">–</b><span id="c7l">7 d</span></div>
+    <div class="stat"><b id="c15">–</b><span id="c15l">15 d</span></div>
+    <div class="stat"><b id="c30">–</b><span id="c30l">30 d</span></div>
   </div>
 
   <div class="card">
@@ -359,6 +381,15 @@
     <div class="galbar"><div class="tabs" id="galTabs"></div><button class="ghost" id="galClose" type="button">Zatvori</button></div>
     <div class="galscroll"><div class="gal" id="gal"></div></div>
   </div>
+  <div class="card" id="calCard">
+    <div class="galhead">Kalendar</div>
+    <button class="ghost" id="calOpen" type="button" style="width:100%">Otvori kalendar</button>
+  </div>
+  <div id="calOv" style="display:none">
+    <div class="galbar"><b id="calWho" style="flex:1;padding-top:8px"></b><button class="ghost" id="calClose" type="button">Zatvori</button></div>
+    <div class="calkey">Zeleno = niže od prethodnog mjerenja · crveno = više · dodir na dan ga otvara za unos</div>
+    <div class="galscroll" id="calScroll"><div id="calBody"></div></div>
+  </div>
 
   <div class="foot">
     <button class="ghost" id="fbn" type="button" data-m="n">Obavijesti</button>
@@ -386,7 +417,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:00</div>
+  <div class="ver">verzija 11.11. 23:20</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -477,17 +508,32 @@
     return out;
   }
 
+  function trendAtDay(s,d){
+    for(var i=s.length-1;i>=0;i--){
+      if(s[i].d<=d){
+        if(s[i].d===d||i===s.length-1)return i===s.length-1&&s[i].d<d?null:s[i].t;
+        var a=s[i],b2=s[i+1];return a.t+(b2.t-a.t)*(d-a.d)/(b2.d-a.d);
+      }
+    }
+    return null;
+  }
+  function setChg(id,lab,s,N){
+    var last=s[s.length-1],base=s.length>1?trendAtDay(s,last.d-N):null,el=$(id),sp=$(id+'l');
+    if(base===null||base<=0){el.textContent='–';el.style.color='';sp.textContent=N+' d';return}
+    var c=last.t-base,p=c/base*100,sg=function(x){return (x>0?'+':'')+f1(x)};
+    el.textContent=sg(c)+' kg';el.style.color=c<-0.05?'var(--gr)':c>0.05?'var(--mg)':'';
+    sp.textContent=N+' d · '+sg(p)+'%';
+  }
   function stats(s,hs){
     $('sH').textContent=hs.length?f1(hs[hs.length-1].h):'–';
-    if(!s.length){$('sCur').textContent=$('sTrend').textContent=$('sChg').textContent='–';$('sChg').style.color='';return}
+    if(!s.length){$('sCur').textContent=$('sTrend').textContent=$('sChg').textContent='–';$('sChg').style.color='';['c7','c15','c30'].forEach(function(id,i){$(id).textContent='–';$(id).style.color='';$(id+'l').textContent=[7,15,30][i]+' d'});return}
     var last=s[s.length-1];
     $('sCur').textContent=f1(last.w);
     $('sTrend').textContent=f1(last.t);
-    var target=last.d-7,base=null;
-    for(var i=s.length-1;i>=0;i--){if(s[i].d<=target){base=s[i];break}}
-    if(!base&&s.length>1)base=s[0];
-    if(base&&base!==last){var c=last.t-base.t;$('sChg').textContent=(c>0?'+':'')+f1(c);$('sChg').style.color=c<0?'var(--gr)':c>0?'var(--mg)':''}
+    var tot=last.w-s[0].w;
+    if(s.length>1){$('sChg').textContent=(tot>0?'+':'')+f1(tot);$('sChg').style.color=tot<0?'var(--gr)':tot>0?'var(--mg)':''}
     else{$('sChg').textContent='–';$('sChg').style.color=''}
+    setChg('c7','',s,7);setChg('c15','',s,15);setChg('c30','',s,30);
   }
 
   // Catmull-Rom -> cubic bezier
@@ -707,7 +753,7 @@
     for(q=0;q<lw.length;q++)lw[q].style.display=mm==='h'?'none':'';
     for(q=0;q<lh.length;q++)lh[q].style.display=mm==='w'?'none':'';
     document.querySelector('.legend').style.display=all?'none':'';
-    document.querySelector('.stats').style.display=all?'none':'';
+    document.querySelector('.stats').style.display=all?'none':'';$('chg').style.display=all?'none':'';$('calCard').style.display=all?'none':'';
     $('entry').style.display=all?'none':'';
     $('allHint').style.display=all?'block':'none';
     $('goalCard').style.display=all?'none':'';
@@ -1102,6 +1148,38 @@
   if('serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js')}catch(e){}}
   window.addEventListener('resize',render);
   load();applyTheme();$('date').value=today();render();checkRem();
+  var MN=['siječanj','veljača','ožujak','travanj','svibanj','lipanj','srpanj','kolovoz','rujan','listopad','studeni','prosinac'];
+  function renderCal(){
+    var e=state.entries,keys=Object.keys(e).sort(),t=today(),ty=+t.slice(0,4),tm=+t.slice(5,7),sy=ty,sm=tm;
+    if(keys.length){sy=+keys[0].slice(0,4);sm=+keys[0].slice(5,7)}
+    var prev={},pw=null;keys.forEach(function(k){prev[k]=pw;pw=e[k]});
+    var h='',y=ty,m=tm;
+    while(y>sy||(y===sy&&m>=sm)){
+      var dim=new Date(Date.UTC(y,m,0)).getUTCDate(),off=(new Date(Date.UTC(y,m-1,1)).getUTCDay()+6)%7,vals=[],cells='',d;
+      for(d=0;d<off;d++)cells+='<i></i>';
+      for(d=1;d<=dim;d++){
+        var k=y+'-'+pad(m)+'-'+pad(d),w=e[k],cls='cd';
+        if(w!==undefined){vals.push(w);var pv=prev[k];cls+=pv===null?' has':w<pv?' dn':w>pv?' up':' has'}
+        if(k===t)cls+=' tod';
+        cells+='<div class="'+cls+'" data-k="'+k+'"><u>'+d+'</u>'+(w!==undefined?'<span>'+f1(w)+'</span>':'')+'</div>';
+      }
+      var sum='';
+      if(vals.length){var av=vals.reduce(function(a,b){return a+b},0)/vals.length,ch=vals[vals.length-1]-vals[0];
+        sum='<small>'+vals.length+' mjer. · prosjek '+f1(av)+(vals.length>1?' · '+(ch>0?'+':'')+f1(ch)+' kg':'')+'</small>'}
+      h+='<div class="calm"><div class="calt"><span>'+MN[m-1]+' '+y+'.</span>'+sum+'</div><div class="calw"><span>Po</span><span>Ut</span><span>Sr</span><span>Če</span><span>Pe</span><span>Su</span><span>Ne</span></div><div class="calg">'+cells+'</div></div>';
+      if(--m<1){m=12;y--}
+    }
+    $('calBody').innerHTML=h;
+  }
+  $('calOpen').onclick=function(){$('calWho').textContent=P().name;renderCal();$('calOv').style.display='flex';$('calScroll').scrollTop=0};
+  $('calClose').onclick=function(){$('calOv').style.display='none'};
+  $('calBody').onclick=function(ev){
+    var c=ev.target.closest?ev.target.closest('.cd'):null;if(!c)return;
+    var k=c.dataset.k,w=state.entries[k];
+    $('date').value=k;$('kg').value=w!==undefined?String(w):'';
+    $('calOv').style.display='none';window.scrollTo(0,0);
+    msg('Odabran datum '+fmtDate(k)+(w!==undefined?' – promijeni težinu pa Spremi.':' – upiši težinu pa Spremi.'));
+  };
   openDb(function(){loadPhotos(function(){renderGallery()})});
 })();
 </script>
