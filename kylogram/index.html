@@ -194,6 +194,8 @@
   #sub-s .tl.on{border-color:var(--acc)!important;box-shadow:0 0 0 1px var(--acc)}
   #sub-s .ic.flag{background:none!important;overflow:hidden}
   #sub-s #sndBtn{grid-column:1/-1}
+  #sub-s #sub-t{grid-template-columns:repeat(3,1fr);gap:6px}
+  #sub-s #sub-t .tl{padding:10px 8px}
   html[data-theme="90"] .slab{color:#fff}
   .slab{flex:1 1 100%;font-size:13px;color:var(--mute);margin-top:4px}
   .stats.chg .stat b{font-size:20px}
@@ -472,8 +474,6 @@
       <button class="tile tl" type="button" data-th="m"><span class="ic" style="background:#0f1115;border:1px solid #888"></span><b class="tn">Tamna</b></button>
       <button class="tile tl" type="button" data-th="ml"><span class="ic" style="background:#eef0f4;border:1px solid #888"></span><b class="tn">Svijetla</b></button>
       <button class="tile tl" type="button" data-th="mb"><span class="ic" style="background:#000;border:1px solid #888"></span><b class="tn">Crna</b></button>
-      <button class="tile tl" type="button" data-th="90"><span class="ic" style="background:#008080;border:1px solid #888"></span><b class="tn">90-e</b></button>
-      <button class="tile tl" type="button" data-th="80"><span class="ic" style="background:#07060d;border:1px solid #888"></span><b class="tn">80-e</b></button>
       <button class="tile tl" type="button" id="sndBtn">Zvuk i vibracija skale: uključeno</button>
     </div>
   </div>
@@ -487,7 +487,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 00:27</div>
+  <div class="ver"><span>verzija</span> 12.11. 00:39</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -505,7 +505,7 @@
 (function(){
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
   var PALETTE=[['#e3ff00','Žuta'],['#11b882','Zelena'],['#ff2bd6','Roza'],['#2a7bff','Plava']],pcolor=null;
-  var THEMES=['m','ml','mb','90','80'],NAMES={'90':'90-e','80':'80-e','m':'Moderna tamna','ml':'Moderna svijetla','mb':'Moderna crna'},TCOL={'90':'#008080','80':'#07060d','m':'#0f1115','ml':'#eef0f4','mb':'#000000'};
+  var THEMES=['m','ml','mb'],NAMES={'90':'90-e','80':'80-e','m':'Moderna tamna','ml':'Moderna svijetla','mb':'Moderna crna'},TCOL={'90':'#008080','80':'#07060d','m':'#0f1115','ml':'#eef0f4','mb':'#000000'};
   var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[],cfg:{h:false,u:'m',lang:'hr'}};
   var LANG='hr';
   var EN={'Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
