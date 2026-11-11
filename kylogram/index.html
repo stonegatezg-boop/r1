@@ -128,10 +128,9 @@
   html[data-theme="90"] .galhead{display:none}
   html[data-theme="90"] .wrap>.card:nth-of-type(7)::before{content:'Galerija'}
   html[data-theme="80"] .wrap>.card:nth-of-type(7){border-color:var(--cy);box-shadow:0 0 14px rgba(0,229,255,.25),inset 0 0 0 1px #000}
-  .gal{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-  .gal .thumb{cursor:pointer;transform:rotate(-1.2deg)}
-  .gal .thumb:nth-child(even){transform:rotate(1.2deg)}
-  .gal .thumb img{display:block;width:100%;height:auto;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+  .gal{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+  .gal .thumb{cursor:pointer}
+  .gal .thumb img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;background:#222}
   #galOv{position:fixed;inset:0;z-index:150;background:var(--bg);flex-direction:column;padding:12px 14px}
   .galbar{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
   .galbar .tabs{flex:1;margin-bottom:0}
@@ -382,7 +381,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 22:51</div>
+  <div class="ver">verzija 11.11. 22:55</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
