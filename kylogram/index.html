@@ -69,7 +69,8 @@
   #remBanner .rb{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--acc);border-radius:12px;padding:10px 12px;margin-bottom:8px}
   #remBanner .rb span{flex:1}
   .foot{display:flex;gap:6px;flex-wrap:nowrap}
-  .foot button{flex:1 1 0;min-width:0;padding-left:4px!important;padding-right:4px!important;line-height:1.2;overflow-wrap:anywhere}
+  .foot button{flex:1 1 0;min-width:0;padding-left:4px!important;padding-right:4px!important;line-height:1.2;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px}
+  .foot button::after{content:'\25BE';font-size:12px;font-family:system-ui,sans-serif;text-shadow:none}
   html[data-theme="80"] .foot button{font-size:7px}
   html[data-theme="80"] .sub button{font-size:8px}
   html[data-theme="80"] select{border-radius:0;border:2px solid var(--line);font-family:'VT323',monospace;font-size:24px;padding:8px 10px;color:var(--acc)}
@@ -333,9 +334,9 @@
   </div>
 
   <div class="foot">
-    <button class="ghost" id="fbn" type="button" data-m="n">Obavijesti ▾</button>
-    <button class="ghost" id="fbb" type="button" data-m="b">Backup ▾</button>
-    <button class="ghost" id="theme" type="button" data-m="t">Tema ▾</button>
+    <button class="ghost" id="fbn" type="button" data-m="n">Obavijesti</button>
+    <button class="ghost" id="fbb" type="button" data-m="b">Backup</button>
+    <button class="ghost" id="theme" type="button" data-m="t">Tema</button>
     <input type="file" id="file" accept="application/json" hidden>
   </div>
   <div id="sub-b" class="sub">
@@ -355,7 +356,7 @@
     <div class="msg" id="rmsg"></div>
     <div id="rlist"></div>
   </div>
-  <div class="ver">verzija 11.11. 22:40</div>
+  <div class="ver">verzija 11.11. 23:00</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -419,7 +420,6 @@
   function applyTheme(){
     document.documentElement.setAttribute('data-theme',S.theme);
     $('tc').setAttribute('content',TCOL[S.theme]);
-    $('theme').textContent='Tema: '+NAMES[S.theme]+' ▾';
     var tb=document.querySelectorAll('#sub-t [data-th]');for(var i=0;i<tb.length;i++)tb[i].classList.toggle('on',tb[i].dataset.th===S.theme);
     applyColor();
   }
