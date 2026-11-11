@@ -128,8 +128,6 @@
   #pbwrap,#pgwrap{flex:0 0 100%;display:flex;align-items:center;gap:10px;color:var(--mute)}
   #pbwrap input,#pgwrap input{flex:1}
   #pmsg{flex:0 0 100%;min-height:0}
-  #delDay{line-height:1.3}
-  html[data-theme="80"] #delDay{font-size:13px}
   html[data-theme="mb"] .card{background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 8%,var(--card)),var(--card) 58%);border-color:color-mix(in srgb,var(--acc) 18%,var(--line))}
   html[data-theme="mb"] .stat{background:linear-gradient(150deg,color-mix(in srgb,var(--tc,var(--acc)) 14%,var(--card)),var(--card) 78%);border-color:color-mix(in srgb,var(--tc,var(--acc)) 28%,var(--line))}
   .stat.t1{--tc:var(--acc)}.stat.t2{--tc:var(--warn)}.stat.t3{--tc:var(--gr)}.stat.t4{--tc:var(--hc)}
@@ -351,7 +349,6 @@
       <div class="camwrap"><button class="ghost" type="button" tabindex="-1">Odaberi sliku</button><input type="file" id="fpick" class="fover" accept="image/*" aria-label="Odaberi sliku"></div>
     </div>
     <div class="msg" id="msg"></div>
-    <button class="ghost" id="delDay" type="button" style="display:none;width:100%;margin-top:6px"></button>
     </div>
     <div id="allHint" style="display:none">Prikaz svih osoba. Za unos odaberi osobu.</div>
   </div>
@@ -437,7 +434,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:51</div>
+  <div class="ver">verzija 11.11. 23:54</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -772,7 +769,7 @@
     renderPeople();
     if(S.all&&S.people.length<2)S.all=false;
     var all=!!S.all,s=series(),hs=hseries();
-    stats(s,hs);updDel();
+    stats(s,hs);
     if(all)chartAll();else chart(s,hs);
     renderCmp(all);
     var mm=all?(S.metric==='w'?'w':'h'):(S.metric||'b');
@@ -823,16 +820,6 @@
   $('undoBtn').onclick=function(){
     if(!backup)return;S=sane(JSON.parse(backup));backup=null;
     $('undo').style.display='none';persist();applyTheme();render();if($('calOv').style.display==='flex')renderCalView();
-  };
-  function updDel(){
-    var d=$('date').value,b=$('delDay');
-    var has=d&&(state.entries[d]!==undefined||state.heights[d]!==undefined);
-    b.style.display=has?'':'none';if(has){var hw=state.entries[d]!==undefined,hh=state.heights[d]!==undefined;b.textContent='Obriši '+(hw&&hh?'težinu i visinu':hw?'težinu':'visinu')+' '+fmtDate(d)}
-  }
-  $('date').addEventListener('change',updDel);$('date').addEventListener('input',updDel);
-  $('delDay').onclick=function(){
-    var k=$('date').value;if(!k)return;
-    snap('Obrisano '+fmtDate(k));delete state.entries[k];delete state.heights[k];$('kg').value='';$('cm').value='';persist();msg('');render();
   };
   function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
   var pmode=null;
@@ -1267,7 +1254,7 @@
     if(x==='close'){closeDay();return}
     if(x==='edit'){
       var w=state.entries[k];
-      $('date').value=k;$('kg').value=w!==undefined?String(w):'';$('cm').value=state.heights[k]!==undefined?String(state.heights[k]):'';updDel();
+      $('date').value=k;$('kg').value=w!==undefined?String(w):'';$('cm').value=state.heights[k]!==undefined?String(state.heights[k]):'';
       closeDay();$('calOv').style.display='none';window.scrollTo(0,0);
       msg('Odabran datum '+fmtDate(k)+' – promijeni pa Spremi.');return;
     }
