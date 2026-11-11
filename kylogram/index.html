@@ -130,18 +130,21 @@
   #pmsg{flex:0 0 100%;min-height:0}
   #delDay{line-height:1.3}
   html[data-theme="80"] #delDay{font-size:13px}
-  html:is([data-theme="m"],[data-theme="ml"],[data-theme="mb"]) .card{background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 8%,var(--card)),var(--card) 58%);border-color:color-mix(in srgb,var(--acc) 18%,var(--line))}
-  html:is([data-theme="m"],[data-theme="ml"],[data-theme="mb"]) .stat{background:linear-gradient(150deg,color-mix(in srgb,var(--tc,var(--acc)) 14%,var(--card)),var(--card) 78%);border-color:color-mix(in srgb,var(--tc,var(--acc)) 28%,var(--line))}
+  html[data-theme="mb"] .card{background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 8%,var(--card)),var(--card) 58%);border-color:color-mix(in srgb,var(--acc) 18%,var(--line))}
+  html[data-theme="mb"] .stat{background:linear-gradient(150deg,color-mix(in srgb,var(--tc,var(--acc)) 14%,var(--card)),var(--card) 78%);border-color:color-mix(in srgb,var(--tc,var(--acc)) 28%,var(--line))}
   .stat.t1{--tc:var(--acc)}.stat.t2{--tc:var(--warn)}.stat.t3{--tc:var(--gr)}.stat.t4{--tc:var(--hc)}
   .tile{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:14px;color:var(--text);font-weight:400}
   .tile.tv1{--tc:var(--hc)}.tile.tv2{--tc:var(--acc)}
-  .tile .ic{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 24%,transparent);color:var(--tc);margin-bottom:8px}
+  .tile .ic{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--text) 9%,transparent);color:var(--mute);margin-bottom:8px}
+  html[data-theme="mb"] .tile .ic{background:color-mix(in srgb,var(--tc) 24%,transparent);color:var(--tc)}
   .tile .tn{font-size:17px;font-weight:700;color:inherit}
   .tile .tv{font-size:15px;color:var(--mute)}
-  .tile .tcg{font-size:14px;font-weight:600;color:var(--tc);min-height:1.25em}
+  .tile .tcg{font-size:14px;font-weight:600;color:var(--mute);min-height:1.25em}
+  html[data-theme="mb"] .tile .tcg{color:var(--tc)}
   html:is([data-theme="m"],[data-theme="ml"],[data-theme="mb"]) #galCard{background:none;border:0;padding:0}
   html:is([data-theme="m"],[data-theme="ml"],[data-theme="mb"]) #galCard .galhead{display:none}
-  html:is([data-theme="m"],[data-theme="ml"],[data-theme="mb"]) .tile{background:linear-gradient(150deg,color-mix(in srgb,var(--tc) 16%,var(--card)),var(--card) 72%);border:1px solid color-mix(in srgb,var(--tc) 30%,var(--line));border-radius:18px}
+  html:is([data-theme="m"],[data-theme="ml"],[data-theme="mb"]) .tile{background:var(--card);border:1px solid var(--line);border-radius:18px}
+  html[data-theme="mb"] .tile{background:linear-gradient(150deg,color-mix(in srgb,var(--tc) 16%,var(--card)),var(--card) 72%);border:1px solid color-mix(in srgb,var(--tc) 30%,var(--line))}
   .lr{display:flex;align-items:center;gap:10px;padding:11px 4px;border-top:1px solid var(--line);cursor:pointer}
   .calm .lr:first-of-type{border-top:0}
   .lr .ld{flex:1;color:var(--mute);font-size:14px}
@@ -434,7 +437,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 11.11. 23:46</div>
+  <div class="ver">verzija 11.11. 23:51</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
