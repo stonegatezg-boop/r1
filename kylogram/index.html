@@ -150,6 +150,20 @@
   .lr .lcm{color:var(--hc);font-size:13px}
   .lr .lch{min-width:96px;text-align:right;font-weight:600;font-size:14px}
   #sub-t{flex-wrap:wrap}#sub-t button{flex:1 1 28%}
+  #cmpBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 2px 8px;color:var(--text);font-size:14px}
+  #cmpTxt{flex:1 1 100%;font-weight:600}
+  .cmpbtns{display:flex;gap:6px;flex-wrap:wrap}
+  #cmpBtn.on{color:var(--text);border-color:var(--acc)}
+  .gal .thumb{position:relative}
+  .gal .thumb.sel{outline:3px solid var(--acc);outline-offset:-3px}
+  .thumb .nb{position:absolute;top:5px;left:5px;background:var(--acc);color:var(--navy);border-radius:50%;width:24px;height:24px;display:grid;place-items:center;font-size:14px;font-weight:700}
+  #cmpOv{position:fixed;inset:0;z-index:180;background:var(--bg);flex-direction:column;padding:12px 14px}
+  #cmpRow{display:flex;gap:8px;align-items:flex-start}
+  #cmpRow .cm{flex:1 1 0;min-width:0}
+  #cmpRow img{display:block;width:100%;height:auto;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+  #cmpRow .cd2{text-align:center;color:var(--mute);font-size:13px;margin-top:6px}
+  #cmpSum{text-align:center;margin-top:16px;font-size:20px;font-weight:700}
+  #cmpSum small{display:block;font-size:14px;font-weight:400;color:var(--mute);margin-top:4px}
   .row2{display:flex;gap:8px}
   .row2 button{flex:1 1 0;min-width:0}
   .galhead{font-weight:700;margin-bottom:10px}
@@ -389,6 +403,10 @@
     </div>
   </div>
 
+  <div id="cmpOv" style="display:none">
+    <div class="galbar"><b style="flex:1;padding-top:8px">Usporedba</b><button class="ghost" id="cmpSwap" type="button">Zamijeni</button><button class="ghost" id="cmpSave" type="button">Spremi</button><button class="ghost" id="cmpClose" type="button">Zatvori</button></div>
+    <div class="galscroll"><div id="cmpRow"></div><div id="cmpSum"></div></div>
+  </div>
   <div class="card" id="galCard">
     <div class="galhead">Galerija i kalendar</div>
     <div class="row2">
@@ -397,7 +415,8 @@
     </div>
   </div>
   <div id="galOv" style="display:none">
-    <div class="galbar"><div class="tabs" id="galTabs"></div><button class="ghost" id="galClose" type="button">Zatvori</button></div>
+    <div class="galbar"><div class="tabs" id="galTabs"></div><button class="ghost" id="cmpBtn" type="button">Usporedi</button><button class="ghost" id="galClose" type="button">Zatvori</button></div>
+    <div id="cmpBar" style="display:none"><span id="cmpTxt"></span><span class="cmpbtns"><button class="ghost" id="cmpAuto" type="button">Zadnja ↔ prije mjesec dana</button><button class="ghost" id="cmpCancel" type="button">Odustani</button></span></div>
     <div class="galscroll"><div class="gal" id="gal"></div></div>
   </div>
   <div id="calOv" style="display:none">
@@ -435,7 +454,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver">verzija 12.11. 00:03</div>
+  <div class="ver">verzija 12.11. 00:09</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1008,7 +1027,7 @@
     if(mv.length>1){var ch=mv[mv.length-1]-mv[0];tc.textContent=(ch>0?'+':'')+f1(ch)+' kg ovaj mj.';tc.style.color=ch<0?'var(--gr)':ch>0?'var(--mg)':''}
     else{tc.textContent='';tc.style.color=''}
   }
-  var galSel=null;
+  var galSel=null,cmpMode=false,cmpSel=[];
   function renderGallery(){
     var el=$('gal');if(!el)return;
     updTiles();
@@ -1019,10 +1038,10 @@
     $('galTabs').innerHTML=tb;
     var list=photos.filter(function(r){return galSel==='all'?ids[r.pid]:r.pid===galSel});
     if(!list.length){el.innerHTML='<div class="galempty">Još nema slika. Slikaj ili odaberi sliku.</div>';return}
-    el.innerHTML=list.map(function(r){return '<div class="thumb" data-id="'+r.id+'"><img alt="" loading="lazy" src="'+urlOf(r)+'"></div>'}).join('');
+    el.innerHTML=list.map(function(r){var si=cmpSel.indexOf(r.id);return '<div class="thumb'+(si>=0?' sel':'')+'" data-id="'+r.id+'"><img alt="" loading="lazy" src="'+urlOf(r)+'">'+(si>=0?'<span class="nb">'+(si+1)+'</span>':'')+'</div>'}).join('');
   }
   $('galOpen').onclick=function(){galSel=S.all?'all':S.active;renderGallery();$('galOv').style.display='flex';$('galOv').querySelector('.galscroll').scrollTop=0};
-  $('galClose').onclick=function(){$('galOv').style.display='none'};
+  $('galClose').onclick=function(){cmpOff();$('galOv').style.display='none'};
   $('galTabs').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b)return;galSel=b.dataset.g;renderGallery();$('galOv').querySelector('.galscroll').scrollTop=0};
   function plural(n,a,b,c){var m10=n%10,m100=n%100;if(m10===1&&m100!==11)return a;if(m10>=2&&m10<=4&&(m100<12||m100>14))return b;return c}
   function ageText(birth,on){
@@ -1125,7 +1144,9 @@
   $('fpick').onchange=function(){var f=this.files[0];this.value='';handleFile(f)};
   $('gal').onclick=function(e){
     var t=e.target.closest?e.target.closest('.thumb'):null;if(!t)return;
-    var id=t.dataset.id;for(var i=0;i<photos.length;i++)if(photos[i].id===id){openLb(photos[i]);return}
+    var id=t.dataset.id;
+    if(cmpMode){var ix=cmpSel.indexOf(id);if(ix>=0)cmpSel.splice(ix,1);else cmpSel.push(id);if(cmpSel.length>2)cmpSel.shift();cmpUpd();renderGallery();if(cmpSel.length===2)openCmp(cmpSel[0],cmpSel[1]);return}
+    for(var i=0;i<photos.length;i++)if(photos[i].id===id){openLb(photos[i]);return}
   };
   $('lbRefresh').onclick=function(){
     var rec=lbRec;if(!rec||!rec.src)return;
@@ -1231,6 +1252,61 @@
   window.addEventListener('resize',render);
   sndLabel();
   load();applyTheme();$('date').value=today();render();checkRem();
+  function recById(id){for(var i=0;i<photos.length;i++)if(photos[i].id===id)return photos[i];return null}
+  function cmpUpd(){
+    $('cmpBtn').classList.toggle('on',cmpMode);
+    $('cmpBar').style.display=cmpMode?'flex':'none';
+    $('cmpTxt').textContent='Odaberi dvije slike ('+cmpSel.length+'/2)';
+  }
+  function cmpOff(){cmpMode=false;cmpSel=[];cmpUpd();renderGallery()}
+  $('cmpBtn').onclick=function(){if(cmpMode){cmpOff();return}cmpMode=true;cmpSel=[];cmpUpd();renderGallery()};
+  $('cmpCancel').onclick=cmpOff;
+  $('cmpAuto').onclick=function(){
+    var pid=galSel!=='all'?galSel:P().id;
+    var l=photos.filter(function(r){return r.pid===pid&&r.date}).sort(function(a,b){return toDay(b.date)-toDay(a.date)||b.ts-a.ts});
+    if(l.length<2){$('cmpTxt').textContent='Treba barem dvije slike ove osobe.';return}
+    var nw=l[0],target=toDay(nw.date)-30,best=null,bd=1e9;
+    l.slice(1).forEach(function(r){var dd=Math.abs(toDay(r.date)-target);if(dd<bd){bd=dd;best=r}});
+    cmpSel=[best.id,nw.id];openCmp(best.id,nw.id);
+  };
+  var cmpA=null,cmpB=null;
+  function cmpWeight(r){var p=null;S.people.forEach(function(q){if(q.id===r.pid)p=q});return p?latestOn(p.entries,r.date):null}
+  function openCmp(ia,ib,keep){
+    var a=recById(ia),b=recById(ib);if(!a||!b)return;
+    if(!keep&&(toDay(a.date||'1970-01-01')>toDay(b.date||'1970-01-01')||(a.date===b.date&&a.ts>b.ts))){var t=a;a=b;b=t}
+    cmpA=a;cmpB=b;
+    var wa=cmpWeight(a),wb=cmpWeight(b),days=Math.abs(Math.round(toDay(b.date)-toDay(a.date)));
+    if(toDay(a.date)>toDay(b.date)){var tw=wa;wa=wb;wb=tw}
+    function col(r,w){return '<div class="cm"><img alt="" src="'+urlOf(r)+'"><div class="cd2">'+fmtDate(r.date)+(w!==null?' · '+f1(w)+' kg':'')+'</div></div>'}
+    $('cmpRow').innerHTML=col(a,cmpWeight(a))+col(b,cmpWeight(b));
+    var sum='';
+    if(a.pid===b.pid&&wa!==null&&wb!==null){var d=wb-wa,pc=d/wa*100,c=d<0?'var(--gr)':d>0?'var(--mg)':'var(--text)';
+      sum='<span style="color:'+c+'">'+(d>0?'+':'')+f1(d)+' kg ('+(pc>0?'+':'')+f1(pc)+'%)</span>'}
+    var dt=days===0?'isti dan':days+' '+plural(days,'dan','dana','dana')+' razlike';
+    $('cmpSum').innerHTML=(sum||'<span>'+dt+'</span>')+(sum?'<small>'+dt+'</small>':'');
+    $('cmpOv').style.display='flex';
+  }
+  $('cmpClose').onclick=function(){$('cmpOv').style.display='none';cmpSel=[];renderGallery()};
+  $('cmpSwap').onclick=function(){if(cmpA&&cmpB)openCmp(cmpB.id,cmpA.id,true)};
+  $('cmpSave').onclick=function(){
+    if(!cmpA||!cmpB)return;
+    var a=cmpA,b=cmpB,wa=cmpWeight(a),wb=cmpWeight(b),days=Math.abs(Math.round(toDay(b.date)-toDay(a.date)));
+    if(toDay(a.date)>toDay(b.date)){var tw=wa;wa=wb;wb=tw}
+    Promise.all([createImageBitmap(a.blob),createImageBitmap(b.blob)]).then(function(im){
+      var W=im[0].width+im[1].width+40,H=Math.max(im[0].height,im[1].height)+210,c=document.createElement('canvas');c.width=W;c.height=H;
+      var x=c.getContext('2d');x.fillStyle='#111';x.fillRect(0,0,W,H);
+      x.drawImage(im[0],10,10);x.drawImage(im[1],im[0].width+30,10);
+      x.fillStyle='#fff';x.textAlign='center';x.textBaseline='alphabetic';
+      var base=Math.max(im[0].height,im[1].height)+10,line='';
+      if(a.pid===b.pid&&wa!==null&&wb!==null){var d=wb-wa,pc=d/wa*100;line=(d>0?'+':'')+f1(d)+' kg ('+(pc>0?'+':'')+f1(pc)+'%)  ·  '+days+' '+plural(days,'dan','dana','dana')}
+      else line=days+' '+plural(days,'dan','dana','dana')+' razlike';
+      x.font='700 76px system-ui,sans-serif';x.fillText(line,W/2,base+90);
+      x.fillStyle='#8a8a8a';x.font='600 40px system-ui,sans-serif';x.fillText(fmtDate(a.date)+'   →   '+fmtDate(b.date)+'   ·   kylogram',W/2,base+160);
+      c.toBlob(function(bl){
+        var u=URL.createObjectURL(bl),l=document.createElement('a');l.href=u;l.download='kylogram-usporedba-'+a.date+'_'+b.date+'.jpg';document.body.appendChild(l);l.click();l.remove();setTimeout(function(){URL.revokeObjectURL(u)},4000);
+      },'image/jpeg',0.92);
+    });
+  };
   var MN=['siječanj','veljača','ožujak','travanj','svibanj','lipanj','srpanj','kolovoz','rujan','listopad','studeni','prosinac'];
   function renderCal(){
     var e=state.entries,keys=Object.keys(e).sort(),t=today(),ty=+t.slice(0,4),tm=+t.slice(5,7),sy=ty,sm=tm;
