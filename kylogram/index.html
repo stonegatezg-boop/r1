@@ -129,7 +129,9 @@
   #pswatch{flex:0 0 100%;display:flex;gap:8px;align-items:center}
   #pswatch .sw{width:34px;height:34px;min-width:0;padding:0;font-size:14px;line-height:1}
   #pswatch .sw.on{outline:3px solid var(--text);outline-offset:2px}
-  #pswatch .sw.def{background:repeating-linear-gradient(45deg,#888 0 4px,#444 4px 8px);color:#fff}
+  #pswatch .sw.cust{position:relative;display:inline-block;border-radius:10px;overflow:visible;vertical-align:top;background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+  #pswatch .sw.cust input{position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0;border:0;cursor:pointer}
+  html[data-theme="80"] #pswatch .sw.cust,html[data-theme="90"] #pswatch .sw.cust{border-radius:0}
   #sH{color:var(--hc)}
   #save{width:100%;margin-top:10px}
   #mtabs{margin-bottom:6px}
@@ -353,7 +355,7 @@
     <div class="msg" id="rmsg"></div>
     <div id="rlist"></div>
   </div>
-  <div class="ver">verzija 11.11. 22:25</div>
+  <div class="ver">verzija 11.11. 22:40</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -738,8 +740,10 @@
     $('save').textContent=pmode==='add'?'Dodaj':'Spremi';
     $('pok').textContent=pmode==='edit'?'Spremi':'Dodaj';
     var sw='';PALETTE.forEach(function(c){sw+='<button type="button" class="sw'+(pcolor===c[0]?' on':'')+'" data-c="'+c[0]+'" style="background:'+c[0]+'" title="'+c[1]+'"></button>'});
-    sw+='<button type="button" class="sw def'+(pcolor===null?' on':'')+'" data-c="" title="Zadano">×</button>';
+    var isCust=!!pcolor&&!PALETTE.some(function(c){return c[0]===pcolor});
+    sw+='<div class="sw cust'+(isCust?' on':'')+'" title="Odaberi boju" style="'+(isCust?'background:'+pcolor:'')+'"><input type="color" id="pcol" value="'+(pcolor||'#e3ff00')+'" aria-label="Odaberi boju"></div>';
     $('pswatch').innerHTML=sw;
+    $('pcol').addEventListener('input',function(){pcolor=this.value;var sws=document.querySelectorAll('#pswatch .sw');for(var i=0;i<sws.length;i++)sws[i].classList.remove('on');var c=this.parentNode;c.classList.add('on');c.style.background=this.value});
     $('pdel').style.display=(pmode==='edit'&&S.people.length>1)?'':'none';
   }
   $('people').onclick=function(e){
