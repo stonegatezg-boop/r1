@@ -102,6 +102,9 @@
   .cur{display:inline;color:var(--acc);animation:blink 1s steps(1) infinite}
   html[data-theme="m"] .cur,html[data-theme="ml"] .cur,html[data-theme="mb"] .cur{display:none}
   .brand h1{white-space:nowrap}
+  .brand h1 .y{color:var(--pc,#fff);-webkit-text-fill-color:currentColor}
+  html[data-theme="ml"]:not([style*="--pc"]) .brand h1 .y{-webkit-text-stroke:1.2px #14161a;paint-order:stroke fill}
+  html[data-theme="ml"][style*="--pc"] .brand h1 .y{color:var(--logo)}
   #brandR{margin-left:auto;display:flex;align-items:center;gap:6px}
   #chHead{display:flex;align-items:center;justify-content:space-between;margin:2px 0 6px}
   #shWrap{position:relative;margin-left:auto}
@@ -364,14 +367,7 @@
 <body>
 <div class="wrap">
   <div class="brand">
-    <svg viewBox="0 0 100 100" aria-hidden="true"><rect x="8" y="8" width="84" height="84" rx="11" style="fill:var(--pc,#000)" stroke="#3a3a40" stroke-width="4.5"/>
-<g transform="translate(0 -8)"><path d="M27 37 Q50 24 73 37 L66 55 Q50 47 34 55 Z" fill="#f3fbf7" stroke="#000000" stroke-width="3.5" stroke-linejoin="round"/>
-<path d="M39 41 L41 45 M50 38.5 L50 43 M61 41 L59 45" stroke="#000000" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-<path d="M43.2 41L46.4 53L52.2 50.2Z" fill="#ff1a1a" stroke="#ff1a1a" stroke-width="1.2" stroke-linejoin="round"/>
-<circle cx="50" cy="52.5" r="3.6" fill="#f3fbf7" stroke="#000" stroke-width="1.4"/></g>
-<path d="M50 55V77" stroke="#000" stroke-width="7.2" stroke-linecap="round"/>
-<path d="M50 55V77" stroke="#ffffff" stroke-width="4.8" stroke-linecap="round"/></svg>
-    <h1>kylogram<span class="cur">_</span></h1>
+    <h1>k<span class="y">y</span>logram<span class="cur">_</span></h1>
     <div id="brandR"><button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button></div>
   </div>
 
@@ -592,7 +588,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 15:19</div>
+  <div class="ver"><span>verzija</span> 12.11. 15:21</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
