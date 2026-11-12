@@ -122,11 +122,11 @@
   .camwrap button{width:100%}
   .fover{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;font-size:100px;padding:0;border:0;margin:0}
   .camrow svg{vertical-align:-3px;margin-right:6px}
-  #pbwrap,#pgwrap,#phwrap{flex:0 0 100%;display:flex;align-items:center;gap:10px;color:var(--mute)}
-  #pbwrap,#pgwrap,#phwrap{justify-content:space-between;font-size:15px;line-height:1.25}
+  #pbwrap,#pwwrap,#pgwrap,#phwrap{flex:0 0 100%;display:flex;align-items:center;gap:10px;color:var(--mute)}
+  #pbwrap,#pwwrap,#pgwrap,#phwrap{justify-content:space-between;font-size:15px;line-height:1.25}
   #pmwrap{flex:0 0 100%;display:flex;flex-direction:column;gap:8px;color:var(--mute);font-size:15px}
   #pmwrap .pmin{display:flex;gap:8px}#pmwrap .pmin input{flex:1;min-width:0;width:0;font-size:17px;text-align:center}
-  #pbwrap input,#pgwrap input,#phwrap input{flex:0 0 170px!important;width:170px!important;max-width:170px;min-width:0!important;box-sizing:border-box;font-size:17px}
+  #pbwrap input,#pwwrap input,#pgwrap input,#phwrap input{flex:0 0 170px!important;width:170px!important;max-width:170px;min-width:0!important;box-sizing:border-box;font-size:17px}
   #pmsg{flex:0 0 100%;min-height:0}
   html[data-theme="mb"] .card{background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 8%,var(--card)),var(--card) 58%);border-color:color-mix(in srgb,var(--acc) 18%,var(--line))}
   html[data-theme="mb"] .stat{background:linear-gradient(150deg,color-mix(in srgb,var(--tc,var(--acc)) 14%,var(--card)),var(--card) 78%);border-color:color-mix(in srgb,var(--tc,var(--acc)) 28%,var(--line))}
@@ -308,7 +308,8 @@
   #cardNew{position:relative}
   #pcancel{position:absolute;top:14px;right:14px;width:38px;height:38px;padding:0;display:grid;place-items:center;font-size:20px;line-height:1;z-index:2}
   #cardNew:has(#pform[style*="flex"]) #people{padding-right:50px}
-  #pok{display:none!important}
+  #pok{flex:1 1 100%;order:20}
+  #pdel{order:21}
   #who{align-self:center;font-weight:700;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   /* ===== 80s ===== */
@@ -363,7 +364,7 @@
 <body>
 <div class="wrap">
   <div class="brand">
-    <svg viewBox="0 0 100 100" aria-hidden="true"><rect x="2" y="2" width="96" height="96" rx="24" fill="#0b0b0d"/><g transform="translate(21.000000000000004 21.000000000000004) scale(0.58)"><clipPath id="kc"><rect x="0" y="0" width="100" height="100"/></clipPath><g clip-path="url(#kc)"><g transform="rotate(-45 50 50)"><rect x="-80" y="-12" width="260" height="30.9" fill="#fff"/><rect x="-80" y="26" width="260" height="32.5" fill="#3ef5c4"/></g><polygon points="20,100 100,100 60,60" fill="#fff"/></g></g></svg>
+    <svg viewBox="0 0 100 100" aria-hidden="true"><rect x="2" y="2" width="96" height="96" rx="24" fill="#0b0b0d"/><g transform="translate(21.000000000000004 21.000000000000004) scale(0.58)"><clipPath id="kc"><rect x="0" y="0" width="100" height="100"/></clipPath><g clip-path="url(#kc)"><g transform="rotate(-45 50 50)"><rect x="-80" y="-12" width="260" height="30.9" fill="#fff"/><rect x="-80" y="26" width="260" height="32.5" style="fill:var(--pc,#3ef5c4)"/></g><polygon points="20,100 100,100 60,60" fill="#fff"/></g></g></svg>
     <h1>kylogram<span class="cur">_</span></h1>
     <div id="brandR"><button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button></div>
   </div>
@@ -374,6 +375,7 @@
       <input type="search" id="pname" maxlength="24" placeholder="Ime osobe" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
       <div id="pswatch"></div>
       <label id="pbwrap">Rođen/a (nije obavezno) <input type="date" id="pbirth" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
+      <label id="pwwrap">Težina <input type="number" id="pwt" inputmode="decimal" step="0.1" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
       <label id="pgwrap">Ciljna težina (nije obavezno) <input type="number" id="pgoal" inputmode="decimal" step="0.1" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
       <label id="phwrap">Visina <input type="number" id="phgt" inputmode="decimal" step="0.1" placeholder="cm" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
       <div id="pmwrap"><span>Mjere tijela</span><div class="pmin"><input type="number" id="pmc" inputmode="decimal" step="0.1" placeholder="prsa" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="number" id="pmw2" inputmode="decimal" step="0.1" placeholder="struk" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="number" id="pmh" inputmode="decimal" step="0.1" placeholder="bokovi" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div></div>
@@ -584,7 +586,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 14:29</div>
+  <div class="ver"><span>verzija</span> 12.11. 14:33</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1463,7 +1465,7 @@
     $('people').innerHTML=h;
     $('who').textContent=P().name;
     $('pform').style.display=pmode?'flex':'none';
-    $('entry').style.display=(S.all&&!pmode)?'none':'';
+    $('entry').style.display=(S.all||pmode)?'none':'';
     var cr=document.querySelector('.camrow');if(cr)cr.style.display=pmode?'none':'';
     $('save').textContent=T(pmode==='add'?'Dodaj':'Spremi');
     $('pok').textContent=T(pmode==='edit'?'Spremi':'Dodaj');
@@ -1494,7 +1496,8 @@
   };
   var PBF=[['chest','pmc'],['waist','pmw2'],['hips','pmh']];
   function pfBody(p){
-    var u=hu();$('phgt').placeholder=u;
+    var u=hu();$('phgt').placeholder=u;$('pwt').placeholder=wu();
+    var lw=p&&p.entries?latest(p.entries):null,wv=lw?nv(dw(lw.v)):'';$('pwt').value=wv;$('pwt').dataset.i=wv;
     var lh=p&&p.heights?latest(p.heights):null,v=lh?nv(dh(lh.v)):'';$('phgt').value=v;$('phgt').dataset.i=v;
     PBF.forEach(function(r){var o=p&&p.meas&&p.meas[r[0]]?latest(p.meas[r[0]]):null,x=o?nv(dh(o.v)):'';$(r[1]).value=x;$(r[1]).dataset.i=x});
   }
@@ -1505,13 +1508,16 @@
     if(bd&&(bd>today()||bd<'1900-01-01')){$('pmsg').textContent=T('Datum rođenja nije ispravan.');return false}
     var gv=$('pgoal').value.trim(),gl=null;
     if(gv!==''){gl=uw(parseKg(gv));if(!(gl>=0.99&&gl<=300.01)){$('pmsg').textContent=T('Ciljna težina mora biti između')+' '+rng(1,300,'w');return false}gl=rw(gl)}
+    var wtv=$('pwt').value.trim(),wtn=null;
+    if(wtv!==''){wtn=uw(parseKg(wtv));if(!(wtn>=1.99&&wtn<=400.01)){$('pmsg').textContent=T('Težina mora biti između')+' '+rng(2,400,'w');return false}}
     var hv=$('phgt').value.trim(),hn=null,mo={},mAny=false;
     if(hv!==''){hn=uh(parseKg(hv));if(!(hn>=29.99&&hn<=250.01)){$('pmsg').textContent=T('Visina mora biti između')+' '+rng(30,250,'h');return false}}
     for(var qi=0;qi<PBF.length;qi++){var mv=$(PBF[qi][1]).value.trim();if(mv!==''){var mx=uh(parseKg(mv));if(!(mx>=19.99&&mx<=250.01)){$('pmsg').textContent=T('Mjera mora biti između')+' '+rng(20,250,'h');return false}mo[PBF[qi][0]]=mx}}
     $('pmsg').textContent='';
     if(pmode==='add'){var id='p'+Date.now().toString(36);S.people.push({id:id,name:n,birth:bd||null,color:pcolor,entries:{},heights:{},meas:{chest:{},waist:{},hips:{}},goal:gl});S.active=id;S.all=false;dropUndo()}
     else if(pmode==='edit'){P().name=n;P().color=pcolor;P().birth=bd||null;P().goal=gl}
-    var pp=P(),dd=$('date').value||today(),cfgCh=false;
+    var pp=P(),dd=today(),cfgCh=false;
+    if(wtn!==null&&wtv!==$('pwt').dataset.i){pp.entries[dd]=rw(wtn)}
     if(hn!==null&&hv!==$('phgt').dataset.i){pp.heights=pp.heights||{};pp.heights[dd]=rh(hn);if(!S.cfg.h){S.cfg.h=true;cfgCh=true}}
     PBF.forEach(function(r){if(mo[r[0]]!==undefined&&$(r[1]).value.trim()!==$(r[1]).dataset.i){state.meas[r[0]][dd]=rh(mo[r[0]]);mAny=true}});
     if(mAny&&!S.cfg.m){S.cfg.m=true;cfgCh=true}
