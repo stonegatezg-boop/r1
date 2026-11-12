@@ -583,7 +583,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 13:46</div>
+  <div class="ver"><span>verzija</span> 12.11. 13:51</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1033,31 +1033,35 @@
     ds.forEach(function(x){x.pw.forEach(function(e){allw.push(e.v);dd.push(e.d)});x.ph.forEach(function(e){allh.push(e.v);dd.push(e.d)})});
     if(!dd.length){svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" text-anchor="middle" font-size="14">'+T('Nema podataka')+'</text>';geo=null;return}
     var d0=Math.min.apply(null,dd),d1=Math.max.apply(null,dd);if(d1===d0){d0-=1;d1+=1}
-    var padL=40,padR=48,padT=28,padB=26,iw=W-padL-padR,ih=H-padT-padB;
+    var hp=ds.filter(function(x){return x.ph.length}),colW=40;
+    var padL=40,padR=18+Math.max(hp.length,1)*colW,padT=36,padB=26,iw=W-padL-padR,ih=H-padT-padB;
     function X(d){return padL+(d-d0)/(d1-d0)*iw}
     var sw=allw.length?scaleOf(allw,dw(0.5)):{lo:0,hi:1},sh=allh.length?scaleOf(allh,dh(1)):{lo:0,hi:1};
     function YW(v){return padT+(sw.hi-v)/(sw.hi-sw.lo)*ih}
     function YH(v){return padT+(sh.hi-v)/(sh.hi-sh.lo)*ih}
-    var g='',st=niceStep((sw.hi-sw.lo)/4),sth=niceStep((sh.hi-sh.lo)/4);
+    var g='',st=niceStep((sw.hi-sw.lo)/4);
     for(var v=Math.ceil(sw.lo/st)*st;v<=sw.hi;v+=st){
       g+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+YW(v)+'" y2="'+YW(v)+'" stroke="var(--line)" stroke-dasharray="2 5"/><text x="'+(padL-6)+'" y="'+(YW(v)+4)+'" text-anchor="end" font-size="11">'+(+v.toFixed(2))+'</text>';
     }
-    for(v=Math.ceil(sh.lo/sth)*sth;v<=sh.hi;v+=sth){
-      g+='<text x="'+(W-padR+6)+'" y="'+(YH(v)+4)+'" font-size="11" style="fill:var(--mute)">'+(+v.toFixed(2))+'</text>';
-    }
-    g+='<text x="'+(padL-6)+'" y="15" text-anchor="end" font-size="11">'+wu()+'</text><text x="'+(W-padR+6)+'" y="15" font-size="11">'+hu()+'</text>';
+    g+='<text x="'+(padL-6)+'" y="18" text-anchor="end" font-size="11">'+wu()+'</text>';
+    if(hp.length)g+='<text x="'+(W-12)+'" y="18" text-anchor="end" font-size="11">'+hu()+'</text>';
     g+=xTicks(X,d0,d1,3,H);
     var labs=[];
     ds.forEach(function(x){
-      var p=x.pw.map(function(e){return [X(e.d),YW(e.v)]}),q2=x.ph.map(function(e){return [X(e.d),YH(e.v)]});
-      if(q2.length>1)g+='<path d="'+smoothPath(q2)+'" fill="none" stroke="'+x.col+'" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round" opacity=".8"/>';
-      q2.forEach(function(q){g+='<path d="M'+q[0]+','+(q[1]-4.5)+' L'+(q[0]+4.5)+','+q[1]+' L'+q[0]+','+(q[1]+4.5)+' L'+(q[0]-4.5)+','+q[1]+' Z" fill="'+x.col+'"/>'});
+      var p=x.pw.map(function(e){return [X(e.d),YW(e.v)]});
       if(p.length>1)g+='<path d="'+smoothPath(p)+'" fill="none" stroke="'+x.col+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
       p.forEach(function(q){g+='<rect x="'+(q[0]-3.5)+'" y="'+(q[1]-3.5)+'" width="7" height="7" fill="'+x.col+'"/>'});
-      var lw=x.pw.length?x.pw[x.pw.length-1]:null,lh=x.ph.length?x.ph[x.ph.length-1]:null;
-      var tx=(lw?f1(lw.v)+' '+wu():'')+(lw&&lh?' · ':'')+(lh?f1(lh.v)+' '+hu():'');
-      var anchorY=lw?p[p.length-1][1]:q2[q2.length-1][1];
-      if(lw||lh)labs.push({y:anchorY,col:x.col,t:x.name+'  '+tx});
+      if(x.pw.length)labs.push({y:p[p.length-1][1],col:x.col,t:x.name+'  '+f1(x.pw[x.pw.length-1].v)+' '+wu()});
+    });
+    hp.forEach(function(x,i){
+      var cx=W-padR+20+i*colW,f=x.ph[0].v,l=x.ph[x.ph.length-1].v,mid=(f+l)/2,rg=Math.max(Math.abs(l-f)*1.8,dh(2)),yf=padT+(mid+rg/2-f)/rg*ih,yl=padT+(mid+rg/2-l)/rg*ih;
+      g+='<path d="M'+cx+' '+yf+'V'+yl+'" stroke="'+x.col+'" stroke-width="3.5" stroke-linecap="round" opacity=".55"/>';
+      g+='<circle cx="'+cx+'" cy="'+yl+'" r="5" fill="'+x.col+'"/>';
+      var up=l>=f;
+      g+='<text x="'+cx+'" y="'+(yl+(up?-10:17))+'" text-anchor="middle" font-size="11" style="fill:'+x.col+';font-weight:700">'+f1(l)+'</text>';
+      if(x.ph.length>1&&Math.abs(l-f)>1e-9){
+        g+='<circle cx="'+cx+'" cy="'+yf+'" r="3.5" fill="'+x.col+'" opacity=".6"/><text x="'+cx+'" y="'+(yf+(up?16:-9))+'" text-anchor="middle" font-size="10" style="fill:'+x.col+';opacity:.8">'+f1(f)+'</text>';
+      }
     });
     labs.sort(function(a,b){return a.y-b.y});
     for(var j=1;j<labs.length;j++)if(labs[j].y<labs[j-1].y+15)labs[j].y=labs[j-1].y+15;
