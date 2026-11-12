@@ -586,7 +586,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 14:33</div>
+  <div class="ver"><span>verzija</span> 12.11. 14:39</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1223,7 +1223,7 @@
     if(all){if(mm==='b')chartAllB();else if(mm==='h')chartAllH();else chartAll()}else if(mm==='m')chartMeas();else chart(s,hs,mm);
     document.querySelector('.legend').style.display=all?'none':'';
     document.querySelector('.stats').style.display=all?'none':'';$('chg').style.display=all?'none':'';$('galCard').style.display='';
-    $('entry').style.display=all?'none':'';
+    $('entry').style.display=(all||pmode)?'none':'';
     $('allHint').style.display=all?'block':'none';renderAllSel();
     $('who').textContent=all?T('Svi'):P().name;
     var tabs=$('tabs').children;
