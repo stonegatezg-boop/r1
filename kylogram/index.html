@@ -191,11 +191,25 @@
   #shOv{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:14px;overflow:auto}
   #shOv .dscard{width:100%;max-width:360px;max-height:100%;overflow:auto}
   #shCv{width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--line)}
+  #shFmt{display:flex;gap:8px;margin-top:12px}
+  #shFmt button{flex:1;padding:9px 6px;font-size:14px}
+  #shFmt button.on{border-color:var(--acc);color:var(--acc)}
   .shrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:15px;color:var(--text)}
   .shrow input{width:22px;height:22px;accent-color:var(--acc)}
   #shGo{flex:1 1 100%}
-  #mstats .stat,#sH{cursor:pointer}
-  #mstats .stat:active,#stH:active{filter:brightness(1.2)}
+  #sH{cursor:pointer}
+  #stH:active{filter:brightness(1.2)}
+  .mpan{margin:14px 0 2px;display:flex;flex-direction:column;gap:11px}
+  .mrow{cursor:pointer;display:grid;grid-template-columns:62px 1fr 78px;align-items:center;gap:10px}
+  .mrow:active{filter:brightness(1.2)}
+  .mrow .mn{font-size:13px;color:var(--mute);display:flex;align-items:center;gap:6px}
+  .mrow .mn i{width:9px;height:9px;border-radius:50%;flex:none}
+  .mrow .mb{position:relative;height:22px;background:rgba(255,255,255,.04);border-radius:11px;overflow:hidden}
+  .mrow .mb:after{content:'';position:absolute;left:50%;top:3px;bottom:3px;width:1.5px;background:var(--line)}
+  .mrow .mb u{position:absolute;top:3px;bottom:3px;border-radius:8px;text-decoration:none;z-index:1}
+  .mrow .mv{text-align:right;font-weight:700;font-size:15px;line-height:1.1}
+  .mrow .mv small{display:block;font-weight:400;font-size:10.5px;color:var(--mute);margin-top:2px}
+
   #sub-s{flex-direction:column;gap:0;margin-top:14px;padding:0 2px 24px}
   #sub-s.open{display:flex}
   #sub-s .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-bottom:1px solid var(--line)}
@@ -414,11 +428,7 @@
     </div>
     <svg id="chart"></svg>
     <div id="tip"></div>
-  <div class="stats m3" id="mstats" style="display:none;margin:12px 0 4px">
-    <div class="stat t1"><b id="sMc">–</b><span id="lMc">prsa</span></div>
-    <div class="stat t2"><b id="sMw">–</b><span id="lMw">struk</span></div>
-    <div class="stat t4"><b id="sMh">–</b><span id="lMh">bokovi</span></div>
-  </div>
+  <div id="mstats" class="mpan" style="display:none"></div>
     <div id="cmp"></div>
     <div class="legend">
       <span class="lw"><i class="dot" style="background:var(--gr)"></i>pad</span>
@@ -562,7 +572,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 10:57</div>
+  <div class="ver"><span>verzija</span> 12.11. 11:03</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -575,7 +585,7 @@
   </div>
 </div>
 <div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
-<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
+<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><div id="shFmt"><button class="ghost on" type="button" data-f="p">Instagram 4:5</button><button class="ghost" type="button" data-f="s">Story 9:16</button></div><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
 <div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
 
@@ -910,7 +920,7 @@
     if(state.goal&&sw){
       var gy=Y(sw,dw(state.goal)),gt=fd(dw(state.goal));
       gm={padT:padT,ih:ih,hi:sw.hi,lo:sw.lo,gy0:gy,W:W,padR:padR,last:dw(vw[vw.length-1].w),orig:dw(state.goal)};
-      g+='<line id="gline" x1="'+(padL-4)+'" x2="'+(W-padR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="5 4"/>';
+      g+='<line id="gline" x1="'+(padL-4)+'" x2="'+(two&&!leftIsH?Math.min(W-padR,X(vw[vw.length-1].d)+8):W-padR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="5 4"/>';
       g+='<g id="gdrag" style="cursor:ns-resize"><circle cx="19" cy="'+gy+'" r="26" fill="transparent"/><circle cx="19" cy="'+gy+'" r="16" style="fill:var(--warn)"/><text id="gtxt" x="19" y="'+(gy+5)+'" text-anchor="middle" font-size="'+(gt.length>3?12:14)+'" font-weight="700" style="fill:'+'var(--navy)'+';pointer-events:none">'+gt+'</text></g>';
     }
     if(sh){
@@ -1102,14 +1112,21 @@
   }
 
   function mStats(){
+    var cut=state.range?toDay(today())-state.range:-1e9,rows=[],mx=0.0001;
     MK.forEach(function(k,i){
-      var o=state.meas[k],ks=Object.keys(o).sort(),b=$(['sMc','sMw','sMh'][i]),l=$(['lMc','lMw','lMh'][i]);
-      if(!ks.length){b.textContent='–';l.textContent=T(MKL[k]);return}
-      var v=o[ks[ks.length-1]];b.textContent=f1(dh(v))+' '+hu();
-      var lab=T(MKL[k]);
-      if(ks.length>1){var d=v-o[ks[ks.length-2]];lab+=' · '+(d>0?'+':'')+f1(dh(d))}
-      l.textContent=lab;
-    });
+      var o=state.meas[k],ks=Object.keys(o).sort().filter(function(d){return toDay(d)>=cut}),r={k:k,i:i};
+      if(ks.length>1){r.a=o[ks[0]];r.b=o[ks[ks.length-1]];r.d=r.b-r.a;mx=Math.max(mx,Math.abs(r.d))}
+      else if(ks.length===1){r.b=o[ks[0]]}
+      rows.push(r)});
+    $('mstats').innerHTML=rows.map(function(r){
+      var c=MCOL[r.i],bar='',txt='–',sm='';
+      if(r.d!==undefined){
+        var w=Math.max(3,Math.abs(r.d)/mx*46),neg=r.d<0;
+        bar='<u style="background:'+c+';'+(neg?'right:50%':'left:50%')+';width:'+w+'%;opacity:'+(Math.abs(r.d)<0.05?.35:1)+'"></u>';
+        txt=(Math.abs(r.d)<0.05?'0':(r.d>0?'+':'−')+f1(Math.abs(dh(r.d))))+' '+hu();
+        sm=f1(dh(r.a))+' → '+f1(dh(r.b));
+      }else if(r.b!==undefined)sm=f1(dh(r.b))+' '+hu();
+      return '<div class="mrow"><span class="mn"><i style="background:'+c+'"></i>'+T(MKC[r.k])+'</span><span class="mb">'+bar+'</span><span class="mv" style="color:'+c+'">'+txt+'<small>'+sm+'</small></span></div>'}).join('');
   }
   function readMeas(){
     var o={},bad=false,any=false;if(!mOn())return {o:o,any:false,bad:false};
@@ -1135,10 +1152,12 @@
     if(msKey==='height')state.heights[d]=rh(x);else state.meas[msKey][d]=rh(x);
     persist();closeMs();render();
   };
-  $('mstats').onclick=function(e){var t=e.target.closest?e.target.closest('.stat'):null;if(!t)return;openMs(MK[Array.prototype.indexOf.call($('mstats').children,t)])};
+  $('mstats').onclick=function(e){var t=e.target.closest?e.target.closest('.mrow'):null;if(!t)return;openMs(MK[Array.prototype.indexOf.call($('mstats').children,t)])};
   $('sH').parentNode.onclick=function(){if(hOn())openMs('height')};
 
   var shBlob=null;
+  var shFmt='p';
+  $('shFmt').onclick=function(e){var f=e.target.dataset&&e.target.dataset.f;if(!f)return;shFmt=f;[].forEach.call($('shFmt').children,function(b){b.classList.toggle('on',b.dataset.f===f)});shDraw()};
   function shDraw(){
     var cv=$('shCv'),c=cv.getContext('2d'),W=1080,H=1350,cs=getComputedStyle(document.documentElement);
     function V(n){return cs.getPropertyValue(n).trim()||'#888'}
@@ -1148,7 +1167,7 @@
     if($('shHt').checked&&hOn()){var lh=latest(state.heights);if(lh)tl.push([T('Visina'),dh(lh.v),V('--hc')])}
     if($('shMs').checked&&mOn()){[['chest','Prsa','#ff6bd6'],['waist','Struk',ac],['hips','Bokovi','#6bd6ff']].forEach(function(r){var lm=latest(state.meas[r[0]]);if(lm)tl.push([T(r[1]),dh(lm.v),r[2]])})}
     if(rg>0){var lim=all.length?all[all.length-1].d-rg:0;s=all.filter(function(e){return e.d>=lim})}
-    c.clearRect(0,0,W,H);c.fillStyle=bg;c.fillRect(0,0,W,H);
+    var FH=shFmt==='s'?1920:1350;cv.height=FH;c=cv.getContext('2d');c.fillStyle=bg;c.fillRect(0,0,W,FH);c.translate(0,(FH-H)/2);
     var SF='system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
     c.textBaseline='alphabetic';
     c.fillStyle=ac;c.font='900 64px PFD,Georgia,serif';c.textAlign='left';c.fillText('kylogram',70,120);
@@ -1238,7 +1257,7 @@
   $('shNo').onclick=function(){$('shOv').style.display='none'};
   $('shOv').onclick=function(e){if(e.target===this)$('shOv').style.display='none'};
   function shMsg(){$('shM').textContent=T('Slika spremljena');setTimeout(function(){$('shM').textContent=''},2500)}
-  function shFile(b){var n='kylogram-'+today()+'.png';try{return new File([b],n,{type:'image/png'})}catch(e){return null}}
+  function shFile(b){var n='kylogram-'+today()+(shFmt==='s'?'-story':'')+'.png';try{return new File([b],n,{type:'image/png'})}catch(e){return null}}
   function shDl(b){var u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='kylogram-'+today()+'.png';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(u)},1500)}
   $('shSave').onclick=function(){shBlobGet(function(b){if(b){shDl(b);shMsg()}})};
   $('shGo').onclick=function(){shBlobGet(function(b){
