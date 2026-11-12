@@ -352,12 +352,12 @@
   <div class="card" id="cardNew">
     <div class="people" id="people"></div>
     <div id="pform">
-      <input id="pname" maxlength="24" placeholder="Ime osobe">
+      <input id="pname" maxlength="24" placeholder="Ime osobe" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
       <div id="pswatch"></div>
-      <label id="pbwrap">Rođen/a (nije obavezno) <input type="date" id="pbirth"></label>
-      <label id="pgwrap">Ciljna težina (nije obavezno) <input type="number" id="pgoal" inputmode="decimal" step="0.1" placeholder="kg"></label>
-      <label id="phwrap">Visina <input type="number" id="phgt" inputmode="decimal" step="0.1" placeholder="cm"></label>
-      <div id="pmwrap"><span>Mjere tijela</span><div class="pmin"><input type="number" id="pmc" inputmode="decimal" step="0.1" placeholder="prsa"><input type="number" id="pmw2" inputmode="decimal" step="0.1" placeholder="struk"><input type="number" id="pmh" inputmode="decimal" step="0.1" placeholder="bokovi"></div></div>
+      <label id="pbwrap">Rođen/a (nije obavezno) <input type="date" id="pbirth" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
+      <label id="pgwrap">Ciljna težina (nije obavezno) <input type="number" id="pgoal" inputmode="decimal" step="0.1" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
+      <label id="phwrap">Visina <input type="number" id="phgt" inputmode="decimal" step="0.1" placeholder="cm" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
+      <div id="pmwrap"><span>Mjere tijela</span><div class="pmin"><input type="number" id="pmc" inputmode="decimal" step="0.1" placeholder="prsa" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="number" id="pmw2" inputmode="decimal" step="0.1" placeholder="struk" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="number" id="pmh" inputmode="decimal" step="0.1" placeholder="bokovi" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div></div>
       <div class="msg" id="pmsg"></div>
       <button id="pok" type="button">Dodaj</button>
       <button class="ghost" id="pdel" type="button">Obriši</button>
@@ -365,19 +365,19 @@
     </div>
     <div id="entry">
     <div class="row">
-      <input type="date" id="date">
-      <input type="number" id="kg" inputmode="decimal" step="0.1" min="2" max="400" placeholder="kg">
-      <input type="number" id="cm" inputmode="decimal" step="0.1" min="30" max="250" placeholder="cm">
+      <input type="date" id="date" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+      <input type="number" id="kg" inputmode="decimal" step="0.1" min="2" max="400" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+      <input type="number" id="cm" inputmode="decimal" step="0.1" min="30" max="250" placeholder="cm" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
     </div>
     <div class="row" id="mrow" style="display:none;margin-top:8px">
-      <input type="number" id="mc" inputmode="decimal" step="0.1" placeholder="prsa">
-      <input type="number" id="mw" inputmode="decimal" step="0.1" placeholder="struk">
-      <input type="number" id="mh" inputmode="decimal" step="0.1" placeholder="bokovi">
+      <input type="number" id="mc" inputmode="decimal" step="0.1" placeholder="prsa" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+      <input type="number" id="mw" inputmode="decimal" step="0.1" placeholder="struk" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+      <input type="number" id="mh" inputmode="decimal" step="0.1" placeholder="bokovi" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
     </div>
     <button id="save" type="button">Spremi</button>
     <div class="camrow">
-      <div class="camwrap"><button class="ghost" type="button" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Slikaj</button><input type="file" id="fcam" class="fover" accept="image/*" capture="environment" aria-label="Slikaj"></div>
-      <div class="camwrap"><button class="ghost" type="button" tabindex="-1">Odaberi sliku</button><input type="file" id="fpick" class="fover" accept="image/*" aria-label="Odaberi sliku"></div>
+      <div class="camwrap"><button class="ghost" type="button" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Slikaj</button><input type="file" id="fcam" class="fover" accept="image/*" capture="environment" aria-label="Slikaj" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
+      <div class="camwrap"><button class="ghost" type="button" tabindex="-1">Odaberi sliku</button><input type="file" id="fpick" class="fover" accept="image/*" aria-label="Odaberi sliku" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
     </div>
     <div class="msg" id="msg"></div>
     </div>
@@ -458,7 +458,7 @@
     <button class="ghost" id="fbn" type="button" data-m="n">Obavijesti</button>
     <button class="ghost" id="fbb" type="button" data-m="b">Backup</button>
     <button class="ghost" id="fbs" type="button" data-m="s">Postavke</button>
-    <input type="file" id="file" accept="application/json" hidden>
+    <input type="file" id="file" accept="application/json" hidden autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
   </div>
   <div id="sub-b" class="sub">
     <button class="ghost" id="exp" type="button">Izvezi backup</button>
@@ -552,16 +552,16 @@
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
   </div>
   <div id="sub-n" class="sub subn">
-    <div class="rrow"><input type="date" id="rdate"><input type="time" id="rtime" value="08:00"></div>
+    <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
     <select id="rrep" aria-label="Ponavljanje"></select>
-    <input id="rtext" maxlength="60" placeholder="Naziv" value="Vaganje">
+    <input id="rtext" maxlength="60" placeholder="Naziv" value="Vaganje" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
     <button id="rsave" type="button">Spremi i dodaj u kalendar</button>
     <div class="msg" id="rmsg"></div>
     <div id="rlist"></div>
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 10:44</div>
+  <div class="ver"><span>verzija</span> 12.11. 10:45</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -573,9 +573,9 @@
     <button class="ghost" id="lbClose" type="button">Zatvori</button>
   </div>
 </div>
-<div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
-<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><label class="shrow"><span>Prikaži kilograme</span><input type="checkbox" id="shKg"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
-<div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
+<div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
+<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><label class="shrow"><span>Prikaži kilograme</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
+<div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
 
 <script>
