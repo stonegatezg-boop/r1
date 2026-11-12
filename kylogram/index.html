@@ -430,8 +430,9 @@
     <div class="tabs" id="mtabs">
       <button class="ghost" data-m="w">Težina</button>
       <button class="ghost" data-m="h">Visina</button>
+      <button class="ghost" data-m="b">Oboje</button>
       <button class="ghost" data-m="m">Mjere</button>
-      <div id="shWrap"><button class="ghost" id="shBtn" type="button" aria-label="Share"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>Share</span></button><div id="shMenu" style="display:none"><button type="button" data-t="ig">Instagram</button><button type="button" data-t="wa">WhatsApp</button><button type="button" data-t="em">Email</button><button type="button" data-t="ot">Other</button></div></div>
+      
     </div>
     <div class="tabs" id="tabs">
       <button class="ghost" data-r="7">7 d</button>
@@ -440,7 +441,7 @@
       <button class="ghost" data-r="365">1 god</button>
       <button class="ghost" data-r="0">Sve</button>
     </div>
-    <div id="chHead"><span id="who"></span></div>
+    <div id="chHead"><span id="who"></span><div id="shWrap"><button class="ghost" id="shBtn" type="button" aria-label="Share"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>Share</span></button><div id="shMenu" style="display:none"><button type="button" data-t="ig">Instagram</button><button type="button" data-t="wa">WhatsApp</button><button type="button" data-t="em">Email</button><button type="button" data-t="ot">Other</button></div></div></div>
     <svg id="chart"></svg>
     <div id="tip"></div>
   <div id="mstats" class="mpan" style="display:none"></div>
@@ -587,7 +588,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 11:24</div>
+  <div class="ver"><span>verzija</span> 12.11. 11:28</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -609,7 +610,7 @@
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
   var PALETTE=[['#3985f7','Plava'],['#f16b65','Koraljna'],['#11b882','Zelena'],['#f5ca45','Žuta'],['#f28a38','Narančasta'],['#e879b5','Roza'],['#a586f5','Ljubičasta'],['#929ba8','Siva']],pcolor=null;
   var THEMES=['m','ml','mb'],NAMES={'80':'80-e','m':'Moderna tamna','ml':'Moderna svijetla','mb':'Moderna crna'},TCOL={'80':'#07060d','m':'#0f1115','ml':'#eef0f4','mb':'#000000'};
-  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:30,theme:'m',metric:'w',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr',pf:{n:true,d:true,a:true,w:true,h:true},pt:{c:'#ffffff',p:'bl'}}};
+  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:30,theme:'m',metric:'b',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr',pf:{n:true,d:true,a:true,w:true,h:true},pt:{c:'#ffffff',p:'bl'}}};
   var LANG='hr';
   var MK=['chest','waist','hips'],MKL={chest:'prsa',waist:'struk',hips:'bokovi'},MKC={chest:'Prsa',waist:'Struk',hips:'Bokovi'},MCOL=['#ff6bd6','var(--acc)','#6bd6ff'],MAB={hr:['P','S','B'],en:['C','W','H'],de:['B','T','H'],es:['Pe','Ci','Ca'],it:['P','V','F'],pt:['P','C','Q'],pl:['K','T','B'],zh:['胸','腰','臀'],ja:['胸','腰','臀'],he:['ח','מ','י'],fr:['P','T','H'],cs:['H','P','B'],sk:['H','P','B'],hu:['M','D','Cs'],ro:['Pi','Ta','Șo'],bg:['Г','Т','Х'],el:['Σ','Μ','Γ'],ko:['가','허','엉'],nl:['B','T','H'],no:['Br','Mi','Ho'],fi:['R','V','L'],sv:['B','M','H'],da:['B','T','H'],ar:['ص','خ','و'],hi:['छा','क','कू'],sl:['Pr','Pa','Bo'],ru:['Гр','Та','Бё'],uk:['Гр','Та','Ст'],tr:['G','B','K'],sq:['Gj','B','I'],id:['D','Pi','Pg'],fil:['D','B','Ba'],vi:['N','E','H'],th:['อก','เอว','สะ'],bn:['বু','কো','নি'],sw:['Ki','Kn','Ny'],sr:['Гр','Ст','Ку'],mk:['Гр','По','Ко'],lt:['K','Ta','Kl'],lv:['K','V','G'],et:['R','V','P'],ca:['P','C','M'],is:['Br','Mi','Mj'],mt:['Si','Qa','Ġe'],ka:['მკ','წე','თე'],hy:['կր','գո','կո'],bs:['P','S','B'],fa:['سی','کم','با'],ur:['سی','کم','کو'],ms:['D','P','Pi'],ta:['மா','இடை','இடு'],te:['ఛా','న','తు'],mr:['छा','कं','नि'],ha:['Ƙ','K','D'],am:['ደ','ወ','ዳ'],af:['B','M','H']};
   function mOn(){return !!S.cfg.m}
@@ -671,7 +672,7 @@
     if(!x.people.length)throw 0;
     if(!x.people.some(function(p){return p.id===x.active}))x.active=x.people[0].id;
     if(x.range===undefined)x.range=30;if(x.range===90)x.range=180;if([0,7,30,180,365].indexOf(x.range)<0)x.range=30;
-    if(['w','h','m'].indexOf(x.metric)<0)x.metric='w';
+    if(['w','h','b','m'].indexOf(x.metric)<0)x.metric='b';
     x.all=!!x.all&&x.people.length>1;
     x.reminders=(Array.isArray(x.reminders)?x.reminders:[]).filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time)&&['once','day','week','month','first','year'].indexOf(r.rep)>=0}).slice(0,50).map(function(r,i){return {id:String(r.id||('r'+i+Date.now().toString(36))),date:r.date,time:r.time,rep:r.rep,text:String(r.text||'Vaganje').slice(0,60),dis:(typeof r.dis==='string'?r.dis:'')}});
     if(THEMES.indexOf(x.theme)<0)x.theme='m';
@@ -1109,7 +1110,7 @@
     if(all)mm=(!ho||S.metric==='w'||S.metric==='m')?'w':'h';
     else{mm=S.metric||'b';if(!ho&&(mm==='h'||mm==='b'))mm='w';if(mm==='m'&&!mo)mm='w'}
     var mt=$('mtabs').children;
-    for(var q=0;q<mt.length;q++){var dm=mt[q].dataset.m;if(dm===undefined)continue;var vis2=dm==='w'||(dm==='h'&&ho)||(dm==='m'&&mo&&!all);mt[q].classList.toggle('on',dm===mm);mt[q].style.display=vis2?'':'none'}
+    for(var q=0;q<mt.length;q++){var dm=mt[q].dataset.m;if(dm===undefined)continue;var vis2=dm==='w'||((dm==='h'||dm==='b')&&ho&&!(all&&dm==='b'))||(dm==='m'&&mo&&!all);mt[q].classList.toggle('on',dm===mm);mt[q].style.display=vis2?'':'none'}
     var lw=document.querySelectorAll('.legend .lw'),lh=document.querySelectorAll('.legend .lh'),lm=document.querySelectorAll('.legend .lm');
     for(q=0;q<lw.length;q++)lw[q].style.display=(mm==='h'||mm==='m')?'none':'';
     for(q=0;q<lh.length;q++)lh[q].style.display=(mm==='w'||mm==='m')?'none':'';
