@@ -181,8 +181,7 @@
   .galbar .tabs{flex:1;margin-bottom:0}
   .galscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 2px 24px}
   .stat b small{font-size:14px;font-weight:600}
-  .stats.chg{grid-template-columns:repeat(3,1fr)}
-  .stats.nh .stat:nth-child(3){grid-column:1/-1}
+  .stats.chg{grid-template-columns:repeat(4,1fr);gap:6px}
   #sub-s{flex-direction:column;gap:0;margin-top:14px;padding:0 2px 24px}
   #sub-s.open{display:flex}
   #sub-s .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-bottom:1px solid var(--line)}
@@ -198,7 +197,9 @@
   #sub-s .sw2.on::after{transform:translateX(18px);background:var(--navy,#000)}
   html[data-theme="90"] .slab{color:#fff}
   .slab{flex:1 1 100%;font-size:13px;color:var(--mute);margin-top:4px}
-  .stats.chg .stat b{font-size:20px}
+  .stats.chg .stat{padding:9px 8px}
+  .stats.chg .stat b{font-size:16px;white-space:nowrap}
+  .stats.chg .stat span{font-size:11px;white-space:nowrap}
   html[data-theme="90"] #calWho,html[data-theme="90"] .calkey{color:#fff}
   #daySheet{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:20px}
   .dscard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;width:100%;max-width:360px;color:var(--text)}
@@ -389,13 +390,14 @@
   <div class="stats">
     <div class="stat t1"><b id="sCur">–</b><span id="lCur">zadnja (kg)</span></div>
     <div class="stat t2"><b id="sTrend">–</b><span id="sTrendL">do cilja (kg)</span></div>
-    <div class="stat t3"><b id="sChg">–</b><span id="lChg">ukupno (kg)</span></div>
+    <div class="stat t3"><b id="sHp">–</b><span id="lHp">prethodna visina (cm)</span></div>
     <div class="stat t4"><b id="sH">–</b><span id="lH">visina (cm)</span></div>
   </div>
   <div class="stats chg" id="chg">
     <div class="stat t1"><b id="c7">–</b><span id="c7l">7 d</span></div>
     <div class="stat t2"><b id="c15">–</b><span id="c15l">15 d</span></div>
     <div class="stat t4"><b id="c30">–</b><span id="c30l">30 d</span></div>
+    <div class="stat t3"><b id="sChg">–</b><span id="lChg">ukupno</span></div>
   </div>
 
   <div class="card" id="cardChart">
@@ -483,7 +485,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 00:58</div>
+  <div class="ver"><span>verzija</span> 12.11. 01:02</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -506,7 +508,7 @@
   var LANG='hr';
   var EN={'Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
   'Dodaj':'Add','Obriši':'Delete','Spremi':'Save','Slikaj':'Take photo','Odaberi sliku':'Choose photo','Prikaz svih osoba. Za unos odaberi osobu.':'Showing everyone. Pick a person to add entries.',
-  'zadnja':'latest','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
+  'zadnja':'latest','prethodna visina':'previous height','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
   'Težina':'Weight','Visina':'Height','Oboje':'Both','Sve':'All','Svi':'All','1 god':'1 y','pad':'drop','rast':'gain','cilj':'goal','Cilj':'Goal',
   'Usporedba':'Comparison','Zamijeni':'Swap','Zatvori':'Close','Galerija i kalendar':'Gallery & calendar','Galerija':'Gallery','Kalendar':'Calendar',
   'Usporedi':'Compare','Označi':'Select','Odustani':'Cancel','Zadnja ↔ prije mjesec dana':'Latest ↔ a month earlier','Lista':'List',
@@ -611,11 +613,10 @@
     var ho=hOn();
     $('kg').placeholder=wu();$('cm').placeholder=hu();$('pgoal').placeholder=wu();
     $('cm').style.display=ho?'':'none';
-    $('sH').parentNode.style.display=ho?'':'none';
-    document.querySelector('.stats').classList.toggle('nh',!ho);
+    $('sH').parentNode.style.display=ho?'':'none';$('sHp').parentNode.style.display=ho?'':'none';
     $('mtabs').style.display=ho?'':'none';
     $('lCur').textContent=T('zadnja')+' ('+wu()+')';
-    $('lChg').textContent=T('ukupno')+' ('+wu()+')';
+    $('lHp').textContent=T('prethodna visina')+' ('+hu()+')';
     $('lH').textContent=T('visina')+' ('+hu()+')';
     $('galCard').setAttribute('data-t',T('Galerija i kalendar'));
     $('cardNew').setAttribute('data-t',T('Novo vaganje'));
@@ -688,14 +689,15 @@
   function stats(s,hs){
     var U=' ('+wu()+')';
     $('sH').textContent=hs.length?f1(dh(hs[hs.length-1].h)):'–';
-    if(!s.length){$('sCur').textContent=$('sTrend').textContent=$('sChg').textContent='–';$('sTrendL').textContent=state.goal?T('do cilja')+U:T('najniža')+U;$('sChg').style.color='';['c7','c15','c30'].forEach(function(id,i){$(id).textContent='–';$(id).style.color='';$(id+'l').textContent=[7,15,30][i]+' d'});return}
+    $('sHp').textContent=hs.length>1?f1(dh(hs[hs.length-2].h)):'–';
+    if(!s.length){$('sCur').textContent=$('sTrend').textContent=$('sChg').textContent='–';$('lChg').textContent=T('ukupno');$('sTrendL').textContent=state.goal?T('do cilja')+U:T('najniža')+U;$('sChg').style.color='';['c7','c15','c30'].forEach(function(id,i){$(id).textContent='–';$(id).style.color='';$(id+'l').textContent=[7,15,30][i]+' d'});return}
     var last=s[s.length-1];
     $('sCur').textContent=f1(dw(last.w));
     if(state.goal){var rem=last.w-state.goal;$('sTrendL').textContent=rem>0?T('do cilja')+U:rem<0?T('ispod cilja')+U:T('cilj dosegnut');$('sTrend').textContent=f1(dw(Math.abs(rem)))}
     else{var mn=Math.min.apply(null,s.map(function(e){return e.w}));$('sTrendL').textContent=T('najniža')+U;$('sTrend').textContent=f1(dw(mn))}
     var tot=last.w-s[0].w;
-    if(s.length>1){var tp=tot/s[0].w*100;$('sChg').innerHTML=(tot>0?'+':'')+f1(dw(tot))+' <small>('+(tp>0?'+':'')+f1(tp)+'%)</small>';$('sChg').style.color=tot<0?'var(--gr)':tot>0?'var(--mg)':''}
-    else{$('sChg').textContent='–';$('sChg').style.color=''}
+    if(s.length>1){var tp=tot/s[0].w*100;$('sChg').textContent=(tot>0?'+':'')+f1(dw(tot))+' '+wu();$('lChg').textContent=T('ukupno')+' · '+(tp>0?'+':'')+f1(tp)+'%';$('sChg').style.color=tot<0?'var(--gr)':tot>0?'var(--mg)':''}
+    else{$('sChg').textContent='–';$('lChg').textContent=T('ukupno');$('sChg').style.color=''}
     setChg('c7','',s,7);setChg('c15','',s,15);setChg('c30','',s,30);
   }
 
