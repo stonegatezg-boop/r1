@@ -113,9 +113,11 @@
   .camwrap button{width:100%}
   .fover{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;font-size:100px;padding:0;border:0;margin:0}
   .camrow svg{vertical-align:-3px;margin-right:6px}
-  #pbwrap,#pgwrap{flex:0 0 100%;display:flex;align-items:center;gap:10px;color:var(--mute)}
-  #pbwrap,#pgwrap{justify-content:space-between;font-size:15px;line-height:1.25}
-  #pbwrap input,#pgwrap input{flex:0 0 170px!important;width:170px!important;max-width:170px;min-width:0!important;box-sizing:border-box;font-size:17px}
+  #pbwrap,#pgwrap,#phwrap{flex:0 0 100%;display:flex;align-items:center;gap:10px;color:var(--mute)}
+  #pbwrap,#pgwrap,#phwrap{justify-content:space-between;font-size:15px;line-height:1.25}
+  #pmwrap{flex:0 0 100%;display:flex;flex-direction:column;gap:8px;color:var(--mute);font-size:15px}
+  #pmwrap .pmin{display:flex;gap:8px}#pmwrap .pmin input{flex:1;min-width:0;width:0;font-size:17px;text-align:center}
+  #pbwrap input,#pgwrap input,#phwrap input{flex:0 0 170px!important;width:170px!important;max-width:170px;min-width:0!important;box-sizing:border-box;font-size:17px}
   #pmsg{flex:0 0 100%;min-height:0}
   html[data-theme="mb"] .card{background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 8%,var(--card)),var(--card) 58%);border-color:color-mix(in srgb,var(--acc) 18%,var(--line))}
   html[data-theme="mb"] .stat{background:linear-gradient(150deg,color-mix(in srgb,var(--tc,var(--acc)) 14%,var(--card)),var(--card) 78%);border-color:color-mix(in srgb,var(--tc,var(--acc)) 28%,var(--line))}
@@ -354,6 +356,8 @@
       <div id="pswatch"></div>
       <label id="pbwrap">Rođen/a (nije obavezno) <input type="date" id="pbirth"></label>
       <label id="pgwrap">Ciljna težina (nije obavezno) <input type="number" id="pgoal" inputmode="decimal" step="0.1" placeholder="kg"></label>
+      <label id="phwrap">Visina <input type="number" id="phgt" inputmode="decimal" step="0.1" placeholder="cm"></label>
+      <div id="pmwrap"><span>Mjere tijela</span><div class="pmin"><input type="number" id="pmc" inputmode="decimal" step="0.1" placeholder="prsa"><input type="number" id="pmw2" inputmode="decimal" step="0.1" placeholder="struk"><input type="number" id="pmh" inputmode="decimal" step="0.1" placeholder="bokovi"></div></div>
       <div class="msg" id="pmsg"></div>
       <button id="pok" type="button">Dodaj</button>
       <button class="ghost" id="pdel" type="button">Obriši</button>
@@ -557,7 +561,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 10:36</div>
+  <div class="ver"><span>verzija</span> 12.11. 10:41</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -867,7 +871,8 @@
     var all=vw.concat(vh),ds=all.map(function(e){return e.d});
     var d0=Math.min.apply(null,ds),d1=Math.max.apply(null,ds);
     if(d1===d0){d0-=1;d1+=1}
-    function X(d){return padL+(d-d0)/(d1-d0)*iw}
+    var inset=two?22:0;
+    function X(d){return padL+(d-d0)/(d1-d0)*(iw-inset)}
     function Y(sc,v){return padT+(sc.hi-v)/(sc.hi-sc.lo)*ih}
     var left=sw||sh,lst=sw?' style="fill:var(--acc)"':' style="fill:var(--hc)"';
     var g='<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--acc)" stop-opacity=".34"/><stop offset="1" stop-color="var(--acc)" stop-opacity="0"/></linearGradient><filter id="gl" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="4"/></filter><linearGradient id="tg" gradientUnits="userSpaceOnUse" x1="'+padL+'" y1="0" x2="'+(W-padR)+'" y2="0"><stop offset="0" stop-color="#00e5ff"/><stop offset=".5" stop-color="#e3ff00"/><stop offset="1" stop-color="#ff3df2"/></linearGradient></defs>';
@@ -908,6 +913,7 @@
     if(sh){
       var hp=vh.map(function(e){return [X(e.d),Y(sh,dh(e.h))]});
       if(hp.length>1)g+='<path d="'+smoothPath(hp)+'" fill="none" style="stroke:var(--hc)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+      if(two&&!leftIsH&&hp.length){var lp0=hp[hp.length-1];g+='<line x1="'+lp0[0]+'" x2="'+(W-padR)+'" y1="'+lp0[1]+'" y2="'+lp0[1]+'" style="stroke:var(--hc)" stroke-width="1.5" stroke-dasharray="3 4" opacity=".8"/>'}
       hp.forEach(function(p){g+='<path d="M'+p[0]+','+(p[1]-5)+' L'+(p[0]+5)+','+p[1]+' L'+p[0]+','+(p[1]+5)+' L'+(p[0]-5)+','+p[1]+' Z" style="fill:var(--hc)"/>'});
     }
     if(sw){
@@ -1293,9 +1299,15 @@
     var b=e.target.closest?e.target.closest('button'):null;if(!b)return;
     if(b.id==='pall'){S.all=true;pmode=null;dropUndo();persist();render();return}
     if(b.dataset.p){S.active=b.dataset.p;S.all=false;pmode=null;dropUndo();persist();render();return}
-    if(b.id==='padd'){pmode='add';pcolor=nextColor();renderPeople();$('pbirth').value='';$('pgoal').value='';$('pmsg').textContent='';$('pname').value='';$('pname').focus()}
-    else if(b.id==='pedit'){pmode='edit';pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal?nv(dw(P().goal)):'';$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
+    if(b.id==='padd'){pmode='add';pcolor=nextColor();renderPeople();$('pbirth').value='';$('pgoal').value='';pfBody(null);$('pmsg').textContent='';$('pname').value='';$('pname').focus()}
+    else if(b.id==='pedit'){pmode='edit';pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal?nv(dw(P().goal)):'';pfBody(P());$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
   };
+  var PBF=[['chest','pmc'],['waist','pmw2'],['hips','pmh']];
+  function pfBody(p){
+    var u=hu();$('phgt').placeholder=u;
+    var lh=p&&p.heights?latest(p.heights):null,v=lh?nv(dh(lh.v)):'';$('phgt').value=v;$('phgt').dataset.i=v;
+    PBF.forEach(function(r){var o=p&&p.meas&&p.meas[r[0]]?latest(p.meas[r[0]]):null,x=o?nv(dh(o.v)):'';$(r[1]).value=x;$(r[1]).dataset.i=x});
+  }
   $('pok').onclick=function(){savePerson()};
   function savePerson(){
     var n=$('pname').value.trim().slice(0,24);if(!n){$('pmsg').textContent=T('Upiši ime.');return false}
@@ -1303,10 +1315,17 @@
     if(bd&&(bd>today()||bd<'1900-01-01')){$('pmsg').textContent=T('Datum rođenja nije ispravan.');return false}
     var gv=$('pgoal').value.trim(),gl=null;
     if(gv!==''){gl=uw(parseKg(gv));if(!(gl>=19.99&&gl<=400.01)){$('pmsg').textContent=T('Ciljna težina mora biti između')+' '+rng(20,400,'w');return false}gl=rw(gl)}
+    var hv=$('phgt').value.trim(),hn=null,mo={},mAny=false;
+    if(hv!==''){hn=uh(parseKg(hv));if(!(hn>=29.99&&hn<=250.01)){$('pmsg').textContent=T('Visina mora biti između')+' '+rng(30,250,'h');return false}}
+    for(var qi=0;qi<PBF.length;qi++){var mv=$(PBF[qi][1]).value.trim();if(mv!==''){var mx=uh(parseKg(mv));if(!(mx>=19.99&&mx<=250.01)){$('pmsg').textContent=T('Mjera mora biti između')+' '+rng(20,250,'h');return false}mo[PBF[qi][0]]=mx}}
     $('pmsg').textContent='';
     if(pmode==='add'){var id='p'+Date.now().toString(36);S.people.push({id:id,name:n,birth:bd||null,color:pcolor,entries:{},heights:{},meas:{chest:{},waist:{},hips:{}},goal:gl});S.active=id;S.all=false;dropUndo()}
     else if(pmode==='edit'){P().name=n;P().color=pcolor;P().birth=bd||null;P().goal=gl}
-    pmode=null;persist();render();return true;
+    var pp=P(),dd=$('date').value||today(),cfgCh=false;
+    if(hn!==null&&hv!==$('phgt').dataset.i){pp.heights=pp.heights||{};pp.heights[dd]=rh(hn);if(!S.cfg.h){S.cfg.h=true;cfgCh=true}}
+    PBF.forEach(function(r){if(mo[r[0]]!==undefined&&$(r[1]).value.trim()!==$(r[1]).dataset.i){state.meas[r[0]][dd]=rh(mo[r[0]]);mAny=true}});
+    if(mAny&&!S.cfg.m){S.cfg.m=true;cfgCh=true}
+    pmode=null;persist();if(cfgCh)applyCfg();render();return true;
   }
   $('pname').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
   $('pdel').onclick=function(){
