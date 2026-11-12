@@ -592,7 +592,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 15:57</div>
+  <div class="ver"><span>verzija</span> 12.11. 16:00</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -678,7 +678,7 @@
     if(!x.people.some(function(p){return p.id===x.active}))x.active=x.people[0].id;
     if(x.range===undefined)x.range=30;if(x.range===90)x.range=180;if([0,7,30,180,365].indexOf(x.range)<0)x.range=30;
     if(['w','h','b','m'].indexOf(x.metric)<0)x.metric='b';
-    x.cust=(Array.isArray(x.cust)?x.cust:[]).filter(function(c,i,a){return typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c)&&a.indexOf(c)===i}).slice(0,8);
+    x.cust=(Array.isArray(x.cust)?x.cust:[]).filter(function(c,i,a){return typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c)&&a.indexOf(c)===i}).slice(-3);
     x.all=!!x.all&&x.people.length>1;
     x.sel=Array.isArray(x.sel)?x.sel.filter(function(id){return x.people.some(function(p){return p.id===id})}):null;if(x.sel&&(!x.sel.length||x.sel.length>=x.people.length))x.sel=null;
     x.reminders=(Array.isArray(x.reminders)?x.reminders:[]).filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time)&&['once','day','week','month','first','year'].indexOf(r.rep)>=0}).slice(0,50).map(function(r,i){return {id:String(r.id||('r'+i+Date.now().toString(36))),date:r.date,time:r.time,rep:r.rep,text:String(r.text||'Vaganje').slice(0,60),dis:(typeof r.dis==='string'?r.dis:'')}});
@@ -1548,7 +1548,7 @@
     pmode=null;persist();render();
   };
   function nextColor(){for(var i=0;i<PALETTE.length;i++){var c=PALETTE[i][0];if(!S.people.some(function(p){return p.color===c}))return c}return null}
-  $('pswatch').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b)return;if(b.dataset.cust){e.stopPropagation();var cb=function(h){pcolor=h;drawSw()};cb.done=function(){S.cust=S.cust||[];if(pcolor&&!PALETTE.some(function(c){return c[0]===pcolor})&&S.cust.indexOf(pcolor)<0){S.cust.push(pcolor);if(S.cust.length>8)S.cust.shift();persist()}drawSw()};openCp(pcolor||'#11b882',cb);return}pcolor=b.dataset.c||null;drawSw()};
+  $('pswatch').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b)return;if(b.dataset.cust){e.stopPropagation();var cb=function(h){pcolor=h;drawSw()};cb.done=function(){S.cust=S.cust||[];if(pcolor&&!PALETTE.some(function(c){return c[0]===pcolor})&&S.cust.indexOf(pcolor)<0){S.cust.push(pcolor);while(S.cust.length>3)S.cust.shift();persist()}drawSw()};openCp(pcolor||'#11b882',cb);return}pcolor=b.dataset.c||null;drawSw()};
   $('pcancel').onclick=function(){pmode=null;renderPeople()};
   var openSub=null;
   function showSub(m){
