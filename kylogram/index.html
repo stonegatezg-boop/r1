@@ -126,7 +126,8 @@
   .fover{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;font-size:100px;padding:0;border:0;margin:0}
   .camrow svg{vertical-align:-3px;margin-right:6px}
   #pbwrap,#pgwrap{flex:0 0 100%;display:flex;align-items:center;gap:10px;color:var(--mute)}
-  #pbwrap input,#pgwrap input{flex:1}
+  #pbwrap,#pgwrap{justify-content:space-between;font-size:15px;line-height:1.25}
+  #pbwrap input,#pgwrap input{flex:0 0 170px!important;width:170px!important;max-width:170px;min-width:0!important;box-sizing:border-box;font-size:17px}
   #pmsg{flex:0 0 100%;min-height:0}
   html[data-theme="mb"] .card{background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 8%,var(--card)),var(--card) 58%);border-color:color-mix(in srgb,var(--acc) 18%,var(--line))}
   html[data-theme="mb"] .stat{background:linear-gradient(150deg,color-mix(in srgb,var(--tc,var(--acc)) 14%,var(--card)),var(--card) 78%);border-color:color-mix(in srgb,var(--tc,var(--acc)) 28%,var(--line))}
@@ -245,7 +246,7 @@
   html[data-theme="80"] #tg stop:nth-child(2){stop-color:var(--acc)}
   .pdot{display:inline-block;width:9px;height:9px;margin-right:6px;border-radius:50%;vertical-align:middle}
   html[data-theme="80"] .pdot,html[data-theme="90"] .pdot{border-radius:0}
-  #pswatch{flex:0 0 100%;display:flex;gap:8px;align-items:center}
+  #pswatch{flex:0 0 100%;display:flex;gap:12px;align-items:center;padding:6px 6px 4px}
   #pswatch .sw{width:34px;height:34px;min-width:0;padding:0;font-size:14px;line-height:1}
   #pswatch .sw.on{outline:3px solid var(--text);outline-offset:2px}
   #pswatch .sw.cust{position:relative;display:inline-block;border-radius:10px;overflow:visible;vertical-align:top;background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
@@ -258,7 +259,7 @@
   html[data-theme="80"] #sH{color:var(--hc);text-shadow:0 0 10px rgba(157,77,255,.8)}
   #chart text{fill:var(--mute)}
   .people{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-  #pform{display:none;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+  #pform{display:none;gap:14px 8px;flex-wrap:wrap;margin-bottom:14px;margin-top:12px;align-items:center}
   #pform input{flex:1;min-width:120px;font-size:18px}
   #pok{display:none!important}
   #who{margin-left:auto;align-self:center;font-weight:700;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -509,7 +510,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 01:24</div>
+  <div class="ver"><span>verzija</span> 12.11. 01:27</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
