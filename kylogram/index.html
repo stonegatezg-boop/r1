@@ -74,7 +74,7 @@
   .sub button{flex:1 1 0;min-width:0}
   .subn{flex-direction:column;gap:8px}
   .subn button#rsave{flex:none}
-  .rrow{display:flex;gap:8px}.rrow input{flex:1;min-width:0;font-size:17px}
+  .rrow{display:flex;gap:8px}.rrow input{flex:1;min-width:0;width:0;font-size:15px!important;padding-left:10px!important;padding-right:30px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background-size:16px!important;background-position:right 8px center!important}.rrow #rdate{flex:1.5}
   select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;min-width:0;width:100%}
   #rlist .ritem{display:flex;gap:6px;align-items:center;padding:6px 0;border-top:1px dashed var(--line);font-size:14px}
   #rlist .ritem span{flex:1;min-width:0}
@@ -183,9 +183,14 @@
   .gal .thumb{cursor:pointer}
   .gal .thumb img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;background:#222}
   #phOv{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.62);align-items:center;justify-content:center;padding:16px}
-  #phOv summary{cursor:pointer;padding:12px 0;font-size:15px;list-style:none}
-  #phOv summary::after{content:' \25BE';color:var(--mute)}
-  #phOv details[open] summary::after{content:' \25B4'}
+  #phOv .phrow{white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 10px;font-size:15px}
+  #phFmt{font-size:15px;padding:9px 10px;border-radius:10px;background:var(--card);color:var(--text);border:1px solid var(--line)}
+  #phOv details{border:1px solid var(--line);border-radius:12px;padding:0 12px;margin-bottom:4px}
+  #phOv summary{cursor:pointer;padding:12px 0;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  #phOv summary::-webkit-details-marker{display:none}
+  #phOv summary::after{content:'';width:8px;height:8px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(45deg);margin-right:4px;transition:transform .15s}
+  #phOv details[open] summary::after{transform:rotate(-135deg)}
+  #phOv details .shd{margin-top:2px}
   #setOv{position:fixed;inset:0;z-index:150;background:var(--bg);flex-direction:column;padding:12px 14px;display:none}
   #setOv .galbar .foot{flex:1}
   #setOv .foot button::after{content:none}
@@ -595,7 +600,7 @@
     </div></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 18:21</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 18:26</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -622,7 +627,7 @@
   </div>
 </div>
 <div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
-<div id="phOv" style="display:none"><div class="dscard" style="max-height:92vh;overflow:auto"><div class="dtitle">Slika: <span id="phWho"></span></div><details id="phDet"><summary>Što piše na slici</summary>
+<div id="phOv" style="display:none"><div class="dscard" style="max-height:92vh;overflow:auto"><div class="dtitle">Slika: <span id="phWho"></span></div><div class="phrow"><span>Format slike</span><select id="phFmt"><option value="s">9:16</option><option value="p">4:5</option><option value="t">3:4</option><option value="o">1:1 kvadrat</option></select></div><details id="phDet"><summary><span>Što piše na slici</span></summary>
     <div id="pfrWrap"><div class="srow shd"><span class="sl">Stil fotografije</span></div><div id="pfrows"></div></div>
     <div id="pfData">
     <div class="srow shd"><span class="sl">Podaci na fotografiji</span></div>
@@ -721,7 +726,7 @@
     if(THEMES.indexOf(x.theme)<0)x.theme='ml';if(!x.tm1){x.theme='ml';x.tm1=1}
     var cf=x.cfg||{},hadH=x.people.some(function(p){return p.heights&&Object.keys(p.heights).length});
     var cfH=cf.h===undefined?hadH:!!cf.h,cfM=!!cf.m;x.people.forEach(function(p){if(p.hideH===undefined)p.hideH=!(cfH&&p.heights&&Object.keys(p.heights).length);if(p.hideM===undefined)p.hideM=!(cfM&&p.meas&&['chest','waist','hips'].some(function(k){return p.meas[k]&&Object.keys(p.meas[k]).length}))});
-    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,mot:cf.mot!==false,u:cf.u==='i'?'i':'m',lang:LANGS.indexOf(cf.lang)>=0?cf.lang:'hr',pt:{c:(cf.pt&&/^#[0-9a-f]{6}$/i.test(cf.pt.c))?cf.pt.c.toLowerCase():'#ffffff',p:(cf.pt&&['tl','tc','tr','bl','bc','br'].indexOf(cf.pt.p)>=0)?cf.pt.p:'bl'},pf:{n:!(cf.pf&&cf.pf.n===false),d:!(cf.pf&&cf.pf.d===false),a:!(cf.pf&&cf.pf.a===false),w:!(cf.pf&&cf.pf.w===false),h:!(cf.pf&&cf.pf.h===false)}};
+    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,mot:cf.mot!==false,u:cf.u==='i'?'i':'m',lang:LANGS.indexOf(cf.lang)>=0?cf.lang:'hr',pr:['s','p','t','o'].indexOf(cf.pr)>=0?cf.pr:'s',pt:{c:(cf.pt&&/^#[0-9a-f]{6}$/i.test(cf.pt.c))?cf.pt.c.toLowerCase():'#ffffff',p:(cf.pt&&['tl','tc','tr','bl','bc','br'].indexOf(cf.pt.p)>=0)?cf.pt.p:'bl'},pf:{n:!(cf.pf&&cf.pf.n===false),d:!(cf.pf&&cf.pf.d===false),a:!(cf.pf&&cf.pf.a===false),w:!(cf.pf&&cf.pf.w===false),h:!(cf.pf&&cf.pf.h===false)}};
     return x;
   }
   function load(){
@@ -1842,7 +1847,7 @@
     Promise.all([loadImg(file),fl]).then(function(r){
       var im=r[0],w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;
       if(person.frame!=='polaroid'){
-        var sq0=document.createElement('canvas');sq0.width=sq0.height=1000;var sw0=Math.min(w,h),g0=sq0.getContext('2d');g0.drawImage(im,(w-sw0)/2,(h-sw0)/2,sw0,sw0,0,0,1000,1000);
+        var rr0={s:16/9,p:5/4,t:4/3,o:1}[S.cfg.pr||'s'],HH=Math.round(1000*rr0),sq0=document.createElement('canvas');sq0.width=1000;sq0.height=HH;var cw0=Math.min(w,h/rr0),ch0=cw0*rr0,g0=sq0.getContext('2d');g0.drawImage(im,(w-cw0)/2,(h-ch0)/2,cw0,ch0,0,0,1000,HH);
         var kg0=latestOn(person.entries,date),cm0=latestOn(person.heights,date),L1=[],L2=[],pf=S.cfg.pf;
         if(pf.n)L1.push(person.name);if(pf.d)L1.push(fmtDate(date));
         if(pf.a&&person.birth){var at0=ageText(person.birth,date);if(at0)L2.push(at0)}
@@ -1853,7 +1858,7 @@
           var ps=S.cfg.pt.p,fs=56,lh=62,m=40,al=ps[1]==='l'?'left':ps[1]==='r'?'right':'center',tx=ps[1]==='l'?m:ps[1]==='r'?1000-m:500;
           g0.textAlign=al;g0.textBaseline='alphabetic';g0.fillStyle=S.cfg.pt.c;g0.shadowColor='rgba(0,0,0,.6)';g0.shadowBlur=10;g0.shadowOffsetX=0;g0.shadowOffsetY=2;
           LN.forEach(function(t,i){var f=fitFont(g0,t,'700',fs,1000-2*m);g0.font='700 '+f+'px Caveat, cursive';
-            var y=ps[0]==='t'?m+fs-8+i*lh:1000-m-(LN.length-1-i)*lh-8;g0.fillText(t,tx,y)});
+            var y=ps[0]==='t'?m+fs-8+i*lh:HH-m-(LN.length-1-i)*lh-8;g0.fillText(t,tx,y)});
           sq0.toBlob(function(b0){cb(b0,clean)},'image/jpeg',0.92);
         },'image/jpeg',0.92);return}
       var W=900,H=1180,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
@@ -1894,8 +1899,9 @@
     phFile=file;var p=P();$('phWho').textContent=p.name;
     var hr=$('pfHrow');if(hr)hr.style.display=(p.hideH||!hOn())?'none':'';
     var wr=document.querySelector('#phOv [data-pf=w]');if(wr&&wr.closest('.srow'))wr.closest('.srow').style.display=p.hideW?'none':'';
-    renderFrames();applyCfg();$('phOv').style.display='flex';
+    renderFrames();applyCfg();$('phFmt').value=S.cfg.pr||'s';$('phOv').style.display='flex';
   }
+  $('phFmt').onchange=function(){S.cfg.pr=this.value;persist()};
   $('phGo').onclick=function(){var f=phFile;phFile=null;$('phOv').style.display='none';if(f)doFile(f)};
   $('phNo').onclick=function(){phFile=null;$('phOv').style.display='none'};
   $('phOv').addEventListener('click',function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b||b.id==='phGo'||b.id==='phNo')return;
