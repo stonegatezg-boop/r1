@@ -600,7 +600,7 @@
     </div></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 18:34</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 00:57</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -1586,7 +1586,7 @@
     if(b.id==='pall'){S.all=true;pmode=null;dropUndo();persist();render();return}
     if(b.dataset.p){S.active=b.dataset.p;S.all=false;pmode=null;dropUndo();persist();render();return}
     if(b.id==='padd'){pmode='add';phW=true;phH=false;phM=false;pshSync();pcolor=nextColor();renderPeople();$('pbirth').value='';$('pgoal').value='';pfBody(null);$('pmsg').textContent='';$('pname').value='';$('pname').focus()}
-    else if(b.id==='pedit'){pmode='edit';phW=!P().hideW;phH=!P().hideH;phM=!P().hideM;pshSync();pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal?nv(dw(P().goal)):'';pfBody(P());$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
+    else if(b.id==='pedit'){pmode='edit';phW=!P().hideW;phH=!P().hideH;phM=!P().hideM;pshSync();pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal?nv(dw(P().goal)):'';pfBody(P());$('pmsg').textContent='';$('pname').value=P().name}
   };
   var PBF=[['chest','pmc'],['waist','pmw2'],['hips','pmh']];
   var phW=true,phH=true,phM=true;
