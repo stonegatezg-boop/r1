@@ -97,7 +97,9 @@
   .cur{display:inline;color:var(--acc);animation:blink 1s steps(1) infinite}
   html[data-theme="m"] .cur,html[data-theme="ml"] .cur,html[data-theme="mb"] .cur{display:none}
   .brand h1{white-space:nowrap}
-  #brandR{margin-left:auto;display:flex;align-items:center;gap:6px;position:relative}
+  #brandR{margin-left:auto;display:flex;align-items:center;gap:6px}
+  #chHead{display:flex;align-items:center;justify-content:space-between;margin:2px 0 6px}
+  #shWrap{position:relative}
   #shBtn{display:flex;align-items:center;gap:7px;padding:7px 12px;font-size:14px;border-radius:12px}
   #shMenu{position:absolute;right:0;top:100%;margin-top:6px;z-index:250;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;min-width:190px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
   #shMenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--text);font-size:16px;padding:12px 14px;border-radius:10px;cursor:pointer}
@@ -304,7 +306,7 @@
   #pcancel{position:absolute;top:14px;right:14px;width:38px;height:38px;padding:0;display:grid;place-items:center;font-size:20px;line-height:1;z-index:2}
   #cardNew:has(#pform[style*="flex"]) #people{padding-right:50px}
   #pok{display:none!important}
-  #who{margin-left:auto;align-self:center;font-weight:700;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #who{align-self:center;font-weight:700;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   /* ===== 80s ===== */
   html[data-theme="80"] body{font-family:'VT323',monospace;font-size:22px;background:radial-gradient(ellipse at 50% 0%,#1a0f35 0%,var(--bg) 60%) fixed;text-shadow:0 0 6px color-mix(in srgb,var(--acc) 25%,transparent)}
@@ -368,7 +370,7 @@
 <circle cx="79" cy="79" r="3.2" style="fill:var(--logo)" stroke="#17384a" stroke-width="2.6"/>
 </svg>
     <h1>kylogram<span class="cur">_</span></h1>
-    <div id="brandR"><button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button><button class="ghost" id="shBtn" type="button" aria-label="Share"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>Share</span></button><div id="shMenu" style="display:none"><button type="button" data-t="ig">Instagram</button><button type="button" data-t="st">Instagram Story</button><button type="button" data-t="wa">WhatsApp</button><button type="button" data-t="em">Email</button><button type="button" data-t="ot">Other</button></div></div>
+    <div id="brandR"><button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button></div>
   </div>
 
   <div class="card" id="cardNew">
@@ -437,8 +439,8 @@
       <button class="ghost" data-r="180">6 mj</button>
       <button class="ghost" data-r="365">1 god</button>
       <button class="ghost" data-r="0">Sve</button>
-      <span id="who"></span>
     </div>
+    <div id="chHead"><span id="who"></span><div id="shWrap"><button class="ghost" id="shBtn" type="button" aria-label="Share"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>Share</span></button><div id="shMenu" style="display:none"><button type="button" data-t="ig">Instagram</button><button type="button" data-t="st">Instagram Story</button><button type="button" data-t="wa">WhatsApp</button><button type="button" data-t="em">Email</button><button type="button" data-t="ot">Other</button></div></div></div>
     <svg id="chart"></svg>
     <div id="tip"></div>
   <div id="mstats" class="mpan" style="display:none"></div>
@@ -585,7 +587,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 11:13</div>
+  <div class="ver"><span>verzija</span> 12.11. 11:18</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -598,7 +600,7 @@
   </div>
 </div>
 <div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
-<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><div id="shFmt"><button class="ghost on" type="button" data-f="p">Instagram 4:5</button><button class="ghost" type="button" data-f="s">Story 9:16</button></div><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
+<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><div id="shFmt"><button class="ghost on" type="button" data-f="p">Instagram 4:5</button><button class="ghost" type="button" data-f="s">Story 9:16</button></div><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
 <div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
 
@@ -1174,14 +1176,16 @@
   var shFmt='p';
   $('shFmt').onclick=function(e){var f=e.target.dataset&&e.target.dataset.f;if(!f)return;shFmt=f;[].forEach.call($('shFmt').children,function(b){b.classList.toggle('on',b.dataset.f===f)});shDraw()};
   function shDraw(){
-    var cv=$('shCv'),c=cv.getContext('2d'),W=1080,H=1350,cs=getComputedStyle(document.documentElement);
+    var cv=$('shCv'),c=cv.getContext('2d'),W=1080,H=(shFmt==='s'?1620:1350),cs=getComputedStyle(document.documentElement);
     function V(n){return cs.getPropertyValue(n).trim()||'#888'}
     var bg=V('--bg'),card=V('--card'),line=V('--line'),tx=V('--text'),mu=V('--mute'),ac=V('--acc'),gr=V('--gr'),mg=V('--mg');
     var showW=$('shKg').checked,showKg=true,all=series(),s=all,rg=state.range;
-    var tl=[],rcut=rg?toDay(today())-rg:-1e9;
+    var hT=[],mT=[],rcut=rg?toDay(today())-rg:-1e9;
     function rdl(o){var ks=Object.keys(o).sort().filter(function(d){return toDay(d)>=rcut});if(ks.length<2)return null;var d=o[ks[ks.length-1]]-o[ks[0]];return Math.abs(d)<0.05?'0':(d>0?'+':'−')+f1(Math.abs(dh(d)))}
-    if($('shHt').checked&&hOn()){var lh=latest(state.heights);if(lh)tl.push([T('Visina'),dh(lh.v),V('--hc'),rdl(state.heights)])}
-    if($('shMs').checked&&mOn()){[['chest','Prsa','#ff6bd6'],['waist','Struk',ac],['hips','Bokovi','#6bd6ff']].forEach(function(r){var lm=latest(state.meas[r[0]]);if(lm)tl.push([T(r[1]),dh(lm.v),r[2],rdl(state.meas[r[0]])])})}
+    if($('shHt').checked&&hOn()){var lh=latest(state.heights);if(lh)hT.push([T('Visina'),dh(lh.v),V('--hc'),rdl(state.heights)])}
+    if($('shMs').checked&&mOn()){[['chest','Prsa','#ff6bd6'],['waist','Struk',ac],['hips','Bokovi','#6bd6ff']].forEach(function(r){var lm=latest(state.meas[r[0]]);if(lm)mT.push([T(r[1]),dh(lm.v),r[2],rdl(state.meas[r[0]])])})}
+    var tl=hT.concat(mT),RW=[hT,mT].filter(function(a){return a.length}),ex=H-1350;
+    function drawRows(y0,hh,gap,fs){var y=y0;RW.forEach(function(row,ri){var rh=row===hT?hh[0]:hh[1],f=row===hT?fs[0]:fs[1],k=row.length,tw=(W-140-(k-1)*20)/k;row.forEach(function(r,j){dTile(70+j*(tw+20),y,tw,rh,f1(r[1]),r[0]+' · '+hu(),f,r[2]||tx,r[3])});y+=rh+gap})}
     if(rg>0){var lim=all.length?all[all.length-1].d-rg:0;s=all.filter(function(e){return e.d>=lim})}
     var FH=shFmt==='s'?1920:1350;cv.height=FH;c=cv.getContext('2d');c.fillStyle=bg;c.fillRect(0,0,W,FH);c.translate(0,(FH-H)/2);
     var SF='system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
@@ -1213,7 +1217,7 @@
     // chart
     if(showW){
     var cx=70,cy=722,cw=W-140,ch=500;
-    if(tl.length){cy=690;ch=330}
+    var tA=0;RW.forEach(function(r){tA+=(r===hT?120:150)+16});tA-=16;if(tl.length){cy=690;ch=1219+ex-tA-cy}
     if(false){
       var tw2=(W-140-(tl.length-1)*20)/tl.length,ty2=690;
       tl.forEach(function(r,j){var x=70+j*(tw2+20);
@@ -1251,18 +1255,17 @@
           var ay=nb.reduce(function(a,b){return a+b},0)/nb.length,below=ay<p[1]-1||(Math.abs(ay-p[1])<=1&&q===n2-1);
           var ty2=below?p[1]+(q===n2-1?52:46):p[1]-(q===n2-1?34:28);
           var lab=f1(dw(s[q].w))+(q===n2-1?' '+wu():'');
-          c.fillText(lab,Math.min(Math.max(p[0],ix+55),ix+iw-60),Math.min(Math.max(ty2,iy+10),iy+ih+30));
+          c.fillText(lab,Math.min(Math.max(p[0],ix+55),ix+iw-60),Math.min(Math.max(ty2,iy+10),iy+ih+12));
         });
       }
     }
-    if(tl.length){var tw2=(W-140-(tl.length-1)*20)/tl.length;tl.forEach(function(r,j){dTile(70+j*(tw2+20),1040,tw2,200,f1(r[1]),r[0]+' · '+hu(),44,r[2]||tx,r[3])})}
+    if(tl.length)drawRows(1235+ex-tA,[120,150],16,[34,40])
     }else{
       var n3=tl.length;
       if(!n3){c.textAlign='center';c.fillStyle=mu;c.font='500 40px '+SF;c.fillText('–',W/2,H/2)}
-      else{var cols=n3===1?1:2,rows=Math.ceil(n3/cols),gw=(W-140-(cols-1)*24)/cols,gh=Math.min(300,(H-420-(rows-1)*24)/rows);
-        tl.forEach(function(r,j){var rr=Math.floor(j/cols),cc=j%cols,rowN=Math.min(cols,n3-rr*cols),off=cols>1&&rowN<cols?(gw+24)/2:0;dTile(70+cc*(gw+24)+off,260+rr*(gh+24),gw,gh,f1(r[1]),r[0]+' · '+hu(),Math.round(gh*0.36),r[2]||tx,r[3])})}
+      else{var gh=Math.min(260,(H-420-(RW.length-1)*24)/RW.length),fz=Math.round(Math.min(64,gh*0.3));drawRows(260,[gh,gh],24,[fz,fz])}
     }
-    c.textAlign='center';c.fillStyle=mu;c.font='500 28px '+SF;c.fillText('kylogram',W/2,H-60);
+    c.textAlign='center';c.fillStyle=mu;c.font='500 28px '+SF;c.fillText('kylogram',W/2,H-34);
   }
   function shBlobGet(cb){$('shCv').toBlob(function(b){cb(b)},'image/png')}
   function shOpen(){$('shKg').checked=true;
