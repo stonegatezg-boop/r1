@@ -182,10 +182,17 @@
   .gal{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
   .gal .thumb{cursor:pointer}
   .gal .thumb img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;background:#222}
+  #phOv{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.62);align-items:center;justify-content:center;padding:16px}
+  #phOv summary{cursor:pointer;padding:12px 0;font-size:15px;list-style:none}
+  #phOv summary::after{content:' \25BE';color:var(--mute)}
+  #phOv details[open] summary::after{content:' \25B4'}
   #setOv{position:fixed;inset:0;z-index:150;background:var(--bg);flex-direction:column;padding:12px 14px;display:none}
   #setOv .galbar .foot{flex:1}
   #setOv .foot button::after{content:none}
   #setOv .sub{margin-top:12px}
+  .scard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 14px 2px;margin-top:12px}
+  .sct{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-bottom:2px}
+  .scard .srow:last-child{border-bottom:0}
   #gear{background:transparent;border:0;color:var(--mute);padding:6px;display:flex;align-items:center}
   #galOv,#calOv{position:fixed;inset:0;z-index:150;background:var(--bg);flex-direction:column;padding:12px 14px}
   .galbar{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
@@ -224,8 +231,7 @@
   #shBar button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 8px;font-size:15px}
   #shFmt{margin-top:12px;display:flex;flex-direction:column;gap:8px}
   #shFmt .fr{display:flex;gap:8px}
-  #shFmt button{flex:1;padding:9px 4px;font-size:13px;white-space:nowrap}
-  #shFmt button.on{border-color:var(--acc);color:var(--acc)}
+  #shFmtSel{width:100%;font-size:15px;padding:10px;border-radius:10px;background:var(--card);color:var(--text);border:1px solid var(--line)}
   .shrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:15px;color:var(--text)}
   .shrow input{width:22px;height:22px;accent-color:var(--acc)}
   #shGo{flex:1 1 100%}
@@ -245,10 +251,10 @@
 
   #sub-s{flex-direction:column;gap:0;margin-top:14px;padding:0 2px 24px}
   #sub-s.open{display:flex}
-  #sub-s .srow,#pshow .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-bottom:1px solid var(--line)}
+  #sub-s .srow,#pshow .srow,#phOv .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-bottom:1px solid var(--line)}
   #sub-s>.srow:last-child{border-bottom:0}
-  #sub-s .shd,#pshow .shd{min-height:40px;margin-top:8px;border-bottom:0}
-  #sub-s .shd .sl,#pshow .shd .sl{color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+  #sub-s .shd,#pshow .shd,#phOv .shd{min-height:40px;margin-top:8px;border-bottom:0}
+  #sub-s .shd .sl,#pshow .shd .sl,#phOv .shd .sl{color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
   .ptsw{display:flex;gap:5px;align-items:center;justify-content:flex-end}
   .ptsw button{width:21px;height:21px;padding:0;border-radius:50%;border:2px solid var(--line);position:relative;cursor:pointer;flex:0 0 auto}
   .ptsw button.on{border-color:var(--text);box-shadow:0 0 0 2px var(--card),0 0 0 3.5px var(--acc)}
@@ -257,21 +263,21 @@
   .ptpos button{padding:7px;display:flex;border-radius:6px;min-width:0}
   .ptpos button i{width:12px;height:4px;border-radius:2px;background:var(--mute)}
   .ptpos button.on{border-color:var(--acc)}.ptpos button.on i{background:var(--acc)}
-  #sub-s .sl,#pshow .sl{font-size:15px;color:var(--text)}
-  #sub-s .seg{display:flex;gap:4px;overflow-x:auto;max-width:66%;padding:2px}
-  #sub-s .seg button{flex:0 0 auto;padding:6px 11px;font-size:14px;border-radius:10px;display:flex;align-items:center;gap:6px;min-width:0}
-  #sub-s .seg button b{font-weight:600}
+  #sub-s .sl,#pshow .sl,#phOv .sl{font-size:15px;color:var(--text)}
+  #sub-s .seg,#phOv .seg{display:flex;gap:4px;overflow-x:auto;max-width:66%;padding:2px}
+  #sub-s .seg button,#phOv .seg button{flex:0 0 auto;padding:6px 11px;font-size:14px;border-radius:10px;display:flex;align-items:center;gap:6px;min-width:0}
+  #sub-s .seg button b,#phOv .seg button b{font-weight:600}
   #langRow{flex-direction:column;align-items:stretch;gap:6px;padding:10px 0 12px}
   #langRow .sl{align-self:flex-start}
   #langRow .seg{max-width:100%;padding:3px 2px 6px;scrollbar-width:thin}
   html[dir=rtl] svg,html[dir=rtl] canvas,html[dir=rtl] input[type=number],html[dir=rtl] input[type=date],html[dir=rtl] input[type=time],html[dir=rtl] .stat b,html[dir=rtl] #tip{direction:ltr}
   html[dir=rtl] #tabs button{direction:ltr}
   html[dir=rtl] .stat span{display:block;direction:ltr;unicode-bidi:isolate;text-align:right}
-  #sub-s .seg button.on{border-color:var(--acc);color:var(--text);background:color-mix(in srgb,var(--acc) 16%,transparent)}
-  #sub-s .sw2,#pshow .sw2{flex:none;width:46px;height:28px;padding:0;border-radius:14px;position:relative;background:color-mix(in srgb,var(--text) 18%,transparent);border:0}
-  #sub-s .sw2::after,#pshow .sw2::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
-  #sub-s .sw2.on,#pshow .sw2.on{background:var(--acc)}
-  #sub-s .sw2.on::after,#pshow .sw2.on::after{transform:translateX(18px);background:var(--navy,#000)}
+  #sub-s .seg button.on,#phOv .seg button.on{border-color:var(--acc);color:var(--text);background:color-mix(in srgb,var(--acc) 16%,transparent)}
+  #sub-s .sw2,#pshow .sw2,#phOv .sw2{flex:none;width:46px;height:28px;padding:0;border-radius:14px;position:relative;background:color-mix(in srgb,var(--text) 18%,transparent);border:0}
+  #sub-s .sw2::after,#pshow .sw2::after,#phOv .sw2::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
+  #sub-s .sw2.on,#pshow .sw2.on,#phOv .sw2.on{background:var(--acc)}
+  #sub-s .sw2.on::after,#pshow .sw2.on::after,#phOv .sw2.on::after{transform:translateX(18px);background:var(--navy,#000)}
   .slab{flex:1 1 100%;font-size:13px;color:var(--mute);margin-top:4px}
   .stats.chg .stat{padding:9px 8px}
   .stats.chg .stat b{font-size:16px;white-space:nowrap}
@@ -515,6 +521,7 @@
     <button class="ghost" id="imp" type="button">Uvezi backup</button>
   </div>
   <div id="sub-s" class="sub">
+    <div class="scard"><div class="sct">Jezik</div>
     <div class="srow" id="langRow"><span class="sl">Jezik</span><div class="seg">
       <button class="ghost" type="button" data-lang="en"><svg viewBox="0 0 38 38" width="20" height="20"><clipPath id="fc2"><circle cx="19" cy="19" r="19"/></clipPath><g clip-path="url(#fc2)"><rect width="20" height="20" fill="#012169"/><path d="M0 0L38 38M38 0L0 38" stroke="#fff" stroke-width="7"/><path d="M0 0L38 38M38 0L0 38" stroke="#c8102e" stroke-width="2.4"/><path d="M19 0v38M0 19h38" stroke="#fff" stroke-width="11"/><path d="M19 0v38M0 19h38" stroke="#c8102e" stroke-width="6"/></g></svg><b>English</b></button>
       <button class="ghost" type="button" data-lang="es"><svg viewBox="0 0 38 38" width="20" height="20"><clipPath id="fc22"><circle cx="19" cy="19" r="19"/></clipPath><g clip-path="url(#fc22)"><rect x="0" y="0" width="38" height="38" fill="#c60b1e"/><rect x="0" y="10" width="38" height="18" fill="#ffc400"/></g></svg><b>Español</b></button>
@@ -574,32 +581,21 @@
       <button class="ghost" type="button" data-lang="ms"><svg viewBox="0 0 38 38" width="20" height="20"><clipPath id="fc68"><circle cx="19" cy="19" r="19"/></clipPath><g clip-path="url(#fc68)"><rect x="0" y="0.0" width="38" height="6.43" fill="#cc0001"/><rect x="0" y="6.33" width="38" height="6.43" fill="#fff"/><rect x="0" y="12.67" width="38" height="6.43" fill="#cc0001"/><rect x="0" y="19.0" width="38" height="6.43" fill="#fff"/><rect x="0" y="25.33" width="38" height="6.43" fill="#cc0001"/><rect x="0" y="31.67" width="38" height="6.43" fill="#fff"/><rect x="0" y="0" width="20" height="19" fill="#010066"/><circle cx="9" cy="9.5" r="5" fill="#fc0"/><circle cx="10.6" cy="9.5" r="4.2" fill="#010066"/></g></svg><b>Bahasa Melayu</b></button>
     
     </div></div>
+    </div>
+    <div class="scard"><div class="sct">Aplikacija</div>
     <div class="srow"><span class="sl">Mjerne jedinice</span><div class="seg">
       <button class="ghost" type="button" data-u="m">kg · cm</button>
       <button class="ghost" type="button" data-u="i">lb · in</button>
     </div></div>
     <div class="srow"><span class="sl">Poruke o napretku</span><button class="sw2" type="button" id="motBtn" role="switch" aria-checked="true"></button></div>
-    <div id="pfrWrap"><div class="srow shd"><span class="sl">Stil fotografije</span></div><div id="pfrows"></div></div>
-    <div id="pfData">
-    <div class="srow shd"><span class="sl">Podaci na fotografiji</span></div>
-    <div class="srow"><span class="sl">Ime</span><button class="sw2" type="button" data-pf="n" role="switch" aria-checked="true"></button></div>
-    <div class="srow"><span class="sl">Datum</span><button class="sw2" type="button" data-pf="d" role="switch" aria-checked="true"></button></div>
-    <div class="srow"><span class="sl">Godine</span><button class="sw2" type="button" data-pf="a" role="switch" aria-checked="true"></button></div>
-    <div class="srow"><span class="sl">Težina</span><button class="sw2" type="button" data-pf="w" role="switch" aria-checked="true"></button></div>
-    <div class="srow" id="pfHrow"><span class="sl">Visina</span><button class="sw2" type="button" data-pf="h" role="switch" aria-checked="true"></button></div>
-    </div>
-    <div id="pfPlain">
-    <div class="srow shd"><span class="sl">Tekst na običnoj fotografiji</span></div>
-    <div class="srow"><span class="sl">Boja</span><div class="ptsw" id="ptsw"><button type="button" class="ghost" data-ptc="#ffffff" style="background:#ffffff"></button><button type="button" class="ghost" data-ptc="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-ptc="#3985f7" style="background:#3985f7"></button><button type="button" class="ghost" data-ptc="#f16b65" style="background:#f16b65"></button><button type="button" class="ghost" data-ptc="#11b882" style="background:#11b882"></button><button type="button" class="ghost" data-ptc="#f5ca45" style="background:#f5ca45"></button><button type="button" class="ghost" data-ptc="#f28a38" style="background:#f28a38"></button><button type="button" class="ghost" data-ptc="#e879b5" style="background:#e879b5"></button><button type="button" class="ghost" data-ptc="#a586f5" style="background:#a586f5"></button><button type="button" class="ghost" data-ptc="#929ba8" style="background:#929ba8"></button><button type="button" class="ghost" id="ptcw" aria-label="Odaberi boju"></button></div></div>
-    <div class="srow"><span class="sl">Položaj</span><div class="ptpos" id="ptpos"><button type="button" class="ghost" data-ptp="tl" style="align-items:flex-start;justify-content:flex-start"><i></i></button><button type="button" class="ghost" data-ptp="tc" style="align-items:flex-start;justify-content:center"><i></i></button><button type="button" class="ghost" data-ptp="tr" style="align-items:flex-start;justify-content:flex-end"><i></i></button><button type="button" class="ghost" data-ptp="bl" style="align-items:flex-end;justify-content:flex-start"><i></i></button><button type="button" class="ghost" data-ptp="bc" style="align-items:flex-end;justify-content:center"><i></i></button><button type="button" class="ghost" data-ptp="br" style="align-items:flex-end;justify-content:flex-end"><i></i></button></div></div>
-    </div>
     <div class="srow"><span class="sl">Tema</span><div class="seg" id="sub-t">
       <button class="ghost" type="button" data-th="m">Tamna</button>
       <button class="ghost" type="button" data-th="ml">Svijetla</button>
       <button class="ghost" type="button" data-th="mb">Crna</button>
     </div></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 18:13</div>
+    </div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 18:21</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -626,7 +622,23 @@
   </div>
 </div>
 <div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
-<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><div id="shFmt"><div class="fr"><button class="ghost" type="button" data-f="o">1:1</button><button class="ghost" type="button" data-f="t">3:4</button><button class="ghost on" type="button" data-f="p">4:5</button><button class="ghost" type="button" data-f="s">9:16</button></div><div class="fr"><button class="ghost" type="button" data-f="ip">Instagram</button><button class="ghost" type="button" data-f="is">Instagram Story</button><button class="ghost" type="button" data-f="ir">Instagram Reels</button></div></div><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
+<div id="phOv" style="display:none"><div class="dscard" style="max-height:92vh;overflow:auto"><div class="dtitle">Slika: <span id="phWho"></span></div><details id="phDet"><summary>Što piše na slici</summary>
+    <div id="pfrWrap"><div class="srow shd"><span class="sl">Stil fotografije</span></div><div id="pfrows"></div></div>
+    <div id="pfData">
+    <div class="srow shd"><span class="sl">Podaci na fotografiji</span></div>
+    <div class="srow"><span class="sl">Ime</span><button class="sw2" type="button" data-pf="n" role="switch" aria-checked="true"></button></div>
+    <div class="srow"><span class="sl">Datum</span><button class="sw2" type="button" data-pf="d" role="switch" aria-checked="true"></button></div>
+    <div class="srow"><span class="sl">Godine</span><button class="sw2" type="button" data-pf="a" role="switch" aria-checked="true"></button></div>
+    <div class="srow"><span class="sl">Težina</span><button class="sw2" type="button" data-pf="w" role="switch" aria-checked="true"></button></div>
+    <div class="srow" id="pfHrow"><span class="sl">Visina</span><button class="sw2" type="button" data-pf="h" role="switch" aria-checked="true"></button></div>
+    </div>
+    <div id="pfPlain">
+    <div class="srow shd"><span class="sl">Tekst na običnoj fotografiji</span></div>
+    <div class="srow"><span class="sl">Boja</span><div class="ptsw" id="ptsw"><button type="button" class="ghost" data-ptc="#ffffff" style="background:#ffffff"></button><button type="button" class="ghost" data-ptc="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-ptc="#3985f7" style="background:#3985f7"></button><button type="button" class="ghost" data-ptc="#f16b65" style="background:#f16b65"></button><button type="button" class="ghost" data-ptc="#11b882" style="background:#11b882"></button><button type="button" class="ghost" data-ptc="#f5ca45" style="background:#f5ca45"></button><button type="button" class="ghost" data-ptc="#f28a38" style="background:#f28a38"></button><button type="button" class="ghost" data-ptc="#e879b5" style="background:#e879b5"></button><button type="button" class="ghost" data-ptc="#a586f5" style="background:#a586f5"></button><button type="button" class="ghost" data-ptc="#929ba8" style="background:#929ba8"></button><button type="button" class="ghost" id="ptcw" aria-label="Odaberi boju"></button></div></div>
+    <div class="srow"><span class="sl">Položaj</span><div class="ptpos" id="ptpos"><button type="button" class="ghost" data-ptp="tl" style="align-items:flex-start;justify-content:flex-start"><i></i></button><button type="button" class="ghost" data-ptp="tc" style="align-items:flex-start;justify-content:center"><i></i></button><button type="button" class="ghost" data-ptp="tr" style="align-items:flex-start;justify-content:flex-end"><i></i></button><button type="button" class="ghost" data-ptp="bl" style="align-items:flex-end;justify-content:flex-start"><i></i></button><button type="button" class="ghost" data-ptp="bc" style="align-items:flex-end;justify-content:center"><i></i></button><button type="button" class="ghost" data-ptp="br" style="align-items:flex-end;justify-content:flex-end"><i></i></button></div></div>
+    </div>
+</details><div class="dbtns"><button id="phGo" type="button">Napravi sliku</button><button class="ghost" id="phNo" type="button">Odustani</button></div></div></div>
+<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><div id="shFmt"><select id="shFmtSel"><option value="s">9:16 · Story</option><option value="p">4:5</option><option value="t">3:4</option><option value="o">1:1</option><option value="ip">Instagram</option><option value="is">Instagram Story</option><option value="ir">Instagram Reels</option></select></div><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
 <div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="range" id="cpL" min="4" max="96" value="50" aria-label="Svjetlina" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
 
@@ -772,7 +784,7 @@
     var lb=document.querySelectorAll('#sub-s [data-lang]');for(i=0;i<lb.length;i++)lb[i].classList.toggle('on',lb[i].dataset.lang===S.cfg.lang);
     langScroll();
     $('motBtn').classList.toggle('on',S.cfg.mot!==false);$('motBtn').setAttribute('aria-checked',S.cfg.mot!==false?'true':'false');
-    var pb=document.querySelectorAll('#sub-s [data-pf]');for(i=0;i<pb.length;i++){var on=!!S.cfg.pf[pb[i].dataset.pf];pb[i].classList.toggle('on',on);pb[i].setAttribute('aria-checked',on?'true':'false')}
+    var pb=document.querySelectorAll('#phOv [data-pf]');for(i=0;i<pb.length;i++){var on=!!S.cfg.pf[pb[i].dataset.pf];pb[i].classList.toggle('on',on);pb[i].setAttribute('aria-checked',on?'true':'false')}
     $('pfHrow').style.display=ho?'':'none';
     renderFrames();
     sndLabel();fillRep();renderRem();
@@ -780,7 +792,7 @@
   function langScroll(){var sg=document.querySelector('#langRow .seg'),on=sg&&sg.querySelector('.on');if(on&&sg.clientWidth)sg.scrollLeft=on.offsetLeft-sg.clientWidth/2+on.offsetWidth/2-(sg.offsetLeft||0)}
   function renderFrames(){
     var box=$('pfrows');box.textContent='';var any=false;
-    S.people.forEach(function(p){
+    [P()].forEach(function(p){
       if(p.frame==='polaroid')any=true;
       var r=document.createElement('div');r.className='srow';
       var l=document.createElement('span');l.className='sl';l.textContent=p.name;r.appendChild(l);
@@ -791,7 +803,7 @@
       });
       r.appendChild(sg);box.appendChild(r);
     });
-    var anyPlain=S.people.some(function(q){return q.frame!=='polaroid'});
+    var anyPlain=P().frame!=='polaroid';
     $('pfPlain').style.display=anyPlain?'':'none';
     var pc=document.querySelectorAll('#ptsw [data-ptc]'),isP=false,i;
     for(i=0;i<pc.length;i++){var on=pc[i].dataset.ptc===S.cfg.pt.c;if(on)isP=true;pc[i].classList.toggle('on',on)}
@@ -1311,9 +1323,9 @@
   $('sH').parentNode.onclick=function(){if(hOn())openMs('height')};
 
   var shBlob=null;
-  var shFmt='p';
-  function shFmtSet(f){shFmt=f;[].forEach.call($('shFmt').querySelectorAll('button'),function(b){b.classList.toggle('on',b.dataset.f===f)})}
-  $('shFmt').onclick=function(e){var f=e.target.dataset&&e.target.dataset.f;if(!f)return;shFmtSet(f);shDraw()};
+  var shFmt='s';
+  function shFmtSet(f){shFmt=f;$('shFmtSel').value=f}
+  $('shFmtSel').onchange=function(){shFmtSet(this.value);shDraw()};
   function shDraw(){
     var cv=$('shCv'),c=cv.getContext('2d'),W=(shFmt==='o'?1350:1080),H=(shFmt==='s'||shFmt==='is'?1620:shFmt==='ir'?1500:shFmt==='t'?1440:1350),cs=getComputedStyle(document.documentElement);
     function V(n){return cs.getPropertyValue(n).trim()||'#888'}
@@ -1876,7 +1888,25 @@
       sq.toBlob(function(sb){c.toBlob(function(b){cb(b,sb)},'image/jpeg',0.9)},'image/jpeg',0.9);
     }).catch(function(){cb(null)});
   }
+  var phFile=null;
   function handleFile(file){
+    if(!file)return;
+    phFile=file;var p=P();$('phWho').textContent=p.name;
+    var hr=$('pfHrow');if(hr)hr.style.display=(p.hideH||!hOn())?'none':'';
+    var wr=document.querySelector('#phOv [data-pf=w]');if(wr&&wr.closest('.srow'))wr.closest('.srow').style.display=p.hideW?'none':'';
+    renderFrames();applyCfg();$('phOv').style.display='flex';
+  }
+  $('phGo').onclick=function(){var f=phFile;phFile=null;$('phOv').style.display='none';if(f)doFile(f)};
+  $('phNo').onclick=function(){phFile=null;$('phOv').style.display='none'};
+  $('phOv').addEventListener('click',function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b||b.id==='phGo'||b.id==='phNo')return;
+    if(b.dataset.fr){var fq=b.dataset.fr.split('|');S.people.forEach(function(q){if(q.id===fq[0])q.frame=fq[1]==='polaroid'?'polaroid':'plain'})}
+    else if(b.dataset.ptc)S.cfg.pt.c=b.dataset.ptc;
+    else if(b.dataset.ptp)S.cfg.pt.p=b.dataset.ptp;
+    else if(b.dataset.pf)S.cfg.pf[b.dataset.pf]=!S.cfg.pf[b.dataset.pf];
+    else return;
+    persist();applyCfg();renderFrames();
+  });
+  function doFile(file){
     if(!file)return;
     var p=P(),d=today();msg(T('Pravim sliku…'));
     var kv=$('kg').value.trim(),cv=$('cm').value.trim(),w=kv?uw(parseKg(kv)):null,h=(cv&&hOn())?uh(parseKg(cv)):null,saved=false;
