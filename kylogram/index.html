@@ -519,7 +519,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 01:39</div>
+  <div class="ver"><span>verzija</span> 12.11. 08:58</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -721,7 +721,7 @@
         var a=s[i],b2=s[i+1];return a.w+(b2.w-a.w)*(d-a.d)/(b2.d-a.d);
       }
     }
-    return null;
+    return s.length>1?s[0].w:null;
   }
   function setChg(id,lab,s,N){
     var last=s[s.length-1],base=s.length>1?trendAtDay(s,last.d-N):null,el=$(id),sp=$(id+'l');
