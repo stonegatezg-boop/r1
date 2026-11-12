@@ -97,7 +97,12 @@
   .cur{display:inline;color:var(--acc);animation:blink 1s steps(1) infinite}
   html[data-theme="m"] .cur,html[data-theme="ml"] .cur,html[data-theme="mb"] .cur{display:none}
   .brand h1{white-space:nowrap}
-  #bell{margin-left:auto;background:none;border:0;padding:6px;border-radius:10px;color:color-mix(in srgb,var(--mute) 55%,var(--bg));line-height:0;cursor:pointer}
+  #brandR{margin-left:auto;display:flex;align-items:center;gap:6px;position:relative}
+  #shBtn{display:flex;align-items:center;gap:7px;padding:7px 12px;font-size:14px;border-radius:12px}
+  #shMenu{position:absolute;right:0;top:100%;margin-top:6px;z-index:250;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;min-width:190px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  #shMenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--text);font-size:16px;padding:12px 14px;border-radius:10px;cursor:pointer}
+  #shMenu button:active{background:rgba(255,255,255,.08)}
+  #bell{background:none;border:0;padding:6px;border-radius:10px;color:color-mix(in srgb,var(--mute) 55%,var(--bg));line-height:0;cursor:pointer}
   #bell.due{color:var(--acc)}
   html[data-theme="80"] #bell{color:color-mix(in srgb,var(--acc) 38%,var(--bg));box-shadow:none;padding:6px}
   html[data-theme="80"] #bell.due{color:var(--acc)}
@@ -363,7 +368,7 @@
 <circle cx="79" cy="79" r="3.2" style="fill:var(--logo)" stroke="#17384a" stroke-width="2.6"/>
 </svg>
     <h1>kylogram<span class="cur">_</span></h1>
-    <button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button>
+    <div id="brandR"><button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button><button class="ghost" id="shBtn" type="button" aria-label="Share"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>Share</span></button><div id="shMenu" style="display:none"><button type="button" data-t="ig">Instagram</button><button type="button" data-t="st">Instagram Story</button><button type="button" data-t="wa">WhatsApp</button><button type="button" data-t="em">Email</button><button type="button" data-t="ot">Other</button></div></div>
   </div>
 
   <div class="card" id="cardNew">
@@ -447,7 +452,6 @@
       <span class="lm"><i class="dot" style="background:var(--acc)"></i>struk</span>
       <span class="lm"><i class="dot" style="background:#6bd6ff"></i>bokovi</span>
     </div>
-    <div id="shBar"><button class="ghost" id="shBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span>Podijeli</span></button><button class="ghost" id="igBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6" fill="currentColor"/></svg><span>Instagram</span></button></div>
   </div>
 
   <div id="cmpOv" style="display:none">
@@ -581,7 +585,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 11:06</div>
+  <div class="ver"><span>verzija</span> 12.11. 11:13</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1174,16 +1178,17 @@
     function V(n){return cs.getPropertyValue(n).trim()||'#888'}
     var bg=V('--bg'),card=V('--card'),line=V('--line'),tx=V('--text'),mu=V('--mute'),ac=V('--acc'),gr=V('--gr'),mg=V('--mg');
     var showW=$('shKg').checked,showKg=true,all=series(),s=all,rg=state.range;
-    var tl=[];
-    if($('shHt').checked&&hOn()){var lh=latest(state.heights);if(lh)tl.push([T('Visina'),dh(lh.v),V('--hc')])}
-    if($('shMs').checked&&mOn()){[['chest','Prsa','#ff6bd6'],['waist','Struk',ac],['hips','Bokovi','#6bd6ff']].forEach(function(r){var lm=latest(state.meas[r[0]]);if(lm)tl.push([T(r[1]),dh(lm.v),r[2]])})}
+    var tl=[],rcut=rg?toDay(today())-rg:-1e9;
+    function rdl(o){var ks=Object.keys(o).sort().filter(function(d){return toDay(d)>=rcut});if(ks.length<2)return null;var d=o[ks[ks.length-1]]-o[ks[0]];return Math.abs(d)<0.05?'0':(d>0?'+':'−')+f1(Math.abs(dh(d)))}
+    if($('shHt').checked&&hOn()){var lh=latest(state.heights);if(lh)tl.push([T('Visina'),dh(lh.v),V('--hc'),rdl(state.heights)])}
+    if($('shMs').checked&&mOn()){[['chest','Prsa','#ff6bd6'],['waist','Struk',ac],['hips','Bokovi','#6bd6ff']].forEach(function(r){var lm=latest(state.meas[r[0]]);if(lm)tl.push([T(r[1]),dh(lm.v),r[2],rdl(state.meas[r[0]])])})}
     if(rg>0){var lim=all.length?all[all.length-1].d-rg:0;s=all.filter(function(e){return e.d>=lim})}
     var FH=shFmt==='s'?1920:1350;cv.height=FH;c=cv.getContext('2d');c.fillStyle=bg;c.fillRect(0,0,W,FH);c.translate(0,(FH-H)/2);
     var SF='system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
     c.textBaseline='alphabetic';
     c.fillStyle=ac;c.font='900 64px PFD,Georgia,serif';c.textAlign='left';c.fillText('kylogram',70,120);
     c.fillStyle=tx;c.font='700 44px '+SF;c.textAlign='right';c.fillText(P().name,W-70,116);
-    function dTile(x,y,w,h,val,lab,fs,col){c.fillStyle=card;c.strokeStyle=line;c.lineWidth=2;c.beginPath();c.roundRect?c.roundRect(x,y,w,h,22):c.rect(x,y,w,h);c.fill();c.stroke();c.textAlign='center';c.fillStyle=col;c.font='800 '+fs+'px '+SF;c.fillText(val,x+w/2,y+h*0.52);c.fillStyle=mu;c.font='500 '+Math.round(fs*0.6)+'px '+SF;c.fillText(lab,x+w/2,y+h*0.52+fs*0.72)}
+    function dTile(x,y,w,h,val,lab,fs,col,dl){c.fillStyle=card;c.strokeStyle=line;c.lineWidth=2;c.beginPath();c.roundRect?c.roundRect(x,y,w,h,22):c.rect(x,y,w,h);c.fill();c.stroke();c.textAlign='center';c.fillStyle=col;c.font='800 '+fs+'px '+SF;c.fillText(val,x+w/2,y+h*(dl?0.40:0.52));c.fillStyle=mu;c.font='500 '+Math.round(fs*0.6)+'px '+SF;c.fillText(lab,x+w/2,y+h*(dl?0.40:0.52)+fs*0.72);if(dl){c.fillStyle=col;c.font='700 '+Math.round(fs*0.68)+'px '+SF;c.fillText(dl,x+w/2,y+h-h*0.1)}}
     if(showW){
     // big total
     var last=all[all.length-1],first=all[0];
@@ -1208,7 +1213,7 @@
     // chart
     if(showW){
     var cx=70,cy=722,cw=W-140,ch=500;
-    if(tl.length){cy=690;ch=380}
+    if(tl.length){cy=690;ch=330}
     if(false){
       var tw2=(W-140-(tl.length-1)*20)/tl.length,ty2=690;
       tl.forEach(function(r,j){var x=70+j*(tw2+20);
@@ -1250,12 +1255,12 @@
         });
       }
     }
-    if(tl.length){var tw2=(W-140-(tl.length-1)*20)/tl.length;tl.forEach(function(r,j){dTile(70+j*(tw2+20),1095,tw2,150,f1(r[1]),r[0]+' · '+hu(),46,r[2]||tx)})}
+    if(tl.length){var tw2=(W-140-(tl.length-1)*20)/tl.length;tl.forEach(function(r,j){dTile(70+j*(tw2+20),1040,tw2,200,f1(r[1]),r[0]+' · '+hu(),44,r[2]||tx,r[3])})}
     }else{
       var n3=tl.length;
       if(!n3){c.textAlign='center';c.fillStyle=mu;c.font='500 40px '+SF;c.fillText('–',W/2,H/2)}
       else{var cols=n3===1?1:2,rows=Math.ceil(n3/cols),gw=(W-140-(cols-1)*24)/cols,gh=Math.min(300,(H-420-(rows-1)*24)/rows);
-        tl.forEach(function(r,j){var rr=Math.floor(j/cols),cc=j%cols,rowN=Math.min(cols,n3-rr*cols),off=cols>1&&rowN<cols?(gw+24)/2:0;dTile(70+cc*(gw+24)+off,260+rr*(gh+24),gw,gh,f1(r[1]),r[0]+' · '+hu(),Math.round(gh*0.42),r[2]||tx)})}
+        tl.forEach(function(r,j){var rr=Math.floor(j/cols),cc=j%cols,rowN=Math.min(cols,n3-rr*cols),off=cols>1&&rowN<cols?(gw+24)/2:0;dTile(70+cc*(gw+24)+off,260+rr*(gh+24),gw,gh,f1(r[1]),r[0]+' · '+hu(),Math.round(gh*0.36),r[2]||tx,r[3])})}
     }
     c.textAlign='center';c.fillStyle=mu;c.font='500 28px '+SF;c.fillText('kylogram',W/2,H-60);
   }
@@ -1263,8 +1268,10 @@
   function shOpen(){$('shKg').checked=true;
     var hasH=hOn()&&!!latest(state.heights),hasM=mOn()&&['chest','waist','hips'].some(function(k){return !!latest(state.meas[k])});
     $('shHt').checked=hasH;$('shMs').checked=hasM;$('shHtR').style.display=hasH?'':'none';$('shMsR').style.display=hasM?'':'none';$('shOv').style.display='flex';try{document.fonts.ready.then(shDraw)}catch(e){}shDraw()}
-  $('shBtn').onclick=function(e){e.stopPropagation();shOpen()};
-  $('igBtn').onclick=function(e){e.stopPropagation();shFmt='p';[].forEach.call($('shFmt').children,function(b){b.classList.toggle('on',b.dataset.f==='p')});shOpen()};
+  function shFmtSet(f){shFmt=f;[].forEach.call($('shFmt').children,function(b){b.classList.toggle('on',b.dataset.f===f)})}
+  $('shBtn').onclick=function(e){e.stopPropagation();var m=$('shMenu');m.style.display=m.style.display==='none'?'block':'none'};
+  $('shMenu').onclick=function(e){e.stopPropagation();var t=e.target.dataset&&e.target.dataset.t;if(!t)return;$('shMenu').style.display='none';shFmtSet(t==='st'?'s':'p');shOpen()};
+  document.addEventListener('click',function(){$('shMenu').style.display='none'});
   $('shKg').onchange=shDraw;$('shHt').onchange=shDraw;$('shMs').onchange=shDraw;
   $('shNo').onclick=function(){$('shOv').style.display='none'};
   $('shOv').onclick=function(e){if(e.target===this)$('shOv').style.display='none'};
