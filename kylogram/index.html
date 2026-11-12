@@ -128,6 +128,8 @@
   .camwrap button{width:100%}
   .fover{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;font-size:100px;padding:0;border:0;margin:0}
   .camrow svg{vertical-align:-3px;margin-right:6px}
+  #pshow{flex:0 0 100%}
+  #pbwrap input{font-size:13.5px!important}
   #pbwrap,#pwwrap,#pgwrap,#phwrap{flex:0 0 100%;display:flex;align-items:center;gap:10px;color:var(--mute)}
   #pbwrap,#pwwrap,#pgwrap,#phwrap{justify-content:space-between;font-size:15px;line-height:1.25}
   #pmwrap{flex:0 0 100%;display:flex;flex-direction:column;gap:8px;color:var(--mute);font-size:15px}
@@ -239,10 +241,10 @@
 
   #sub-s{flex-direction:column;gap:0;margin-top:14px;padding:0 2px 24px}
   #sub-s.open{display:flex}
-  #sub-s .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-bottom:1px solid var(--line)}
+  #sub-s .srow,#pshow .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-bottom:1px solid var(--line)}
   #sub-s>.srow:last-child{border-bottom:0}
-  #sub-s .shd{min-height:40px;margin-top:8px;border-bottom:0}
-  #sub-s .shd .sl{color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+  #sub-s .shd,#pshow .shd{min-height:40px;margin-top:8px;border-bottom:0}
+  #sub-s .shd .sl,#pshow .shd .sl{color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
   .ptsw{display:flex;gap:5px;align-items:center;justify-content:flex-end}
   .ptsw button{width:21px;height:21px;padding:0;border-radius:50%;border:2px solid var(--line);position:relative;cursor:pointer;flex:0 0 auto}
   .ptsw button.on{border-color:var(--text);box-shadow:0 0 0 2px var(--card),0 0 0 3.5px var(--acc)}
@@ -251,7 +253,7 @@
   .ptpos button{padding:7px;display:flex;border-radius:6px;min-width:0}
   .ptpos button i{width:12px;height:4px;border-radius:2px;background:var(--mute)}
   .ptpos button.on{border-color:var(--acc)}.ptpos button.on i{background:var(--acc)}
-  #sub-s .sl{font-size:15px;color:var(--text)}
+  #sub-s .sl,#pshow .sl{font-size:15px;color:var(--text)}
   #sub-s .seg{display:flex;gap:4px;overflow-x:auto;max-width:66%;padding:2px}
   #sub-s .seg button{flex:0 0 auto;padding:6px 11px;font-size:14px;border-radius:10px;display:flex;align-items:center;gap:6px;min-width:0}
   #sub-s .seg button b{font-weight:600}
@@ -262,10 +264,10 @@
   html[dir=rtl] #tabs button{direction:ltr}
   html[dir=rtl] .stat span{display:block;direction:ltr;unicode-bidi:isolate;text-align:right}
   #sub-s .seg button.on{border-color:var(--acc);color:var(--text);background:color-mix(in srgb,var(--acc) 16%,transparent)}
-  #sub-s .sw2{flex:none;width:46px;height:28px;padding:0;border-radius:14px;position:relative;background:color-mix(in srgb,var(--text) 18%,transparent);border:0}
-  #sub-s .sw2::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
-  #sub-s .sw2.on{background:var(--acc)}
-  #sub-s .sw2.on::after{transform:translateX(18px);background:var(--navy,#000)}
+  #sub-s .sw2,#pshow .sw2{flex:none;width:46px;height:28px;padding:0;border-radius:14px;position:relative;background:color-mix(in srgb,var(--text) 18%,transparent);border:0}
+  #sub-s .sw2::after,#pshow .sw2::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
+  #sub-s .sw2.on,#pshow .sw2.on{background:var(--acc)}
+  #sub-s .sw2.on::after,#pshow .sw2.on::after{transform:translateX(18px);background:var(--navy,#000)}
   .slab{flex:1 1 100%;font-size:13px;color:var(--mute);margin-top:4px}
   .stats.chg .stat{padding:9px 8px}
   .stats.chg .stat b{font-size:16px;white-space:nowrap}
@@ -380,7 +382,7 @@
   <div class="brand">
     <h1 class="wm" role="img" aria-label="kylogram"><svg viewBox="340 246 653 653" aria-hidden="true"><path d="M350 371H518V600L868 256L983 370L467 888H350Z"/><rect x="670" y="707" width="201" height="181"/></svg></h1>
     <div id="motiv" aria-live="off"><span id="motT"></span></div>
-    <div id="brandR"><button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button><button id="gear" type="button" aria-label="Postavke"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10.2"/><path d="M6.5 9H17.5M6.5 15H17.5"/><circle cx="9" cy="9" r="2.2" style="fill:var(--bg)"/><circle cx="15" cy="15" r="2.2" style="fill:var(--bg)"/></svg></button></div>
+    <div id="brandR"><button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button><button id="gear" type="button" aria-label="Postavke"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.4"/><path d="M16.20 11.06 L17.96 11.28 L17.96 12.72 L16.20 12.94 L15.63 14.30 L16.72 15.70 L15.70 16.72 L14.30 15.63 L12.94 16.20 L12.72 17.96 L11.28 17.96 L11.06 16.20 L9.70 15.63 L8.30 16.72 L7.28 15.70 L8.37 14.30 L7.80 12.94 L6.04 12.72 L6.04 11.28 L7.80 11.06 L8.37 9.70 L7.28 8.30 L8.30 7.28 L9.70 8.37 L11.06 7.80 L11.28 6.04 L12.72 6.04 L12.94 7.80 L14.30 8.37 L15.70 7.28 L16.72 8.30 L15.63 9.70Z"/><circle cx="12" cy="12" r="1.9"/></svg></button></div>
   </div>
 
   <div class="card" id="cardNew">
@@ -388,6 +390,7 @@
     <div id="pform">
       <input type="search" id="pname" maxlength="24" placeholder="Ime osobe" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
       <div id="pswatch"></div>
+      <div id="pshow"><div class="srow shd"><span class="sl">Prikaz na glavnom ekranu</span></div><div class="srow"><span class="sl">Visina</span><button class="sw2" type="button" id="pshH" role="switch" aria-checked="false"></button></div><div class="srow"><span class="sl">Mjere tijela</span><button class="sw2" type="button" id="pshM" role="switch" aria-checked="false"></button></div></div>
       <label id="pbwrap">Rođen/a (nije obavezno) <input type="date" id="pbirth" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
       <label id="pwwrap">Težina <input type="number" id="pwt" inputmode="decimal" step="0.1" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
       <label id="pgwrap">Ciljna težina (nije obavezno) <input type="number" id="pgoal" inputmode="decimal" step="0.1" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
@@ -594,7 +597,7 @@
       <button class="ghost" type="button" data-th="mb">Crna</button>
     </div></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 17:40</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 17:45</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -633,8 +636,8 @@
   var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:30,theme:'ml',tm1:1,metric:'b',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr',pf:{n:true,d:true,a:true,w:true,h:true},pt:{c:'#ffffff',p:'bl'}}};
   var LANG='hr';
   var MK=['chest','waist','hips'],MKL={chest:'prsa',waist:'struk',hips:'bokovi'},MKC={chest:'Prsa',waist:'Struk',hips:'Bokovi'},MCOL=['#ff6bd6','var(--acc)','#6bd6ff'],MAB={hr:['P','S','B'],en:['C','W','H'],de:['B','T','H'],es:['Pe','Ci','Ca'],it:['P','V','F'],pt:['P','C','Q'],pl:['K','T','B'],zh:['胸','腰','臀'],ja:['胸','腰','臀'],he:['ח','מ','י'],fr:['P','T','H'],cs:['H','P','B'],sk:['H','P','B'],hu:['M','D','Cs'],ro:['Pi','Ta','Șo'],bg:['Г','Т','Х'],el:['Σ','Μ','Γ'],ko:['가','허','엉'],nl:['B','T','H'],no:['Br','Mi','Ho'],fi:['R','V','L'],sv:['B','M','H'],da:['B','T','H'],ar:['ص','خ','و'],hi:['छा','क','कू'],sl:['Pr','Pa','Bo'],ru:['Гр','Та','Бё'],uk:['Гр','Та','Ст'],tr:['G','B','K'],sq:['Gj','B','I'],id:['D','Pi','Pg'],fil:['D','B','Ba'],vi:['N','E','H'],th:['อก','เอว','สะ'],bn:['বু','কো','নি'],sw:['Ki','Kn','Ny'],sr:['Гр','Ст','Ку'],mk:['Гр','По','Ко'],lt:['K','Ta','Kl'],lv:['K','V','G'],et:['R','V','P'],ca:['P','C','M'],is:['Br','Mi','Mj'],mt:['Si','Qa','Ġe'],ka:['მკ','წე','თე'],hy:['կր','գո','կո'],bs:['P','S','B'],fa:['سی','کم','با'],ur:['سی','کم','کو'],ms:['D','P','Pi'],ta:['மா','இடை','இடு'],te:['ఛా','న','తు'],mr:['छा','कं','नि'],ha:['Ƙ','K','D'],am:['ደ','ወ','ዳ'],af:['B','M','H']};
-  function mOn(){return !!S.cfg.m}
-  var EN={'Motivacijske poruke':'Motivational messages','Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
+  function mOn(){return !!S.cfg.m&&(S.all||!P().hideM)}
+  var EN={'Prikaz na glavnom ekranu':'Shown on main screen','Motivacijske poruke':'Motivational messages','Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
   'Dodaj':'Add','Obriši':'Delete','Spremi':'Save','Slikaj':'Take photo','Odaberi sliku':'Choose photo','Prikaz svih osoba. Za unos odaberi osobu.':'Showing everyone. Pick a person to add entries.',
   'zadnja':'latest','zadnje mjerenje':'latest measurement','prethodna visina':'previous height','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
   'Težina':'Weight','Visina':'Height','Oboje':'Both','Sve':'All','Svi':'All','1 god':'1 y','6 mj':'6 mo','pad':'drop','rast':'gain','cilj':'goal','Cilj':'Goal',
@@ -664,7 +667,8 @@
   var PL={'slika':['photo','photos'],'mjerenje':['measurement','measurements'],'godina':['year','years'],'mjesec':['month','months'],'dan':['day','days']};
   var LB=2.2046226218,IN=0.3937007874;
   function isUS(){return S.cfg.u==='i'}
-  function hOn(){return !!S.cfg.h}
+  function hOn(){if(!S.cfg.h)return false;if(S.all)return selPeople().some(function(p){return !p.hideH});return !P().hideH}
+  function hOf(p){return p.hideH?{}:(p.heights||{})}
   function wu(){return isUS()?'lb':'kg'}
   function hu(){return isUS()?'in':'cm'}
   function dw(x){return isUS()?x*LB:x}
@@ -689,7 +693,7 @@
   function sane(x){
     if(!x||!x.people||!x.people.length)throw 0;
     x.people=x.people.filter(function(p){return p&&p.entries&&typeof p.entries==='object'}).map(function(p,i){
-      return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?(p.color.toLowerCase()==='#39ff14'?'#11b882':p.color):null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},meas:cleanMeas(p.meas),goal:p.goal||null,frame:p.frame==='polaroid'?'polaroid':'plain'}});
+      return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),hideH:!!p.hideH,hideM:!!p.hideM,birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?(p.color.toLowerCase()==='#39ff14'?'#11b882':p.color):null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},meas:cleanMeas(p.meas),goal:p.goal||null,frame:p.frame==='polaroid'?'polaroid':'plain'}});
     if(!x.people.length)throw 0;
     if(!x.people.some(function(p){return p.id===x.active}))x.active=x.people[0].id;
     if(x.range===undefined)x.range=30;if(x.range===90)x.range=180;if([0,7,30,180,365].indexOf(x.range)<0)x.range=30;
@@ -742,6 +746,7 @@
       else if(r[0].parentNode&&r[0].nodeValue!==t)r[0].nodeValue=t;
     });
   }
+  function applyVis(){var ho=hOn();$('cm').style.display=ho?'':'none';$('sH').parentNode.style.display=ho?'':'none';$('sHp').parentNode.style.display=ho?'':'none';$('mtabs').style.display=(ho||mOn())?'':'none';$('mrow').style.display=mOn()?'':'none'}
   function applyCfg(){
     LANG=S.cfg.lang;document.documentElement.setAttribute('lang',LANG);document.documentElement.setAttribute('dir',RTL[LANG]?'rtl':'ltr');
     trStatic();
@@ -1001,7 +1006,7 @@
     svg.setAttribute('viewBox','0 0 '+W+' '+H);
     var cut=state.range?toDay(today())-state.range:-1e9,cols=pcolors();
     var ds=selPeople().map(function(p){var i=S.people.indexOf(p);
-      var src=m==='h'?(p.heights||{}):p.entries;
+      var src=m==='h'?hOf(p):p.entries;
       var pts=Object.keys(src).sort().map(function(k){return {k:k,d:toDay(k),v:cv(src[k])}}).filter(function(e){return e.d>=cut});
       return {name:p.name,col:lineCol(cols[i]),pts:pts,src:src,idx:i};
     });
@@ -1056,8 +1061,8 @@
     svg.setAttribute('viewBox','0 0 '+W+' '+H);
     var cut=state.range?toDay(today())-state.range:-1e9,cols=pcolors();
     var ds=selPeople().map(function(p){var i=S.people.indexOf(p);
-      var ks=Object.keys(p.heights||{}).sort().filter(function(k){return toDay(k)>=cut});
-      return {name:p.name,col:lineCol(cols[i]),f:ks.length?dh(p.heights[ks[0]]):null,l:ks.length?dh(p.heights[ks[ks.length-1]]):null};
+      var ks=Object.keys(hOf(p)).sort().filter(function(k){return toDay(k)>=cut});
+      return {name:p.name,col:lineCol(cols[i]),f:ks.length?dh(hOf(p)[ks[0]]):null,l:ks.length?dh(hOf(p)[ks[ks.length-1]]):null};
     }).filter(function(x){return x.l!==null});
     if(!ds.length){svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" text-anchor="middle" font-size="14">'+T('Nema podataka')+'</text>';geo=null;return}
     var all=[];ds.forEach(function(x){all.push(x.f,x.l)});
@@ -1091,7 +1096,7 @@
     var cut=state.range?toDay(today())-state.range:-1e9,cols=pcolors();
     var ds=selPeople().map(function(p){var i=S.people.indexOf(p);
       function mk(src,cv){return Object.keys(src||{}).sort().map(function(k){return {k:k,d:toDay(k),v:cv(src[k])}}).filter(function(e){return e.d>=cut})}
-      return {name:p.name,col:lineCol(cols[i]),pw:mk(p.entries,dw),ph:mk(p.heights,dh),sw:p.entries||{},sh:p.heights||{}};
+      return {name:p.name,col:lineCol(cols[i]),pw:mk(p.entries,dw),ph:mk(hOf(p),dh),sw:p.entries||{},sh:hOf(p)};
     });
     var allw=[],allh=[],dd=[];
     ds.forEach(function(x){x.pw.forEach(function(e){allw.push(e.v);dd.push(e.d)});x.ph.forEach(function(e){allh.push(e.v);dd.push(e.d)})});
@@ -1175,7 +1180,7 @@
   function renderCmp(all){
     var el=$('cmp');
     if(!all){el.style.display='none';return}
-    var cols=pcolors(),rows=selPeople().map(function(p){var i=S.people.indexOf(p);return {name:p.name,col:cols[i],h:latest(p.heights)}});
+    var cols=pcolors(),rows=selPeople().map(function(p){var i=S.people.indexOf(p);return {name:p.name,col:cols[i],h:latest(hOf(p))}});
     rows.sort(function(a,b){return (b.h?b.h.v:-1)-(a.h?a.h.v:-1)});
     var h='',prev=null;
     rows.forEach(function(r){
@@ -1228,7 +1233,7 @@
   }
 
   function render(){
-    applyColor();motSync();
+    applyColor();motSync();applyVis();
     renderPeople();
     if(S.all&&S.people.length<2)S.all=false;
     var all=!!S.all,s=series(),hs=hOn()?hseries():[];
@@ -1560,10 +1565,14 @@
     var b=e.target.closest?e.target.closest('button'):null;if(!b)return;
     if(b.id==='pall'){S.all=true;pmode=null;dropUndo();persist();render();return}
     if(b.dataset.p){S.active=b.dataset.p;S.all=false;pmode=null;dropUndo();persist();render();return}
-    if(b.id==='padd'){pmode='add';pcolor=nextColor();renderPeople();$('pbirth').value='';$('pgoal').value='';pfBody(null);$('pmsg').textContent='';$('pname').value='';$('pname').focus()}
-    else if(b.id==='pedit'){pmode='edit';pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal?nv(dw(P().goal)):'';pfBody(P());$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
+    if(b.id==='padd'){pmode='add';phH=!!S.cfg.h;phM=!!S.cfg.m;pshSync();pcolor=nextColor();renderPeople();$('pbirth').value='';$('pgoal').value='';pfBody(null);$('pmsg').textContent='';$('pname').value='';$('pname').focus()}
+    else if(b.id==='pedit'){pmode='edit';phH=!!S.cfg.h&&!P().hideH;phM=!!S.cfg.m&&!P().hideM;pshSync();pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal?nv(dw(P().goal)):'';pfBody(P());$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
   };
   var PBF=[['chest','pmc'],['waist','pmw2'],['hips','pmh']];
+  var phH=true,phM=true;
+  function pshSync(){$('pshH').classList.toggle('on',phH);$('pshH').setAttribute('aria-checked',phH?'true':'false');$('pshM').classList.toggle('on',phM);$('pshM').setAttribute('aria-checked',phM?'true':'false')}
+  $('pshH').onclick=function(){phH=!phH;pshSync()};
+  $('pshM').onclick=function(){phM=!phM;pshSync()};
   function pfBody(p){
     var u=hu();$('phgt').placeholder=u;$('pwt').placeholder=wu();
     var lw=p&&p.entries?latest(p.entries):null,wv=lw?nv(dw(lw.v)):'';$('pwt').value=wv;$('pwt').dataset.i=wv;
@@ -1586,6 +1595,7 @@
     if(pmode==='add'){var id='p'+Date.now().toString(36);S.people.push({id:id,name:n,birth:bd||null,color:pcolor,entries:{},heights:{},meas:{chest:{},waist:{},hips:{}},goal:gl});S.active=id;S.all=false;dropUndo()}
     else if(pmode==='edit'){P().name=n;P().color=pcolor;P().birth=bd||null;P().goal=gl}
     var pp=P(),dd=today(),cfgCh=false;
+    {var pq=P();pq.hideH=!phH;pq.hideM=!phM;if(phH&&!S.cfg.h){S.cfg.h=true;cfgCh=true}if(phM&&!S.cfg.m){S.cfg.m=true;cfgCh=true}}
     if(wtn!==null&&wtv!==$('pwt').dataset.i){pp.entries[dd]=rw(wtn)}
     if(hn!==null&&hv!==$('phgt').dataset.i){pp.heights=pp.heights||{};pp.heights[dd]=rh(hn);if(!S.cfg.h){S.cfg.h=true;cfgCh=true}}
     PBF.forEach(function(r){if(mo[r[0]]!==undefined&&$(r[1]).value.trim()!==$(r[1]).dataset.i){state.meas[r[0]][dd]=rh(mo[r[0]]);mAny=true}});
@@ -2118,13 +2128,13 @@
     $('calBody').innerHTML=h;
   }
   function ptok(p,k,col,withH){
-    var w=p.entries[k],hv=withH&&hOn()&&p.heights?p.heights[k]:undefined,o=[];
+    var w=p.entries[k],hv=withH&&hOn()&&!p.hideH&&p.heights?p.heights[k]:undefined,o=[];
     if(w!==undefined)o.push(f1(dw(w))+' '+wu());if(hv!==undefined)o.push(fd(dh(hv))+' '+hu());
     return o.length?'<span style="color:'+col+';font-weight:700;font-size:14px;display:block">'+esc(p.name)+' '+o.join(' · ')+'</span>':'';
   }
   function renderCalAll(){
     var pp=selPeople(),cols=pcolors(),t=today(),ty=+t.slice(0,4),tm=+t.slice(5,7),sy=ty,sm=tm,mk=null;
-    pp.forEach(function(p){Object.keys(p.entries).concat(Object.keys(p.heights||{})).forEach(function(k){if(!mk||k<mk)mk=k})});
+    pp.forEach(function(p){Object.keys(p.entries).concat(Object.keys(hOf(p))).forEach(function(k){if(!mk||k<mk)mk=k})});
     if(mk){sy=+mk.slice(0,4);sm=+mk.slice(5,7)}
     var mi=sy*12+sm-1,mn=ty*12+tm-1-11;if(mn<mi){sy=Math.floor(mn/12);sm=mn%12+1}
     var h='',y=ty,m=tm;
@@ -2143,7 +2153,7 @@
   }
   function renderListAll(){
     var pp=selPeople(),cols=pcolors(),all={};
-    pp.forEach(function(p){Object.keys(p.entries).forEach(function(k){all[k]=1});if(hOn())Object.keys(p.heights||{}).forEach(function(k){all[k]=1})});
+    pp.forEach(function(p){Object.keys(p.entries).forEach(function(k){all[k]=1});if(hOn())Object.keys(hOf(p)).forEach(function(k){all[k]=1})});
     var keys=Object.keys(all).sort().reverse();
     if(!keys.length){$('calBody').innerHTML='<div class="galempty">'+T('Još nema unosa.')+'</div>';return}
     var h='',cm=null;
@@ -2192,7 +2202,7 @@
   function showDayAll(k){
     dayK=k;var pp=selPeople(),cols=pcolors(),c='<div class="dtitle">'+fmtDate(k)+'</div>',n=0;
     pp.forEach(function(p){
-      var w=p.entries[k],hv=hOn()&&p.heights?p.heights[k]:undefined;if(w===undefined&&hv===undefined)return;
+      var w=p.entries[k],hv=hOn()&&!p.hideH&&p.heights?p.heights[k]:undefined;if(w===undefined&&hv===undefined)return;
       n++;var o=[];if(w!==undefined)o.push(f1(dw(w))+' '+wu());if(hv!==undefined)o.push(f1(dh(hv))+' '+hu());
       c+='<div class="drow"><span><i class="pdot" style="background:'+lineCol(cols[S.people.indexOf(p)])+'"></i>'+esc(p.name)+'</span><b style="font-size:15px">'+o.join(' · ')+'</b><button class="ghost" data-x="pp:'+esc(p.id)+'">'+T('Uredi')+'</button></div>';
     });
