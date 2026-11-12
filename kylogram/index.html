@@ -182,6 +182,11 @@
   .galscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 2px 24px}
   .stat b small{font-size:14px;font-weight:600}
   .stats.chg{grid-template-columns:repeat(4,1fr);gap:6px}
+  .stats.m3{grid-template-columns:repeat(3,1fr);gap:6px}
+  .stats.m3 .stat{padding:9px 8px}
+  .stats.m3 .stat b{font-size:16px;white-space:nowrap}
+  .stats.m3 .stat span{font-size:11px;white-space:nowrap}
+  #mrow input{flex:1;min-width:0}
   #sub-s{flex-direction:column;gap:0;margin-top:14px;padding:0 2px 24px}
   #sub-s.open{display:flex}
   #sub-s .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-bottom:1px solid var(--line)}
@@ -377,6 +382,11 @@
       <input type="number" id="kg" inputmode="decimal" step="0.1" min="2" max="400" placeholder="kg">
       <input type="number" id="cm" inputmode="decimal" step="0.1" min="30" max="250" placeholder="cm">
     </div>
+    <div class="row" id="mrow" style="display:none;margin-top:8px">
+      <input type="number" id="mc" inputmode="decimal" step="0.1" placeholder="prsa">
+      <input type="number" id="mw" inputmode="decimal" step="0.1" placeholder="struk">
+      <input type="number" id="mh" inputmode="decimal" step="0.1" placeholder="bokovi">
+    </div>
     <button id="save" type="button">Spremi</button>
     <div class="camrow">
       <div class="camwrap"><button class="ghost" type="button" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Slikaj</button><input type="file" id="fcam" class="fover" accept="image/*" capture="environment" aria-label="Slikaj"></div>
@@ -393,6 +403,11 @@
     <div class="stat t3"><b id="sHp">–</b><span id="lHp">prethodna visina (cm)</span></div>
     <div class="stat t4"><b id="sH">–</b><span id="lH">visina (cm)</span></div>
   </div>
+  <div class="stats m3" id="mstats" style="display:none">
+    <div class="stat t1"><b id="sMc">–</b><span id="lMc">prsa</span></div>
+    <div class="stat t2"><b id="sMw">–</b><span id="lMw">struk</span></div>
+    <div class="stat t4"><b id="sMh">–</b><span id="lMh">bokovi</span></div>
+  </div>
   <div class="stats chg" id="chg">
     <div class="stat t1"><b id="c7">–</b><span id="c7l">7 d</span></div>
     <div class="stat t2"><b id="c15">–</b><span id="c15l">15 d</span></div>
@@ -405,6 +420,7 @@
       <button class="ghost" data-m="w">Težina</button>
       <button class="ghost" data-m="h">Visina</button>
       <button class="ghost" data-m="b">Oboje</button>
+      <button class="ghost" data-m="m">Mjere</button>
     </div>
     <div class="tabs" id="tabs">
       <button class="ghost" data-r="30">30 d</button>
@@ -421,6 +437,9 @@
       <span class="lw"><i class="dot" style="background:var(--mg)"></i>rast</span>
       <span class="lw"><i class="dot" style="background:var(--warn)"></i>cilj</span>
       <span class="lh"><i class="dot" style="background:var(--hc)"></i>visina</span>
+      <span class="lm"><i class="dot" style="background:#ff6bd6"></i>prsa</span>
+      <span class="lm"><i class="dot" style="background:var(--acc)"></i>struk</span>
+      <span class="lm"><i class="dot" style="background:#6bd6ff"></i>bokovi</span>
     </div>
   </div>
 
@@ -468,6 +487,7 @@
       <button class="ghost" type="button" data-u="i">lb · in</button>
     </div></div>
     <div class="srow"><span class="sl">Praćenje visine</span><button class="sw2" type="button" id="hBtn" role="switch" aria-checked="false"></button></div>
+    <div class="srow"><span class="sl">Mjere tijela</span><button class="sw2" type="button" id="mBtn" role="switch" aria-checked="false"></button></div>
     <div class="srow"><span class="sl">Tema</span><div class="seg" id="sub-t">
       <button class="ghost" type="button" data-th="m">Tamna</button>
       <button class="ghost" type="button" data-th="ml">Svijetla</button>
@@ -485,7 +505,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 01:07</div>
+  <div class="ver"><span>verzija</span> 12.11. 01:21</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -504,8 +524,10 @@
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
   var PALETTE=[['#e3ff00','Žuta'],['#11b882','Zelena'],['#ff2bd6','Roza'],['#2a7bff','Plava']],pcolor=null;
   var THEMES=['m','ml','mb'],NAMES={'90':'90-e','80':'80-e','m':'Moderna tamna','ml':'Moderna svijetla','mb':'Moderna crna'},TCOL={'90':'#008080','80':'#07060d','m':'#0f1115','ml':'#eef0f4','mb':'#000000'};
-  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[],cfg:{h:false,u:'m',lang:'hr'}};
+  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr'}};
   var LANG='hr';
+  var MK=['chest','waist','hips'],MKL={chest:'prsa',waist:'struk',hips:'bokovi'},MKC={chest:'Prsa',waist:'Struk',hips:'Bokovi'},MCOL=['#ff6bd6','var(--acc)','#6bd6ff'],MAB={hr:['P','S','B'],en:['C','W','H']};
+  function mOn(){return !!S.cfg.m}
   var EN={'Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
   'Dodaj':'Add','Obriši':'Delete','Spremi':'Save','Slikaj':'Take photo','Odaberi sliku':'Choose photo','Prikaz svih osoba. Za unos odaberi osobu.':'Showing everyone. Pick a person to add entries.',
   'zadnja':'latest','zadnje mjerenje':'latest measurement','prethodna visina':'previous height','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
@@ -521,7 +543,7 @@
   'Ciljna težina mora biti između':'Goal weight must be between','i':'and','Pohrana nije dostupna – napravi backup.':'Storage is not available – make a backup.',
   'Pohrana nije dostupna u ovom pregledniku – napravi backup.':'Storage is not available in this browser – make a backup.',
   'Upiši ime.':'Enter a name.','Datum rođenja nije ispravan.':'Birth date is not valid.','Obrisano':'Deleted','Backup uvezen':'Backup imported','Neispravna backup datoteka.':'Invalid backup file.',
-  'Metrički':'Metric','Američki':'US customary','Žuta':'Yellow','Zelena':'Green','Roza':'Pink','Plava':'Blue','Odaberi boju':'Pick a colour','uredi':'edit',
+  'Prsa':'Chest','Struk':'Waist','Bokovi':'Hips','prsa':'chest','struk':'waist','bokovi':'hips','Mjere':'Measures','Mjere tijela':'Body measurements','Unesi prvu mjeru':'Enter the first measurement','Mjera mora biti između':'Measurement must be between','Upiši težinu ili neku mjeru.':'Enter a weight or a measurement.','Metrički':'Metric','Američki':'US customary','Žuta':'Yellow','Zelena':'Green','Roza':'Pink','Plava':'Blue','Odaberi boju':'Pick a colour','uredi':'edit',
   'Samo jednom':'Once only','Odaberi datum i sat.':'Pick a date and time.','Vaganje':'Weigh-in','Podsjetnik uključen:':'Reminder on:','Otvori preuzetu datoteku i spremi je u Kalendar.':'Open the downloaded file and save it to your calendar.','U redu':'OK',
   'Pravim sliku…':'Making the photo…','Slika se nije mogla obraditi.':'The photo could not be processed.','Slika nije trajno spremljena u ovom pregledniku – spremi je u galeriju mobitela.':'The photo was not saved permanently in this browser – save it to your phone gallery.',
   'Na slici nedostaje:':'Missing on the photo:','težinu':'weight','visinu':'height','Dodaj to pa u galeriji pritisni Osvježi.':'Add it, then press Refresh in the gallery.',
@@ -550,22 +572,24 @@
   var state={};
   Object.defineProperty(state,'entries',{get:function(){return P().entries},set:function(v){P().entries=v}});
   Object.defineProperty(state,'heights',{get:function(){var p=P();if(!p.heights)p.heights={};return p.heights},set:function(v){P().heights=v}});
+  Object.defineProperty(state,'meas',{get:function(){var p=P();if(!p.meas||typeof p.meas!=='object')p.meas={};MK.forEach(function(k){if(!p.meas[k]||typeof p.meas[k]!=='object')p.meas[k]={}});return p.meas}});
   Object.defineProperty(state,'goal',{get:function(){return P().goal},set:function(v){P().goal=v}});
   Object.defineProperty(state,'range',{get:function(){return S.range},set:function(v){S.range=v}});
   var memOnly=false;
+  function cleanMeas(m){var o={};['chest','waist','hips'].forEach(function(k){o[k]=(m&&m[k]&&typeof m[k]==='object')?m[k]:{}});return o}
   function sane(x){
     if(!x||!x.people||!x.people.length)throw 0;
     x.people=x.people.filter(function(p){return p&&p.entries&&typeof p.entries==='object'}).map(function(p,i){
-      return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?(p.color.toLowerCase()==='#39ff14'?'#11b882':p.color):null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},goal:p.goal||null}});
+      return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?(p.color.toLowerCase()==='#39ff14'?'#11b882':p.color):null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},meas:cleanMeas(p.meas),goal:p.goal||null}});
     if(!x.people.length)throw 0;
     if(!x.people.some(function(p){return p.id===x.active}))x.active=x.people[0].id;
     if(x.range===undefined)x.range=90;
-    if(['w','h','b'].indexOf(x.metric)<0)x.metric='b';
+    if(['w','h','b','m'].indexOf(x.metric)<0)x.metric='b';
     x.all=!!x.all&&x.people.length>1;
     x.reminders=(Array.isArray(x.reminders)?x.reminders:[]).filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time)&&['once','day','week','month','first','year'].indexOf(r.rep)>=0}).slice(0,50).map(function(r,i){return {id:String(r.id||('r'+i+Date.now().toString(36))),date:r.date,time:r.time,rep:r.rep,text:String(r.text||'Vaganje').slice(0,60),dis:(typeof r.dis==='string'?r.dis:'')}});
     if(THEMES.indexOf(x.theme)<0)x.theme='m';
     var cf=x.cfg||{},hadH=x.people.some(function(p){return p.heights&&Object.keys(p.heights).length});
-    x.cfg={h:cf.h===undefined?hadH:!!cf.h,u:cf.u==='i'?'i':'m',lang:cf.lang==='en'?'en':'hr'};
+    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,u:cf.u==='i'?'i':'m',lang:cf.lang==='en'?'en':'hr'};
     return x;
   }
   function load(){
@@ -614,7 +638,8 @@
     $('kg').placeholder=wu();$('cm').placeholder=hu();$('pgoal').placeholder=wu();
     $('cm').style.display=ho?'':'none';
     $('sH').parentNode.style.display=ho?'':'none';$('sHp').parentNode.style.display=ho?'':'none';
-    $('mtabs').style.display=ho?'':'none';
+    $('mtabs').style.display=(ho||mOn())?'':'none';
+    $('mrow').style.display=mOn()?'':'none';
     $('lCur').textContent=T('zadnje mjerenje');
     $('lHp').textContent=T('prethodna visina');
     $('lH').textContent=T('visina');
@@ -624,21 +649,24 @@
     var rt=$('rtext');if(rt.value==='Vaganje'||rt.value==='Weigh-in')rt.value=T('Vaganje');
     var ub=document.querySelectorAll('#sub-s [data-u]');for(var i=0;i<ub.length;i++)ub[i].classList.toggle('on',ub[i].dataset.u===S.cfg.u);
     var lb=document.querySelectorAll('#sub-s [data-lang]');for(i=0;i<lb.length;i++)lb[i].classList.toggle('on',lb[i].dataset.lang===S.cfg.lang);
+    $('mBtn').classList.toggle('on',mOn());$('mBtn').setAttribute('aria-checked',mOn()?'true':'false');
     $('hBtn').classList.toggle('on',ho);$('hBtn').setAttribute('aria-checked',ho?'true':'false');
     sndLabel();fillRep();renderRem();
   }
   $('sub-s').onclick=function(e){
     var b=e.target.closest?e.target.closest('button'):null;if(!b)return;
     var kv=parseKg($('kg').value),cv=parseKg($('cm').value),gv0=parseKg($('pgoal').value);
-    var kk=isFinite(kv)?uw(kv):NaN,ck=isFinite(cv)?uh(cv):NaN,gk0=isFinite(gv0)?uw(gv0):NaN;
+    var kk=isFinite(kv)?uw(kv):NaN,ck=isFinite(cv)?uh(cv):NaN,gk0=isFinite(gv0)?uw(gv0):NaN,mids=['mc','mw','mh'],mk0=mids.map(function(id){var x=parseKg($(id).value);return isFinite(x)?uh(x):NaN});
     if(b.dataset.u)S.cfg.u=b.dataset.u;
     else if(b.dataset.lang)S.cfg.lang=b.dataset.lang;
     else if(b.id==='hBtn')S.cfg.h=!S.cfg.h;
+    else if(b.id==='mBtn')S.cfg.m=!S.cfg.m;
     else return;
     persist();applyCfg();
     if(isFinite(kk))$('kg').value=nv(dw(kk));
     if(isFinite(ck))$('cm').value=nv(dh(ck));
     if(isFinite(gk0))$('pgoal').value=nv(dw(gk0));
+    mids.forEach(function(id,i){if(isFinite(mk0[i]))$(id).value=nv(dh(mk0[i]))});
     render();
   };
   function applyTheme(){
@@ -732,9 +760,9 @@
   var geo=null;
   function scaleOf(vals,minM){var lo=Math.min.apply(null,vals),hi=Math.max.apply(null,vals),mm=Math.max(minM,(hi-lo)*0.12);return {lo:lo-mm,hi:hi+mm}}
   var gm=null,gdrag=false,gval=null;
-  function chart(s,hs){
+  function chart(s,hs,mm){
     gm=null;
-    var m=hOn()?(S.metric||'b'):'w';
+    var m=mm||'w';
     var svg=$('chart'),W=svg.clientWidth||320,H=300;
     svg.setAttribute('viewBox','0 0 '+W+' '+H);
     var cut=state.range?toDay(today())-state.range:-1e9;
@@ -818,7 +846,7 @@
   function lineCol(c){return S.theme==='90'?shade(c,0.7):S.theme==='ml'?forLight(c):c}
   function latest(o){var ks=Object.keys(o||{}).sort();return ks.length?{k:ks[ks.length-1],v:o[ks[ks.length-1]]}:null}
   function chartAll(){
-    var m=(!hOn()||S.metric==='w')?'w':'h',unit=m==='h'?hu():wu(),cv=m==='h'?dh:dw;
+    var m=(!hOn()||S.metric==='w'||S.metric==='m')?'w':'h',unit=m==='h'?hu():wu(),cv=m==='h'?dh:dw;
     var svg=$('chart'),W=svg.clientWidth||320,H=300;
     svg.setAttribute('viewBox','0 0 '+W+' '+H);
     var cut=state.range?toDay(today())-state.range:-1e9,cols=pcolors();
@@ -874,6 +902,38 @@
     var seen={},pts=[];vis.forEach(function(x){x.pts.forEach(function(e){if(!seen[e.k]){seen[e.k]=1;pts.push({k:e.k,d:e.d})}})});
     geo={pts:pts,X:X,all:ds,unit:unit,cv:cv};
   }
+  function chartMeas(){
+    gm=null;
+    var svg=$('chart'),W=svg.clientWidth||320,H=300;
+    svg.setAttribute('viewBox','0 0 '+W+' '+H);
+    var cut=state.range?toDay(today())-state.range:-1e9;
+    var ser=MK.map(function(k,i){var o=state.meas[k];return {k:k,col:MCOL[i],src:o,pts:Object.keys(o).sort().map(function(d){return {k:d,d:toDay(d),v:dh(o[d])}}).filter(function(e){return e.d>=cut})}});
+    var vis=ser.filter(function(x){return x.pts.length});
+    if(!vis.length){svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" text-anchor="middle" font-size="14">'+T('Unesi prvu mjeru')+'</text>';geo=null;return}
+    var vals=[],dd=[];vis.forEach(function(x){x.pts.forEach(function(e){vals.push(e.v);dd.push(e.d)})});
+    var sc=scaleOf(vals,dh(1)),d0=Math.min.apply(null,dd),d1=Math.max.apply(null,dd);
+    if(d1===d0){d0-=1;d1+=1}
+    var padL=40,padR=14,padT=28,padB=26,iw=W-padL-padR,ih=H-padT-padB;
+    function X(d){return padL+(d-d0)/(d1-d0)*iw}
+    function Y(v){return padT+(sc.hi-v)/(sc.hi-sc.lo)*ih}
+    var g='',step=niceStep((sc.hi-sc.lo)/4);
+    for(var v=Math.ceil(sc.lo/step)*step;v<=sc.hi;v+=step){
+      g+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)" stroke-dasharray="2 5"/>';
+      g+='<text x="'+(padL-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="11">'+(+v.toFixed(2))+'</text>';
+    }
+    g+='<g transform="translate(2,2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--mute)"><rect x="3.5" y="0.5" width="9" height="16" rx="1.5"/><path d="M3.5 4H8M3.5 8H10.5M3.5 12H8"/></g><text x="21" y="15" font-size="11">'+hu()+'</text>';
+    var n=3;
+    for(var i=0;i<=n;i++){var dx=d0+(d1-d0)*i/n;g+='<text x="'+X(dx)+'" y="'+(H-6)+'" text-anchor="'+(i===0?'start':i===n?'end':'middle')+'" font-size="11">'+fmtShort(Math.round(dx))+'</text>'}
+    vis.forEach(function(x){
+      var p=x.pts.map(function(e){return [X(e.d),Y(e.v)]});
+      if(p.length>1)g+='<path d="'+smoothPath(p)+'" fill="none" style="stroke:'+x.col+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+      p.forEach(function(q){g+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="3.6" style="fill:'+x.col+'"/>'});
+    });
+    g+='<line id="cur" x1="0" x2="0" y1="'+padT+'" y2="'+(H-padB)+'" stroke="var(--mute)" opacity="0"/>';
+    svg.innerHTML=g;
+    var seen={},pts=[];vis.forEach(function(x){x.pts.forEach(function(e){if(!seen[e.k]){seen[e.k]=1;pts.push({k:e.k,d:e.d})}})});
+    geo={pts:pts,X:X,mser:ser};
+  }
   function renderCmp(all){
     var el=$('cmp');
     if(!all){el.style.display='none';return}
@@ -900,6 +960,11 @@
     geo.pts.forEach(function(e){var dx=Math.abs(geo.X(e.d)-x);if(dx<bd){bd=dx;best=e}});
     if(!best)return;
     var c=$('cur');c.setAttribute('x1',geo.X(best.d));c.setAttribute('x2',geo.X(best.d));c.setAttribute('opacity','.6');
+    if(geo.mser){
+      var mo=[fmtDate(best.k)];
+      geo.mser.forEach(function(x){var ks=Object.keys(x.src).sort().filter(function(k){return k<=best.k});if(ks.length)mo.push(T(MKL[x.k])+' '+f1(dh(x.src[ks[ks.length-1]])))});
+      $('tip').textContent=mo.join('  ·  ')+' '+hu();return;
+    }
     if(geo.all){
       var out=[fmtDate(best.k)];
       geo.all.forEach(function(x){
@@ -920,14 +985,19 @@
     if(S.all&&S.people.length<2)S.all=false;
     var all=!!S.all,s=series(),hs=hOn()?hseries():[];
     stats(s,hs);
-    if(all)chartAll();else chart(s,hs);
+    var mm0=null;
     renderCmp(all&&hOn());
-    var mm=!hOn()?'w':all?(S.metric==='w'?'w':'h'):(S.metric||'b');
+    var ho=hOn(),mo=mOn(),mm;
+    if(all)mm=(!ho||S.metric==='w'||S.metric==='m')?'w':'h';
+    else{mm=S.metric||'b';if(!ho&&(mm==='h'||mm==='b'))mm='w';if(mm==='m'&&!mo)mm='w'}
     var mt=$('mtabs').children;
-    for(var q=0;q<mt.length;q++){mt[q].classList.toggle('on',mt[q].dataset.m===mm);mt[q].style.display=(all&&mt[q].dataset.m==='b')?'none':''}
-    var lw=document.querySelectorAll('.legend .lw'),lh=document.querySelectorAll('.legend .lh');
-    for(q=0;q<lw.length;q++)lw[q].style.display=mm==='h'?'none':'';
-    for(q=0;q<lh.length;q++)lh[q].style.display=mm==='w'?'none':'';
+    for(var q=0;q<mt.length;q++){var dm=mt[q].dataset.m,vis2=dm==='w'||((dm==='h'||dm==='b')&&ho&&!(all&&dm==='b'))||(dm==='m'&&mo&&!all);mt[q].classList.toggle('on',dm===mm);mt[q].style.display=vis2?'':'none'}
+    var lw=document.querySelectorAll('.legend .lw'),lh=document.querySelectorAll('.legend .lh'),lm=document.querySelectorAll('.legend .lm');
+    for(q=0;q<lw.length;q++)lw[q].style.display=(mm==='h'||mm==='m')?'none':'';
+    for(q=0;q<lh.length;q++)lh[q].style.display=(mm==='w'||mm==='m')?'none':'';
+    for(q=0;q<lm.length;q++)lm[q].style.display=mm==='m'?'':'none';
+    $('mstats').style.display=(!all&&mo)?'':'none';mStats();
+    if(all)chartAll();else if(mm==='m')chartMeas();else chart(s,hs,mm);
     document.querySelector('.legend').style.display=all?'none':'';
     document.querySelector('.stats').style.display=all?'none':'';$('chg').style.display=all?'none':'';$('galCard').style.display='';
     $('entry').style.display=all?'none':'';
@@ -938,23 +1008,41 @@
     renderGallery();
   }
 
+  function mStats(){
+    MK.forEach(function(k,i){
+      var o=state.meas[k],ks=Object.keys(o).sort(),b=$(['sMc','sMw','sMh'][i]),l=$(['lMc','lMw','lMh'][i]);
+      if(!ks.length){b.textContent='–';l.textContent=T(MKL[k]);return}
+      var v=o[ks[ks.length-1]];b.textContent=f1(dh(v))+' '+hu();
+      var lab=T(MKL[k]);
+      if(ks.length>1){var d=v-o[ks[ks.length-2]];lab+=' · '+(d>0?'+':'')+f1(dh(d))}
+      l.textContent=lab;
+    });
+  }
+  function readMeas(){
+    var o={},bad=false,any=false;if(!mOn())return {o:o,any:false,bad:false};
+    [['chest','mc'],['waist','mw'],['hips','mh']].forEach(function(q){var v=$(q[1]).value.trim();if(v==='')return;var x=uh(parseKg(v));if(!(x>=19.99&&x<=250.01))bad=true;else{o[q[0]]=x;any=true}});
+    return {o:o,any:any,bad:bad};
+  }
   function parseKg(v){var x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:NaN}
 
   $('save').onclick=function(){
     if(pmode){
-      var kv0=$('kg').value.trim(),cv0=hOn()?$('cm').value.trim():'';
+      var kv0=$('kg').value.trim(),cv0=hOn()?$('cm').value.trim():'',mv0=readMeas().any;
       if(!savePerson())return;
-      if(kv0===''&&cv0==='')return;
+      if(kv0===''&&cv0===''&&!mv0)return;
     }
     var d=$('date').value,kv=$('kg').value.trim(),cv=$('cm').value.trim();
     var w=kv===''?null:uw(parseKg(kv)),h=(cv===''||!hOn())?null:uh(parseKg(cv));
+    var mz=readMeas();
     if(!d){msg(T('Odaberi datum.'));return}
-    if(w===null&&h===null){msg(T(hOn()?'Upiši težinu ili visinu.':'Upiši težinu.'));return}
+    if(mz.bad){msg(T('Mjera mora biti između')+' '+rng(20,250,'h'));return}
+    if(w===null&&h===null&&!mz.any){msg(T(mOn()?'Upiši težinu ili neku mjeru.':hOn()?'Upiši težinu ili visinu.':'Upiši težinu.'));return}
     if(w!==null&&!(w>=1.999&&w<=400.01)){msg(T('Težina mora biti između')+' '+rng(2,400,'w'));return}
     if(h!==null&&!(h>=29.99&&h<=250.01)){msg(T('Visina mora biti između')+' '+rng(30,250,'h'));return}
     if(w!==null)state.entries[d]=rw(w);
     if(h!==null)state.heights[d]=rh(h);
-    persist();$('kg').value='';$('cm').value='';msg(memOnly?T('Pohrana nije dostupna – napravi backup.'):'');render();
+    MK.forEach(function(k){if(mz.o[k]!==undefined)state.meas[k][d]=rh(mz.o[k])});
+    persist();$('kg').value='';$('cm').value='';$('mc').value='';$('mw').value='';$('mh').value='';msg(memOnly?T('Pohrana nije dostupna – napravi backup.'):'');render();
   };
   $('kg').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
   $('cm').addEventListener('keydown',function(e){if(e.key==='Enter')$('save').click()});
@@ -1007,7 +1095,7 @@
     var gv=$('pgoal').value.trim(),gl=null;
     if(gv!==''){gl=uw(parseKg(gv));if(!(gl>=19.99&&gl<=400.01)){$('pmsg').textContent=T('Ciljna težina mora biti između')+' '+rng(20,400,'w');return false}gl=rw(gl)}
     $('pmsg').textContent='';
-    if(pmode==='add'){var id='p'+Date.now().toString(36);S.people.push({id:id,name:n,birth:bd||null,color:pcolor,entries:{},heights:{},goal:gl});S.active=id;S.all=false;dropUndo()}
+    if(pmode==='add'){var id='p'+Date.now().toString(36);S.people.push({id:id,name:n,birth:bd||null,color:pcolor,entries:{},heights:{},meas:{chest:{},waist:{},hips:{}},goal:gl});S.active=id;S.all=false;dropUndo()}
     else if(pmode==='edit'){P().name=n;P().color=pcolor;P().birth=bd||null;P().goal=gl}
     pmode=null;persist();render();return true;
   }
@@ -1473,6 +1561,8 @@
   function mname(i){return LANG==='en'?MNE[i]:MN[i]}
   function yname(y){return LANG==='en'?String(y):y+'.'}
   var MN=['siječanj','veljača','ožujak','travanj','svibanj','lipanj','srpanj','kolovoz','rujan','listopad','studeni','prosinac'];
+  function hasMeas(k){if(!mOn())return false;for(var i=0;i<MK.length;i++)if(state.meas[MK[i]][k]!==undefined)return true;return false}
+  function measStr(k){var a=MAB[LANG],o=[];MK.forEach(function(m,i){var v=state.meas[m][k];if(v!==undefined)o.push(a[i]+' '+fd(dh(v)))});return o.join(' · ')}
   function renderCal(){
     var e=state.entries,keys=Object.keys(e).sort(),t=today(),ty=+t.slice(0,4),tm=+t.slice(5,7),sy=ty,sm=tm;
     if(keys.length){sy=+keys[0].slice(0,4);sm=+keys[0].slice(5,7)}
@@ -1484,8 +1574,8 @@
       for(d=0;d<off;d++)cells+='<i></i>';
       for(d=1;d<=dim;d++){
         var k=y+'-'+pad(m)+'-'+pad(d),w=e[k],cls='cd';
-        var hv=hOn()?state.heights[k]:undefined;
-        if(w!==undefined){vals.push(w);var pv=prev[k];cls+=pv===null?' has':w<pv?' dn':w>pv?' up':' has'}else if(hv!==undefined)cls+=' has';
+        var hv=hOn()?state.heights[k]:undefined,hm=hasMeas(k);
+        if(w!==undefined){vals.push(w);var pv=prev[k];cls+=pv===null?' has':w<pv?' dn':w>pv?' up':' has'}else if(hv!==undefined||hm)cls+=' has';
         if(k===t)cls+=' tod';
         cells+='<div class="'+cls+'" data-k="'+k+'"><u>'+d+'</u>'+(w!==undefined?'<span>'+f1(dw(w))+'</span>':'')+(hv!==undefined?'<em>'+fd(dh(hv))+' '+hu()+'</em>':'')+'</div>';
       }
@@ -1499,7 +1589,7 @@
   }
   var calView=(function(){try{return localStorage.getItem('kilogram.calview')==='list'?'list':'cal'}catch(e){return 'cal'}})();
   function renderList(){
-    var e=state.entries,hh=hOn()?state.heights:{},all={};Object.keys(e).forEach(function(k){all[k]=1});Object.keys(hh).forEach(function(k){all[k]=1});
+    var e=state.entries,hh=hOn()?state.heights:{},all={};Object.keys(e).forEach(function(k){all[k]=1});Object.keys(hh).forEach(function(k){all[k]=1});if(mOn())MK.forEach(function(m){Object.keys(state.meas[m]).forEach(function(k){all[k]=1})});
     var keys=Object.keys(all).sort(),wk=Object.keys(e).sort(),prev={},pw=null;
     wk.forEach(function(k){prev[k]=pw;pw=e[k]});
     if(!keys.length){$('calBody').innerHTML='<div class="galempty">'+T('Još nema unosa.')+'</div>';return}
@@ -1514,7 +1604,7 @@
       ks.forEach(function(k){
         var w=e[k],hv=hh[k],pv=prev[k],ch='',col='var(--mute)';
         if(w!==undefined&&pv!==null&&pv!==undefined){var d=w-pv,pc=d/pv*100;ch=(d>0?'+':'')+f1(dw(d))+' ('+(pc>0?'+':'')+f1(pc)+'%)';col=d<0?'var(--gr)':d>0?'var(--mg)':'var(--mute)'}
-        h+='<div class="lr" data-k="'+k+'"><span class="ld">'+fmtDate(k)+'</span>'+(w!==undefined?'<span class="lw">'+f1(dw(w))+' '+wu()+'</span>':'')+(hv!==undefined?'<span class="lcm">'+fd(dh(hv))+' '+hu()+'</span>':'')+'<span class="lch" style="color:'+col+'">'+ch+'</span></div>';
+        h+='<div class="lr" data-k="'+k+'"><span class="ld">'+fmtDate(k)+'</span>'+(w!==undefined?'<span class="lw">'+f1(dw(w))+' '+wu()+'</span>':'')+(hv!==undefined?'<span class="lcm">'+fd(dh(hv))+' '+hu()+'</span>':'')+(hasMeas(k)?'<span class="lcm">'+measStr(k)+'</span>':'')+'<span class="lch" style="color:'+col+'">'+ch+'</span></div>';
       });
       h+='</div>';
     });
@@ -1534,8 +1624,10 @@
     dayK=k;var w=state.entries[k],h=hOn()?state.heights[k]:undefined,c='<div class="dtitle">'+fmtDate(k)+'</div>';
     if(w!==undefined)c+='<div class="drow"><span>'+T('Težina')+'</span><b>'+f1(dw(w))+' '+wu()+'</b><button class="ghost" data-x="w">'+T('Obriši')+'</button></div>';
     if(h!==undefined)c+='<div class="drow"><span>'+T('Visina')+'</span><b>'+f1(dh(h))+' '+hu()+'</b><button class="ghost" data-x="h">'+T('Obriši')+'</button></div>';
-    if(w===undefined&&h===undefined)c+='<div class="dnone">'+T('Nema unosa za ovaj dan.')+'</div>';
-    c+='<div class="dbtns">'+(w!==undefined&&h!==undefined?'<button class="ghost" data-x="all">'+T('Obriši sve')+'</button>':'')+'<button data-x="edit">'+T(w===undefined&&h===undefined?'Dodaj unos':'Uredi')+'</button><button class="ghost" data-x="close">'+T('Zatvori')+'</button></div>';
+    var np=(w!==undefined?1:0)+(h!==undefined?1:0);
+    if(mOn())MK.forEach(function(m){var v=state.meas[m][k];if(v!==undefined){np++;c+='<div class="drow"><span>'+T(MKC[m])+'</span><b>'+f1(dh(v))+' '+hu()+'</b><button class="ghost" data-x="m:'+m+'">'+T('Obriši')+'</button></div>'}});
+    if(np===0)c+='<div class="dnone">'+T('Nema unosa za ovaj dan.')+'</div>';
+    c+='<div class="dbtns">'+(np>1?'<button class="ghost" data-x="all">'+T('Obriši sve')+'</button>':'')+'<button data-x="edit">'+T(np===0?'Dodaj unos':'Uredi')+'</button><button class="ghost" data-x="close">'+T('Zatvori')+'</button></div>';
     $('dayCard').innerHTML=c;$('daySheet').style.display='flex';
   }
   function closeDay(){$('daySheet').style.display='none';dayK=null}
@@ -1550,14 +1642,17 @@
     if(x==='edit'){
       var w=state.entries[k];
       $('date').value=k;$('kg').value=w!==undefined?nv(dw(w)):'';$('cm').value=(hOn()&&state.heights[k]!==undefined)?nv(dh(state.heights[k])):'';
+      [['chest','mc'],['waist','mw'],['hips','mh']].forEach(function(q){$(q[1]).value=(mOn()&&state.meas[q[0]][k]!==undefined)?nv(dh(state.meas[q[0]][k])):''});
       closeDay();$('calOv').style.display='none';window.scrollTo(0,0);
       msg(T('Odabran datum')+' '+fmtDate(k)+' – '+T('promijeni pa Spremi.'));return;
     }
     snap(T('Obrisano')+' '+fmtDate(k));
     if(x==='w'||x==='all')delete state.entries[k];
     if(x==='h'||(x==='all'&&hOn()))delete state.heights[k];
+    if(x.indexOf('m:')===0)delete state.meas[x.slice(2)][k];
+    if(x==='all'&&mOn())MK.forEach(function(m){delete state.meas[m][k]});
     persist();render();renderCalView();
-    if(state.entries[k]===undefined&&state.heights[k]===undefined)closeDay();else showDay(k);
+    if(state.entries[k]===undefined&&(!hOn()||state.heights[k]===undefined)&&!hasMeas(k))closeDay();else showDay(k);
   };
   openDb(function(){loadPhotos(function(){renderGallery()})});
 })();
