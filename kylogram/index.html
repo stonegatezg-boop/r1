@@ -502,12 +502,15 @@
     </div></div>
     <div class="srow"><span class="sl">Praćenje visine</span><button class="sw2" type="button" id="hBtn" role="switch" aria-checked="false"></button></div>
     <div class="srow"><span class="sl">Mjere tijela</span><button class="sw2" type="button" id="mBtn" role="switch" aria-checked="false"></button></div>
-    <div class="srow" style="min-height:40px"><span class="sl" style="color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em">Podaci na fotografiji</span></div>
+    <div id="pfrWrap"><div class="srow" style="min-height:40px"><span class="sl" style="color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em">Stil fotografije</span></div><div id="pfrows"></div></div>
+    <div id="pfData">
+    <div class="srow" style="min-height:40px"><span class="sl" style="color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em">Podaci na polaroidu</span></div>
     <div class="srow"><span class="sl">Ime</span><button class="sw2" type="button" data-pf="n" role="switch" aria-checked="true"></button></div>
     <div class="srow"><span class="sl">Datum</span><button class="sw2" type="button" data-pf="d" role="switch" aria-checked="true"></button></div>
     <div class="srow"><span class="sl">Godine</span><button class="sw2" type="button" data-pf="a" role="switch" aria-checked="true"></button></div>
     <div class="srow"><span class="sl">Težina</span><button class="sw2" type="button" data-pf="w" role="switch" aria-checked="true"></button></div>
     <div class="srow" id="pfHrow"><span class="sl">Visina</span><button class="sw2" type="button" data-pf="h" role="switch" aria-checked="true"></button></div>
+    </div>
     <div class="srow"><span class="sl">Tema</span><div class="seg" id="sub-t">
       <button class="ghost" type="button" data-th="m">Tamna</button>
       <button class="ghost" type="button" data-th="ml">Svijetla</button>
@@ -525,7 +528,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 09:00</div>
+  <div class="ver"><span>verzija</span> 12.11. 09:09</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -572,7 +575,7 @@
   'Još nema slika. Slikaj ili odaberi sliku.':'No photos yet. Take or choose a photo.','Još nema unosa.':'No entries yet.',
   'Odaberi dvije slike':'Choose two photos','Označeno:':'Selected:','Sigurno?':'Sure?','Treba barem dvije slike ove osobe.':'This person needs at least two photos.','isti dan':'same day','razlike':'apart',
   'mjer.':'meas.','prosjek':'avg','u mjesecu':'this month','ovaj mj.':'this mo.','Nema unosa za ovaj dan.':'No entries for this day.','Obriši sve':'Delete all','Uredi':'Edit','Dodaj unos':'Add entry',
-  'Odabran datum':'Selected date','Podaci na fotografiji':'Data on the photo','Ime':'Name','Datum':'Date','Godine':'Age','Podijeli':'Share','Spremi sliku':'Save image','Prikaži kilograme':'Show weights','Slika spremljena':'Image saved','Nema dovoljno unosa za graf':'Not enough entries for a chart','promijeni pa Spremi.':'change it, then Save.','Zvuk i vibracija skale':'Dial sound & vibration','uključeno':'on','isključeno':'off',
+  'Odabran datum':'Selected date','Stil fotografije':'Photo style','Obična':'Plain','Podaci na polaroidu':'Data on the polaroid','Podaci na fotografiji':'Data on the photo','Ime':'Name','Datum':'Date','Godine':'Age','Podijeli':'Share','Spremi sliku':'Save image','Prikaži kilograme':'Show weights','Slika spremljena':'Image saved','Nema dovoljno unosa za graf':'Not enough entries for a chart','promijeni pa Spremi.':'change it, then Save.','Zvuk i vibracija skale':'Dial sound & vibration','uključeno':'on','isključeno':'off',
   'isto kao prije':'same as before','od prije':'from before','još':'still','ispod za':'below by','upravo sada':'right now','Praćenje visine':'Height tracking'};
   function T(s){return LANG==='en'&&EN.hasOwnProperty(s)?EN[s]:s}
   var PL={'slika':['photo','photos'],'mjerenje':['measurement','measurements'],'godina':['year','years'],'mjesec':['month','months'],'dan':['day','days']};
@@ -602,7 +605,7 @@
   function sane(x){
     if(!x||!x.people||!x.people.length)throw 0;
     x.people=x.people.filter(function(p){return p&&p.entries&&typeof p.entries==='object'}).map(function(p,i){
-      return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?(p.color.toLowerCase()==='#39ff14'?'#11b882':p.color):null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},meas:cleanMeas(p.meas),goal:p.goal||null}});
+      return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?(p.color.toLowerCase()==='#39ff14'?'#11b882':p.color):null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},meas:cleanMeas(p.meas),goal:p.goal||null,frame:p.frame==='polaroid'?'polaroid':'plain'}});
     if(!x.people.length)throw 0;
     if(!x.people.some(function(p){return p.id===x.active}))x.active=x.people[0].id;
     if(x.range===undefined)x.range=90;
@@ -675,7 +678,23 @@
     $('hBtn').classList.toggle('on',ho);$('hBtn').setAttribute('aria-checked',ho?'true':'false');
     var pb=document.querySelectorAll('#sub-s [data-pf]');for(i=0;i<pb.length;i++){var on=!!S.cfg.pf[pb[i].dataset.pf];pb[i].classList.toggle('on',on);pb[i].setAttribute('aria-checked',on?'true':'false')}
     $('pfHrow').style.display=ho?'':'none';
+    renderFrames();
     sndLabel();fillRep();renderRem();
+  }
+  function renderFrames(){
+    var box=$('pfrows');box.textContent='';var any=false;
+    S.people.forEach(function(p){
+      if(p.frame==='polaroid')any=true;
+      var r=document.createElement('div');r.className='srow';
+      var l=document.createElement('span');l.className='sl';l.textContent=p.name;r.appendChild(l);
+      var sg=document.createElement('div');sg.className='seg';
+      [['plain','Obična'],['polaroid','Polaroid']].forEach(function(o){
+        var b=document.createElement('button');b.type='button';b.className='ghost'+((p.frame==='polaroid')===(o[0]==='polaroid')?' on':'');
+        b.dataset.fr=p.id+'|'+o[0];b.textContent=T(o[1]);sg.appendChild(b);
+      });
+      r.appendChild(sg);box.appendChild(r);
+    });
+    $('pfData').style.display=any?'':'none';
   }
   $('sub-s').onclick=function(e){
     var b=e.target.closest?e.target.closest('button'):null;if(!b)return;
@@ -685,6 +704,7 @@
     else if(b.dataset.lang)S.cfg.lang=b.dataset.lang;
     else if(b.id==='hBtn')S.cfg.h=!S.cfg.h;
     else if(b.id==='mBtn')S.cfg.m=!S.cfg.m;
+    else if(b.dataset.fr){var fq=b.dataset.fr.split('|');S.people.forEach(function(q){if(q.id===fq[0])q.frame=fq[1]==='polaroid'?'polaroid':'plain'})}
     else if(b.dataset.pf)S.cfg.pf[b.dataset.pf]=!S.cfg.pf[b.dataset.pf];
     else return;
     persist();applyCfg();
@@ -1238,7 +1258,7 @@
   $('sndBtn').onclick=function(){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true)};
   document.addEventListener('click',function(e){
     if(!openSub)return;
-    var t=e.target;if(!t||!t.closest)return;
+    var t=e.target;if(!t||!t.closest||!t.isConnected)return;
     if(t.closest('.foot,#sub-b,#sub-s,#sub-n,#bell'))return;
     showSub(openSub);
   });
@@ -1420,6 +1440,7 @@
     var fl=Promise.all([document.fonts.load('700 60px Caveat','kylogram 0123'),document.fonts.load('700 60px Caveat','čćđšž')]).catch(function(){});
     Promise.all([loadImg(file),fl]).then(function(r){
       var im=r[0],w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;
+      if(person.frame!=='polaroid'){var sq0=document.createElement('canvas');sq0.width=sq0.height=1000;var sw0=Math.min(w,h);sq0.getContext('2d').drawImage(im,(w-sw0)/2,(h-sw0)/2,sw0,sw0,0,0,1000,1000);sq0.toBlob(function(b0){cb(b0,b0)},'image/jpeg',0.92);return}
       var W=900,H=1180,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
       x.fillStyle='#fbfaf4';x.fillRect(0,0,W,H);
       x.strokeStyle='#e4e0d3';x.lineWidth=2;x.strokeRect(1,1,W-2,H-2);
@@ -1465,8 +1486,8 @@
       savePhoto(rec,function(ok){
         photos.unshift(rec);
         var miss=[];
-        if(latestOn(p.entries,d)===null)miss.push(T('težinu'));
-        if(hOn()&&latestOn(p.heights,d)===null)miss.push(T('visinu'));
+        if(p.frame==='polaroid'){if(S.cfg.pf.w&&latestOn(p.entries,d)===null)miss.push(T('težinu'));
+        if(S.cfg.pf.h&&hOn()&&latestOn(p.heights,d)===null)miss.push(T('visinu'))}
         var m=ok?'':T('Slika nije trajno spremljena u ovom pregledniku – spremi je u galeriju mobitela.')+' ';
         if(miss.length)m+=T('Na slici nedostaje:')+' '+miss.join(', ')+'. '+T('Dodaj to pa u galeriji pritisni Osvježi.');
         msg(m);
