@@ -99,8 +99,8 @@
   .brand h1{white-space:nowrap}
   #brandR{margin-left:auto;display:flex;align-items:center;gap:6px}
   #chHead{display:flex;align-items:center;justify-content:space-between;margin:2px 0 6px}
-  #shWrap{position:relative}
-  #shBtn{display:flex;align-items:center;gap:7px;padding:7px 12px;font-size:14px;border-radius:12px}
+  #shWrap{position:relative;margin-left:auto}
+  #shBtn{display:flex;align-items:center;gap:5px;padding:8px 9px;font-size:14px;border-radius:10px}
   #shMenu{position:absolute;right:0;top:100%;margin-top:6px;z-index:250;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;min-width:190px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
   #shMenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--text);font-size:16px;padding:12px 14px;border-radius:10px;cursor:pointer}
   #shMenu button:active{background:rgba(255,255,255,.08)}
@@ -430,8 +430,8 @@
     <div class="tabs" id="mtabs">
       <button class="ghost" data-m="w">Težina</button>
       <button class="ghost" data-m="h">Visina</button>
-      <button class="ghost" data-m="b">Oboje</button>
       <button class="ghost" data-m="m">Mjere</button>
+      <div id="shWrap"><button class="ghost" id="shBtn" type="button" aria-label="Share"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>Share</span></button><div id="shMenu" style="display:none"><button type="button" data-t="ig">Instagram</button><button type="button" data-t="wa">WhatsApp</button><button type="button" data-t="em">Email</button><button type="button" data-t="ot">Other</button></div></div>
     </div>
     <div class="tabs" id="tabs">
       <button class="ghost" data-r="7">7 d</button>
@@ -440,7 +440,7 @@
       <button class="ghost" data-r="365">1 god</button>
       <button class="ghost" data-r="0">Sve</button>
     </div>
-    <div id="chHead"><span id="who"></span><div id="shWrap"><button class="ghost" id="shBtn" type="button" aria-label="Share"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>Share</span></button><div id="shMenu" style="display:none"><button type="button" data-t="ig">Instagram</button><button type="button" data-t="st">Instagram Story</button><button type="button" data-t="wa">WhatsApp</button><button type="button" data-t="em">Email</button><button type="button" data-t="ot">Other</button></div></div></div>
+    <div id="chHead"><span id="who"></span></div>
     <svg id="chart"></svg>
     <div id="tip"></div>
   <div id="mstats" class="mpan" style="display:none"></div>
@@ -587,7 +587,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 11:18</div>
+  <div class="ver"><span>verzija</span> 12.11. 11:24</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -600,7 +600,7 @@
   </div>
 </div>
 <div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
-<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><div id="shFmt"><button class="ghost on" type="button" data-f="p">Instagram 4:5</button><button class="ghost" type="button" data-f="s">Story 9:16</button></div><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
+<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><div id="shFmt"></div><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
 <div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
 
@@ -609,7 +609,7 @@
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
   var PALETTE=[['#3985f7','Plava'],['#f16b65','Koraljna'],['#11b882','Zelena'],['#f5ca45','Žuta'],['#f28a38','Narančasta'],['#e879b5','Roza'],['#a586f5','Ljubičasta'],['#929ba8','Siva']],pcolor=null;
   var THEMES=['m','ml','mb'],NAMES={'80':'80-e','m':'Moderna tamna','ml':'Moderna svijetla','mb':'Moderna crna'},TCOL={'80':'#07060d','m':'#0f1115','ml':'#eef0f4','mb':'#000000'};
-  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:30,theme:'m',metric:'b',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr',pf:{n:true,d:true,a:true,w:true,h:true},pt:{c:'#ffffff',p:'bl'}}};
+  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:30,theme:'m',metric:'w',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr',pf:{n:true,d:true,a:true,w:true,h:true},pt:{c:'#ffffff',p:'bl'}}};
   var LANG='hr';
   var MK=['chest','waist','hips'],MKL={chest:'prsa',waist:'struk',hips:'bokovi'},MKC={chest:'Prsa',waist:'Struk',hips:'Bokovi'},MCOL=['#ff6bd6','var(--acc)','#6bd6ff'],MAB={hr:['P','S','B'],en:['C','W','H'],de:['B','T','H'],es:['Pe','Ci','Ca'],it:['P','V','F'],pt:['P','C','Q'],pl:['K','T','B'],zh:['胸','腰','臀'],ja:['胸','腰','臀'],he:['ח','מ','י'],fr:['P','T','H'],cs:['H','P','B'],sk:['H','P','B'],hu:['M','D','Cs'],ro:['Pi','Ta','Șo'],bg:['Г','Т','Х'],el:['Σ','Μ','Γ'],ko:['가','허','엉'],nl:['B','T','H'],no:['Br','Mi','Ho'],fi:['R','V','L'],sv:['B','M','H'],da:['B','T','H'],ar:['ص','خ','و'],hi:['छा','क','कू'],sl:['Pr','Pa','Bo'],ru:['Гр','Та','Бё'],uk:['Гр','Та','Ст'],tr:['G','B','K'],sq:['Gj','B','I'],id:['D','Pi','Pg'],fil:['D','B','Ba'],vi:['N','E','H'],th:['อก','เอว','สะ'],bn:['বু','কো','নি'],sw:['Ki','Kn','Ny'],sr:['Гр','Ст','Ку'],mk:['Гр','По','Ко'],lt:['K','Ta','Kl'],lv:['K','V','G'],et:['R','V','P'],ca:['P','C','M'],is:['Br','Mi','Mj'],mt:['Si','Qa','Ġe'],ka:['მკ','წე','თე'],hy:['կր','գո','կո'],bs:['P','S','B'],fa:['سی','کم','با'],ur:['سی','کم','کو'],ms:['D','P','Pi'],ta:['மா','இடை','இடு'],te:['ఛా','న','తు'],mr:['छा','कं','नि'],ha:['Ƙ','K','D'],am:['ደ','ወ','ዳ'],af:['B','M','H']};
   function mOn(){return !!S.cfg.m}
@@ -671,7 +671,7 @@
     if(!x.people.length)throw 0;
     if(!x.people.some(function(p){return p.id===x.active}))x.active=x.people[0].id;
     if(x.range===undefined)x.range=30;if(x.range===90)x.range=180;if([0,7,30,180,365].indexOf(x.range)<0)x.range=30;
-    if(['w','h','b','m'].indexOf(x.metric)<0)x.metric='b';
+    if(['w','h','m'].indexOf(x.metric)<0)x.metric='w';
     x.all=!!x.all&&x.people.length>1;
     x.reminders=(Array.isArray(x.reminders)?x.reminders:[]).filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time)&&['once','day','week','month','first','year'].indexOf(r.rep)>=0}).slice(0,50).map(function(r,i){return {id:String(r.id||('r'+i+Date.now().toString(36))),date:r.date,time:r.time,rep:r.rep,text:String(r.text||'Vaganje').slice(0,60),dis:(typeof r.dis==='string'?r.dis:'')}});
     if(THEMES.indexOf(x.theme)<0)x.theme='m';
@@ -1109,7 +1109,7 @@
     if(all)mm=(!ho||S.metric==='w'||S.metric==='m')?'w':'h';
     else{mm=S.metric||'b';if(!ho&&(mm==='h'||mm==='b'))mm='w';if(mm==='m'&&!mo)mm='w'}
     var mt=$('mtabs').children;
-    for(var q=0;q<mt.length;q++){var dm=mt[q].dataset.m,vis2=dm==='w'||((dm==='h'||dm==='b')&&ho&&!(all&&dm==='b'))||(dm==='m'&&mo&&!all);mt[q].classList.toggle('on',dm===mm);mt[q].style.display=vis2?'':'none'}
+    for(var q=0;q<mt.length;q++){var dm=mt[q].dataset.m;if(dm===undefined)continue;var vis2=dm==='w'||(dm==='h'&&ho)||(dm==='m'&&mo&&!all);mt[q].classList.toggle('on',dm===mm);mt[q].style.display=vis2?'':'none'}
     var lw=document.querySelectorAll('.legend .lw'),lh=document.querySelectorAll('.legend .lh'),lm=document.querySelectorAll('.legend .lm');
     for(q=0;q<lw.length;q++)lw[q].style.display=(mm==='h'||mm==='m')?'none':'';
     for(q=0;q<lh.length;q++)lh[q].style.display=(mm==='w'||mm==='m')?'none':'';
@@ -1176,7 +1176,7 @@
   var shFmt='p';
   $('shFmt').onclick=function(e){var f=e.target.dataset&&e.target.dataset.f;if(!f)return;shFmt=f;[].forEach.call($('shFmt').children,function(b){b.classList.toggle('on',b.dataset.f===f)});shDraw()};
   function shDraw(){
-    var cv=$('shCv'),c=cv.getContext('2d'),W=1080,H=(shFmt==='s'?1620:1350),cs=getComputedStyle(document.documentElement);
+    var cv=$('shCv'),c=cv.getContext('2d'),W=1080,H=(shFmt==='s'?1620:shFmt==='t'?1440:1350),cs=getComputedStyle(document.documentElement);
     function V(n){return cs.getPropertyValue(n).trim()||'#888'}
     var bg=V('--bg'),card=V('--card'),line=V('--line'),tx=V('--text'),mu=V('--mute'),ac=V('--acc'),gr=V('--gr'),mg=V('--mg');
     var showW=$('shKg').checked,showKg=true,all=series(),s=all,rg=state.range;
@@ -1187,7 +1187,7 @@
     var tl=hT.concat(mT),RW=[hT,mT].filter(function(a){return a.length}),ex=H-1350;
     function drawRows(y0,hh,gap,fs){var y=y0;RW.forEach(function(row,ri){var rh=row===hT?hh[0]:hh[1],f=row===hT?fs[0]:fs[1],k=row.length,tw=(W-140-(k-1)*20)/k;row.forEach(function(r,j){dTile(70+j*(tw+20),y,tw,rh,f1(r[1]),r[0]+' · '+hu(),f,r[2]||tx,r[3])});y+=rh+gap})}
     if(rg>0){var lim=all.length?all[all.length-1].d-rg:0;s=all.filter(function(e){return e.d>=lim})}
-    var FH=shFmt==='s'?1920:1350;cv.height=FH;c=cv.getContext('2d');c.fillStyle=bg;c.fillRect(0,0,W,FH);c.translate(0,(FH-H)/2);
+    var FH=shFmt==='s'?1920:shFmt==='t'?1440:1350;cv.height=FH;c=cv.getContext('2d');c.fillStyle=bg;c.fillRect(0,0,W,FH);c.translate(0,(FH-H)/2);
     var SF='system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
     c.textBaseline='alphabetic';
     c.fillStyle=ac;c.font='900 64px PFD,Georgia,serif';c.textAlign='left';c.fillText('kylogram',70,120);
@@ -1271,9 +1271,11 @@
   function shOpen(){$('shKg').checked=true;
     var hasH=hOn()&&!!latest(state.heights),hasM=mOn()&&['chest','waist','hips'].some(function(k){return !!latest(state.meas[k])});
     $('shHt').checked=hasH;$('shMs').checked=hasM;$('shHtR').style.display=hasH?'':'none';$('shMsR').style.display=hasM?'':'none';$('shOv').style.display='flex';try{document.fonts.ready.then(shDraw)}catch(e){}shDraw()}
+  var shIg=false;
+  function shFmtBuild(){var L=shIg?[['p','Instagram 4:5'],['s','Instagram Story 9:16']]:[['t','3:4'],['p','4:5'],['s','9:16']];$('shFmt').innerHTML=L.map(function(x){return '<button class="ghost'+(x[0]===shFmt?' on':'')+'" type="button" data-f="'+x[0]+'">'+x[1]+'</button>'}).join('')}
   function shFmtSet(f){shFmt=f;[].forEach.call($('shFmt').children,function(b){b.classList.toggle('on',b.dataset.f===f)})}
   $('shBtn').onclick=function(e){e.stopPropagation();var m=$('shMenu');m.style.display=m.style.display==='none'?'block':'none'};
-  $('shMenu').onclick=function(e){e.stopPropagation();var t=e.target.dataset&&e.target.dataset.t;if(!t)return;$('shMenu').style.display='none';shFmtSet(t==='st'?'s':'p');shOpen()};
+  $('shMenu').onclick=function(e){e.stopPropagation();var t=e.target.dataset&&e.target.dataset.t;if(!t)return;$('shMenu').style.display='none';shIg=t==='ig';shFmt=shIg?'p':'t';shFmtBuild();shOpen()};
   document.addEventListener('click',function(){$('shMenu').style.display='none'});
   $('shKg').onchange=shDraw;$('shHt').onchange=shDraw;$('shMs').onchange=shDraw;
   $('shNo').onclick=function(){$('shOv').style.display='none'};
