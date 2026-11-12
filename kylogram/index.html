@@ -191,13 +191,16 @@
   #shOv{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:14px;overflow:auto}
   #shOv .dscard{width:100%;max-width:360px;max-height:100%;overflow:auto}
   #shCv{width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--line)}
+  #shBar{display:flex;gap:10px;margin-top:14px}
+  #shBar button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 8px;font-size:15px}
   #shFmt{display:flex;gap:8px;margin-top:12px}
   #shFmt button{flex:1;padding:9px 6px;font-size:14px}
   #shFmt button.on{border-color:var(--acc);color:var(--acc)}
   .shrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:15px;color:var(--text)}
   .shrow input{width:22px;height:22px;accent-color:var(--acc)}
   #shGo{flex:1 1 100%}
-  #sH{cursor:pointer}
+  #sH,#msNow .stat{cursor:pointer}
+  #msNow .stat:active{filter:brightness(1.2)}
   #stH:active{filter:brightness(1.2)}
   .mpan{margin:14px 0 2px;display:flex;flex-direction:column;gap:11px}
   .mrow{cursor:pointer;display:grid;grid-template-columns:62px 1fr 78px;align-items:center;gap:10px}
@@ -404,6 +407,11 @@
     <div class="stat t3"><b id="sHp">–</b><span id="lHp">prethodna visina (cm)</span></div>
     <div class="stat t4"><b id="sH">–</b><span id="lH">visina (cm)</span></div>
   </div>
+  <div class="stats m3" id="msNow" style="display:none">
+    <div class="stat t1"><b id="sMc">–</b><span>prsa</span></div>
+    <div class="stat t2"><b id="sMw">–</b><span>struk</span></div>
+    <div class="stat t4"><b id="sMh">–</b><span>bokovi</span></div>
+  </div>
   <div class="stats chg" id="chg">
     <div class="stat t1"><b id="c7">–</b><span id="c7l">7 d</span></div>
     <div class="stat t2"><b id="c15">–</b><span id="c15l">15 d</span></div>
@@ -424,7 +432,7 @@
       <button class="ghost" data-r="180">6 mj</button>
       <button class="ghost" data-r="365">1 god</button>
       <button class="ghost" data-r="0">Sve</button>
-      <span id="who"></span><button class="ghost" id="shBtn" type="button" aria-label="Share" style="padding:8px 10px;display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
+      <span id="who"></span>
     </div>
     <svg id="chart"></svg>
     <div id="tip"></div>
@@ -439,6 +447,7 @@
       <span class="lm"><i class="dot" style="background:var(--acc)"></i>struk</span>
       <span class="lm"><i class="dot" style="background:#6bd6ff"></i>bokovi</span>
     </div>
+    <div id="shBar"><button class="ghost" id="shBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span>Podijeli</span></button><button class="ghost" id="igBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6" fill="currentColor"/></svg><span>Instagram</span></button></div>
   </div>
 
   <div id="cmpOv" style="display:none">
@@ -572,7 +581,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 11:03</div>
+  <div class="ver"><span>verzija</span> 12.11. 11:06</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1099,7 +1108,7 @@
     for(q=0;q<lw.length;q++)lw[q].style.display=(mm==='h'||mm==='m')?'none':'';
     for(q=0;q<lh.length;q++)lh[q].style.display=(mm==='w'||mm==='m')?'none':'';
     for(q=0;q<lm.length;q++)lm[q].style.display=mm==='m'?'':'none';
-    $('mstats').style.display=(!all&&mo)?'':'none';mStats();
+    $('mstats').style.display=(!all&&mo)?'':'none';$('msNow').style.display=(!all&&mo)?'':'none';mStats();
     if(all)chartAll();else if(mm==='m')chartMeas();else chart(s,hs,mm);
     document.querySelector('.legend').style.display=all?'none':'';
     document.querySelector('.stats').style.display=all?'none':'';$('chg').style.display=all?'none':'';$('galCard').style.display='';
@@ -1118,6 +1127,7 @@
       if(ks.length>1){r.a=o[ks[0]];r.b=o[ks[ks.length-1]];r.d=r.b-r.a;mx=Math.max(mx,Math.abs(r.d))}
       else if(ks.length===1){r.b=o[ks[0]]}
       rows.push(r)});
+    MK.forEach(function(k,i){var o=state.meas[k],ks=Object.keys(o).sort(),b=$(['sMc','sMw','sMh'][i]);b.textContent=ks.length?f1(dh(o[ks[ks.length-1]]))+' '+hu():'–';b.style.color=MCOL[i]});
     $('mstats').innerHTML=rows.map(function(r){
       var c=MCOL[r.i],bar='',txt='–',sm='';
       if(r.d!==undefined){
@@ -1152,6 +1162,7 @@
     if(msKey==='height')state.heights[d]=rh(x);else state.meas[msKey][d]=rh(x);
     persist();closeMs();render();
   };
+  $('msNow').onclick=function(e){var t=e.target.closest?e.target.closest('.stat'):null;if(!t)return;openMs(MK[Array.prototype.indexOf.call($('msNow').children,t)])};
   $('mstats').onclick=function(e){var t=e.target.closest?e.target.closest('.mrow'):null;if(!t)return;openMs(MK[Array.prototype.indexOf.call($('mstats').children,t)])};
   $('sH').parentNode.onclick=function(){if(hOn())openMs('height')};
 
@@ -1253,6 +1264,7 @@
     var hasH=hOn()&&!!latest(state.heights),hasM=mOn()&&['chest','waist','hips'].some(function(k){return !!latest(state.meas[k])});
     $('shHt').checked=hasH;$('shMs').checked=hasM;$('shHtR').style.display=hasH?'':'none';$('shMsR').style.display=hasM?'':'none';$('shOv').style.display='flex';try{document.fonts.ready.then(shDraw)}catch(e){}shDraw()}
   $('shBtn').onclick=function(e){e.stopPropagation();shOpen()};
+  $('igBtn').onclick=function(e){e.stopPropagation();shFmt='p';[].forEach.call($('shFmt').children,function(b){b.classList.toggle('on',b.dataset.f==='p')});shOpen()};
   $('shKg').onchange=shDraw;$('shHt').onchange=shDraw;$('shMs').onchange=shDraw;
   $('shNo').onclick=function(){$('shOv').style.display='none'};
   $('shOv').onclick=function(e){if(e.target===this)$('shOv').style.display='none'};
