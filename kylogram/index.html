@@ -195,6 +195,9 @@
   #cpOv .dscard{width:100%;max-width:340px}
   #cpSv{width:100%;height:170px;display:block;border-radius:10px;touch-action:none;cursor:crosshair}
   #cpH{width:100%;margin:14px 0 4px;height:22px;-webkit-appearance:none;appearance:none;border-radius:11px;background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);outline:0}
+  #cpL{width:100%;margin:6px 0 4px;height:22px;-webkit-appearance:none;appearance:none;border-radius:11px;background:#888;outline:0}
+  #cpL::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid #222;box-shadow:0 0 0 1px #fff}
+  #cpL::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid #222}
   #cpH::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid #222;box-shadow:0 0 0 1px #fff}
   #cpH::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid #222}
   .cprow{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:15px;color:var(--text)}
@@ -589,7 +592,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 15:53</div>
+  <div class="ver"><span>verzija</span> 12.11. 15:57</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -603,7 +606,7 @@
 </div>
 <div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
 <div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><div id="shFmt"><div class="fr"><button class="ghost" type="button" data-f="o">1:1</button><button class="ghost" type="button" data-f="t">3:4</button><button class="ghost on" type="button" data-f="p">4:5</button><button class="ghost" type="button" data-f="s">9:16</button></div><div class="fr"><button class="ghost" type="button" data-f="ip">Instagram</button><button class="ghost" type="button" data-f="is">Instagram Story</button><button class="ghost" type="button" data-f="ir">Instagram Reels</button></div></div><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
-<div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
+<div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="range" id="cpL" min="4" max="96" value="50" aria-label="Svjetlina" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
 
 <script>
@@ -675,6 +678,7 @@
     if(!x.people.some(function(p){return p.id===x.active}))x.active=x.people[0].id;
     if(x.range===undefined)x.range=30;if(x.range===90)x.range=180;if([0,7,30,180,365].indexOf(x.range)<0)x.range=30;
     if(['w','h','b','m'].indexOf(x.metric)<0)x.metric='b';
+    x.cust=(Array.isArray(x.cust)?x.cust:[]).filter(function(c,i,a){return typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c)&&a.indexOf(c)===i}).slice(0,8);
     x.all=!!x.all&&x.people.length>1;
     x.sel=Array.isArray(x.sel)?x.sel.filter(function(id){return x.people.some(function(p){return p.id===id})}):null;if(x.sel&&(!x.sel.length||x.sel.length>=x.people.length))x.sel=null;
     x.reminders=(Array.isArray(x.reminders)?x.reminders:[]).filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time)&&['once','day','week','month','first','year'].indexOf(r.rep)>=0}).slice(0,50).map(function(r,i){return {id:String(r.id||('r'+i+Date.now().toString(36))),date:r.date,time:r.time,rep:r.rep,text:String(r.text||'Vaganje').slice(0,60),dis:(typeof r.dis==='string'?r.dis:'')}});
@@ -1404,9 +1408,14 @@
     var g=c.createLinearGradient(0,0,w,0);g.addColorStop(0,'#fff');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.fillRect(0,0,w,h);
     g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'#000');c.fillStyle=g;c.fillRect(0,0,w,h);
     var x=cpS.s*w,y=(1-cpS.v)*h;c.lineWidth=3;c.strokeStyle='#fff';c.beginPath();c.arc(x,y,10,0,6.2832);c.stroke();c.lineWidth=1.5;c.strokeStyle='#000';c.beginPath();c.arc(x,y,12,0,6.2832);c.stroke();
-    var hx=hsv2hex(cpS.h,cpS.s,cpS.v);$('cpPrev').style.background=hx;$('cpHex').textContent=hx;$('cpH').value=Math.round(cpS.h);
+    var hx=hsv2hex(cpS.h,cpS.s,cpS.v);$('cpPrev').style.background=hx;$('cpHex').textContent=hx;$('cpH').value=Math.round(cpS.h);cpLsync();
     return hx;
   }
+  function hsv2hsl(h,s,v){var l=v*(1-s/2),sl=(l===0||l===1)?0:(v-l)/Math.min(l,1-l);return {h:h,s:sl,l:l}}
+  function hsl2hsv(h,s,l){var v=l+s*Math.min(l,1-l);return {h:h,s:v?2*(1-l/v):0,v:v}}
+  function hslHex(h,s,l){var o=hsl2hsv(h,s,l);return hsv2hex(o.h,o.s,o.v)}
+  function cpLsync(){var o=hsv2hsl(cpS.h,cpS.s,cpS.v),sl=Math.max(o.s,.35);$('cpL').value=Math.round(o.l*100);$('cpL').style.background='linear-gradient(90deg,#000,'+hslHex(cpS.h,sl,.5)+',#fff)'}
+  $('cpL').addEventListener('input',function(){var o=hsv2hsl(cpS.h,cpS.s,cpS.v),s=Math.max(o.s,.35),n=hsl2hsv(cpS.h,s,+this.value/100);cpS.s=n.s;cpS.v=n.v;cpApply()});
   function cpApply(){var hx=cpDraw();if(cpS.cb)cpS.cb(hx)}
   function openCp(hex,cb){
     if(!/^#[0-9a-f]{6}$/i.test(hex||''))hex='#11b882';
@@ -1420,8 +1429,9 @@
   })();
   $('cpH').addEventListener('input',function(){cpS.h=+this.value;cpApply()});
   $('cpSug').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b)return;var o=hex2hsv(b.dataset.cps);cpS.h=o.h;cpS.s=o.s;cpS.v=o.v;cpApply()};
-  $('cpOk').onclick=function(){$('cpOv').style.display='none';cpS.cb=null};
-  $('cpOv').onclick=function(e){if(e.target===this){$('cpOv').style.display='none';cpS.cb=null}};
+  function cpClose(){var c=cpS.cb;$('cpOv').style.display='none';cpS.cb=null;if(c&&c.done)c.done()}
+  $('cpOk').onclick=cpClose;
+  $('cpOv').onclick=function(e){if(e.target===this)cpClose()};
   function parseKg(v){var x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:NaN}
 
   $('save').onclick=function(){
@@ -1472,11 +1482,15 @@
     var cr=document.querySelector('.camrow');if(cr)cr.style.display=pmode?'none':'';
     $('save').textContent=T(pmode==='add'?'Dodaj':'Spremi');
     $('pok').textContent=T(pmode==='edit'?'Spremi':'Dodaj');
-    var sw='';PALETTE.forEach(function(c){sw+='<button type="button" class="sw'+(pcolor===c[0]?' on':'')+'" data-c="'+c[0]+'" style="background:'+c[0]+'" title="'+T(c[1])+'"></button>'});
-    var isCust=!!pcolor&&!PALETTE.some(function(c){return c[0]===pcolor});
-    sw+='<button type="button" class="sw cust'+(isCust?' on':'')+'" data-cust="1" title="'+T('Odaberi boju')+'" style="'+(isCust?'background:'+pcolor:'')+'"></button>';
-    $('pswatch').innerHTML=sw;
+    drawSw();
     $('pdel').style.display=(pmode==='edit'&&S.people.length>1)?'':'none';
+  }
+  function drawSw(){
+    var sw='';PALETTE.forEach(function(c){sw+='<button type="button" class="sw'+(pcolor===c[0]?' on':'')+'" data-c="'+c[0]+'" style="background:'+c[0]+'" title="'+T(c[1])+'"></button>'});
+    var cu=(S.cust||[]).slice();if(pcolor&&!PALETTE.some(function(c){return c[0]===pcolor})&&cu.indexOf(pcolor)<0)cu.push(pcolor);
+    cu.forEach(function(c){sw+='<button type="button" class="sw'+(pcolor===c?' on':'')+'" data-c="'+c+'" style="background:'+c+'"></button>'});
+    sw+='<button type="button" class="sw cust" data-cust="1" title="'+T('Odaberi boju')+'"></button>';
+    $('pswatch').innerHTML=sw;
   }
   function renderAllSel(){
     var el=$('allSel');if(!S.all||S.people.length<3){el.style.display='none';return}
@@ -1534,7 +1548,7 @@
     pmode=null;persist();render();
   };
   function nextColor(){for(var i=0;i<PALETTE.length;i++){var c=PALETTE[i][0];if(!S.people.some(function(p){return p.color===c}))return c}return null}
-  $('pswatch').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b)return;if(b.dataset.cust){e.stopPropagation();openCp(pcolor||'#11b882',function(h){pcolor=h;var sws=document.querySelectorAll('#pswatch .sw');for(var i=0;i<sws.length;i++)sws[i].classList.remove('on');b.classList.add('on');b.style.background=h});return}pcolor=b.dataset.c||null;renderPeople()};
+  $('pswatch').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b)return;if(b.dataset.cust){e.stopPropagation();var cb=function(h){pcolor=h;drawSw()};cb.done=function(){S.cust=S.cust||[];if(pcolor&&!PALETTE.some(function(c){return c[0]===pcolor})&&S.cust.indexOf(pcolor)<0){S.cust.push(pcolor);if(S.cust.length>8)S.cust.shift();persist()}drawSw()};openCp(pcolor||'#11b882',cb);return}pcolor=b.dataset.c||null;drawSw()};
   $('pcancel').onclick=function(){pmode=null;renderPeople()};
   var openSub=null;
   function showSub(m){
