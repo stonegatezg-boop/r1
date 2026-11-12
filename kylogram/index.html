@@ -561,7 +561,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 10:45</div>
+  <div class="ver"><span>verzija</span> 12.11. 10:48</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -574,7 +574,7 @@
   </div>
 </div>
 <div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
-<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><label class="shrow"><span>Prikaži kilograme</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
+<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><label class="shrow"><span>Prikaži kilograme</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
 <div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
 
@@ -775,6 +775,12 @@
   function ifmt(c,o,k){var key=LANG+k;if(!c[key])c[key]=new Intl.DateTimeFormat(LOC[LANG],Object.assign({timeZone:'UTC'},o));return c[key]}
   function intlOn(){return LANG!=='hr'&&LANG!=='en'}
   function fmtDate(s){var p=s.split('-');if(intlOn())return ifmt(IFD,{day:'numeric',month:'short',year:'numeric'},'d').format(new Date(Date.UTC(+p[0],+p[1]-1,+p[2])));return LANG==='en'?(+p[2]+' '+MNS[+p[1]-1]+' '+p[0]):(+p[2]+'.'+ +p[1]+'.'+p[0]+'.')}
+  function xTicks(X,d0,d1,n,H){
+    var m=Math.max(1,Math.min(n,Math.floor(d1-d0))),out=[],last=null,o='';
+    for(var i=0;i<=m;i++){var dd=Math.round(d0+(d1-d0)*i/m);if(dd===last)continue;last=dd;out.push(dd)}
+    out.forEach(function(dd,j){o+='<text x="'+X(dd)+'" y="'+(H-6)+'" text-anchor="'+(j===0?'start':j===out.length-1?'end':'middle')+'" font-size="11">'+fmtShort(dd)+'</text>'});
+    return o;
+  }
   function fmtShort(day){var d=new Date(day*86400000);if(intlOn())return ifmt(IFS,{day:'numeric',month:'short'},'s').format(d);return LANG==='en'?(d.getUTCDate()+' '+MNS[d.getUTCMonth()]):(d.getUTCDate()+'.'+(d.getUTCMonth()+1)+'.')}
   function f1(x){var t=x.toFixed(1);return COMMA[LANG]?t.replace('.',','):t}
 
@@ -899,11 +905,7 @@
       if(leftIsH)g+=icoRuler(2,2,'var(--hc)')+'<text x="21" y="15" font-size="11" style="fill:var(--hc)">'+hu()+'</text>';
       else g+=icoRuler(W-18,2,'var(--hc)')+'<text x="'+(W-22)+'" y="15" font-size="11" text-anchor="end" style="fill:var(--hc)">'+hu()+'</text>';
     }
-    var n=all.length>1?4:1;
-    for(var i=0;i<=n;i++){
-      var dd=d0+(d1-d0)*(n?i/n:0);
-      g+='<text x="'+X(dd)+'" y="'+(H-6)+'" text-anchor="'+(i===0?'start':i===n?'end':'middle')+'" font-size="11">'+fmtShort(Math.round(dd))+'</text>';
-    }
+    g+=xTicks(X,d0,d1,all.length>1?4:1,H);
     if(state.goal&&sw){
       var gy=Y(sw,dw(state.goal)),gt=fd(dw(state.goal));
       gm={padT:padT,ih:ih,hi:sw.hi,lo:sw.lo,gy0:gy,W:W,padR:padR,last:dw(vw[vw.length-1].w),orig:dw(state.goal)};
@@ -975,11 +977,7 @@
     }else{
       g+='<g transform="translate(2,2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--mute)"><path d="M4.5 6V4.5a3.5 3.5 0 0 1 7 0V6"/><circle cx="8" cy="11.5" r="5" style="fill:var(--mute);stroke:var(--mute)"/></g><text x="21" y="15" font-size="11">'+wu()+'</text>';
     }
-    var n=3;
-    for(var i=0;i<=n;i++){
-      var dx=d0+(d1-d0)*i/n;
-      g+='<text x="'+X(dx)+'" y="'+(H-6)+'" text-anchor="'+(i===0?'start':i===n?'end':'middle')+'" font-size="11">'+fmtShort(Math.round(dx))+'</text>';
-    }
+    g+=xTicks(X,d0,d1,3,H);
     var labels=[];
     vis.forEach(function(x){
       var p=x.pts.map(function(e){return [X(e.d),Y(e.v)]});
@@ -1017,8 +1015,7 @@
       g+='<text x="'+(padL-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="11">'+(+v.toFixed(2))+'</text>';
     }
     g+='<g transform="translate(2,2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--mute)"><rect x="3.5" y="0.5" width="9" height="16" rx="1.5"/><path d="M3.5 4H8M3.5 8H10.5M3.5 12H8"/></g><text x="21" y="15" font-size="11">'+hu()+'</text>';
-    var n=3;
-    for(var i=0;i<=n;i++){var dx=d0+(d1-d0)*i/n;g+='<text x="'+X(dx)+'" y="'+(H-6)+'" text-anchor="'+(i===0?'start':i===n?'end':'middle')+'" font-size="11">'+fmtShort(Math.round(dx))+'</text>'}
+    g+=xTicks(X,d0,d1,3,H);
     vis.forEach(function(x){
       var p=x.pts.map(function(e){return [X(e.d),Y(e.v)]});
       if(p.length>1)g+='<path d="'+smoothPath(p)+'" fill="none" style="stroke:'+x.col+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -1146,6 +1143,9 @@
     function V(n){return cs.getPropertyValue(n).trim()||'#888'}
     var bg=V('--bg'),card=V('--card'),line=V('--line'),tx=V('--text'),mu=V('--mute'),ac=V('--acc'),gr=V('--gr'),mg=V('--mg');
     var showKg=$('shKg').checked,all=series(),s=all,rg=state.range;
+    var tl=[];
+    if($('shHt').checked&&hOn()){var lh=latest(state.heights);if(lh)tl.push([T('Visina'),dh(lh.v)])}
+    if($('shMs').checked&&mOn()){[['chest','Prsa'],['waist','Struk'],['hips','Bokovi']].forEach(function(r){var lm=latest(state.meas[r[0]]);if(lm)tl.push([T(r[1]),dh(lm.v)])})}
     if(rg>0){var lim=all.length?all[all.length-1].d-rg:0;s=all.filter(function(e){return e.d>=lim})}
     c.clearRect(0,0,W,H);c.fillStyle=bg;c.fillRect(0,0,W,H);
     var SF='system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
@@ -1173,6 +1173,14 @@
     }
     // chart
     var cx=70,cy=722,cw=W-140,ch=500;
+    if(tl.length){
+      var tw2=(W-140-(tl.length-1)*20)/tl.length,ty2=690;
+      tl.forEach(function(r,j){var x=70+j*(tw2+20);
+        c.fillStyle=card;c.strokeStyle=line;c.lineWidth=2;c.beginPath();c.roundRect?c.roundRect(x,ty2,tw2,150,22):c.rect(x,ty2,tw2,150);c.fill();c.stroke();
+        c.textAlign='center';c.fillStyle=V('--hc')||tx;c.font='800 46px '+SF;c.fillText(f1(r[1]),x+tw2/2,ty2+72);
+        c.fillStyle=mu;c.font='500 28px '+SF;c.fillText(r[0]+' · '+hu(),x+tw2/2,ty2+118)});
+      cy=875;ch=372;
+    }
     c.fillStyle=card;c.strokeStyle=line;c.beginPath();c.roundRect?c.roundRect(cx,cy,cw,ch,26):c.rect(cx,cy,cw,ch);c.fill();c.stroke();
     if(s.length<2){c.textAlign='center';c.fillStyle=mu;c.font='500 34px '+SF;c.fillText(T('Nema dovoljno unosa za graf'),W/2,cy+ch/2)}
     else{
@@ -1209,9 +1217,11 @@
     c.textAlign='center';c.fillStyle=mu;c.font='500 28px '+SF;c.fillText('kylogram',W/2,H-60);
   }
   function shBlobGet(cb){$('shCv').toBlob(function(b){cb(b)},'image/png')}
-  function shOpen(){$('shKg').checked=true;$('shOv').style.display='flex';try{document.fonts.ready.then(shDraw)}catch(e){}shDraw()}
+  function shOpen(){$('shKg').checked=true;
+    var hasH=hOn()&&!!latest(state.heights),hasM=mOn()&&['chest','waist','hips'].some(function(k){return !!latest(state.meas[k])});
+    $('shHt').checked=hasH;$('shMs').checked=hasM;$('shHtR').style.display=hasH?'':'none';$('shMsR').style.display=hasM?'':'none';$('shOv').style.display='flex';try{document.fonts.ready.then(shDraw)}catch(e){}shDraw()}
   $('shBtn').onclick=function(e){e.stopPropagation();shOpen()};
-  $('shKg').onchange=shDraw;
+  $('shKg').onchange=shDraw;$('shHt').onchange=shDraw;$('shMs').onchange=shDraw;
   $('shNo').onclick=function(){$('shOv').style.display='none'};
   $('shOv').onclick=function(e){if(e.target===this)$('shOv').style.display='none'};
   function shMsg(){$('shM').textContent=T('Slika spremljena');setTimeout(function(){$('shM').textContent=''},2500)}
