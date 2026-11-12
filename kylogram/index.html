@@ -388,7 +388,7 @@
   </div>
 
   <div class="stats">
-    <div class="stat t1"><b id="sCur">–</b><span id="lCur">zadnja (kg)</span></div>
+    <div class="stat t1"><b id="sCur">–</b><span id="lCur">zadnje mjerenje</span></div>
     <div class="stat t2"><b id="sTrend">–</b><span id="sTrendL">do cilja (kg)</span></div>
     <div class="stat t3"><b id="sHp">–</b><span id="lHp">prethodna visina (cm)</span></div>
     <div class="stat t4"><b id="sH">–</b><span id="lH">visina (cm)</span></div>
@@ -485,7 +485,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 01:05</div>
+  <div class="ver"><span>verzija</span> 12.11. 01:07</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -508,7 +508,7 @@
   var LANG='hr';
   var EN={'Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
   'Dodaj':'Add','Obriši':'Delete','Spremi':'Save','Slikaj':'Take photo','Odaberi sliku':'Choose photo','Prikaz svih osoba. Za unos odaberi osobu.':'Showing everyone. Pick a person to add entries.',
-  'zadnja':'latest','prethodna visina':'previous height','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
+  'zadnja':'latest','zadnje mjerenje':'latest measurement','prethodna visina':'previous height','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
   'Težina':'Weight','Visina':'Height','Oboje':'Both','Sve':'All','Svi':'All','1 god':'1 y','pad':'drop','rast':'gain','cilj':'goal','Cilj':'Goal',
   'Usporedba':'Comparison','Zamijeni':'Swap','Zatvori':'Close','Galerija i kalendar':'Gallery & calendar','Galerija':'Gallery','Kalendar':'Calendar',
   'Usporedi':'Compare','Označi':'Select','Odustani':'Cancel','Zadnja ↔ prije mjesec dana':'Latest ↔ a month earlier','Lista':'List',
@@ -615,9 +615,9 @@
     $('cm').style.display=ho?'':'none';
     $('sH').parentNode.style.display=ho?'':'none';$('sHp').parentNode.style.display=ho?'':'none';
     $('mtabs').style.display=ho?'':'none';
-    $('lCur').textContent=T('zadnja')+' ('+wu()+')';
-    $('lHp').textContent=T('prethodna visina')+' ('+hu()+')';
-    $('lH').textContent=T('visina')+' ('+hu()+')';
+    $('lCur').textContent=T('zadnje mjerenje');
+    $('lHp').textContent=T('prethodna visina');
+    $('lH').textContent=T('visina');
     $('galCard').setAttribute('data-t',T('Galerija i kalendar'));
     $('cardNew').setAttribute('data-t',T('Novo vaganje'));
     $('cardChart').setAttribute('data-t',T('Graf težine'));
@@ -688,11 +688,11 @@
   }
   function stats(s,hs){
     var U=' ('+wu()+')',GL=state.goal?' ('+fd(dw(state.goal))+' '+wu()+')':'';
-    $('sH').textContent=hs.length?f1(dh(hs[hs.length-1].h)):'–';
-    $('sHp').textContent=hs.length>1?f1(dh(hs[hs.length-2].h)):'–';
+    $('sH').textContent=hs.length?f1(dh(hs[hs.length-1].h))+' '+hu():'–';
+    $('sHp').textContent=hs.length>1?f1(dh(hs[hs.length-2].h))+' '+hu():'–';
     if(!s.length){$('sCur').textContent=$('sTrend').textContent=$('sChg').textContent='–';$('lChg').textContent=T('ukupno');$('sTrendL').textContent=state.goal?T('do cilja')+GL:T('najniža');$('sTrend').textContent='–';$('sChg').style.color='';['c7','c15','c30'].forEach(function(id,i){$(id).textContent='–';$(id).style.color='';$(id+'l').textContent=[7,15,30][i]+' d'});return}
     var last=s[s.length-1];
-    $('sCur').textContent=f1(dw(last.w));
+    $('sCur').textContent=f1(dw(last.w))+' '+wu();
     if(state.goal){var rem=last.w-state.goal;$('sTrendL').textContent=rem>0?T('do cilja')+GL:rem<0?T('ispod cilja')+GL:T('cilj dosegnut')+GL;$('sTrend').textContent=f1(dw(Math.abs(rem)))+' '+wu()}
     else{var mn=Math.min.apply(null,s.map(function(e){return e.w}));$('sTrendL').textContent=T('najniža');$('sTrend').textContent=f1(dw(mn))+' '+wu()}
     var tot=last.w-s[0].w;
