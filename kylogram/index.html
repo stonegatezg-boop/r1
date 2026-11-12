@@ -187,6 +187,10 @@
   .stats.m3 .stat b{font-size:16px;white-space:nowrap}
   .stats.m3 .stat span{font-size:11px;white-space:nowrap}
   #mrow input{flex:1;min-width:0}
+  #mSheet{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.62);align-items:center;justify-content:center;padding:20px}
+  #mSheet .dscard{width:100%;max-width:340px}
+  #mstats .stat,#sH{cursor:pointer}
+  #mstats .stat:active,#stH:active{filter:brightness(1.2)}
   #sub-s{flex-direction:column;gap:0;margin-top:14px;padding:0 2px 24px}
   #sub-s.open{display:flex}
   #sub-s .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-bottom:1px solid var(--line)}
@@ -505,7 +509,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 01:21</div>
+  <div class="ver"><span>verzija</span> 12.11. 01:24</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -517,6 +521,7 @@
     <button class="ghost" id="lbClose" type="button">Zatvori</button>
   </div>
 </div>
+<div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
 
 <script>
@@ -1023,6 +1028,27 @@
     [['chest','mc'],['waist','mw'],['hips','mh']].forEach(function(q){var v=$(q[1]).value.trim();if(v==='')return;var x=uh(parseKg(v));if(!(x>=19.99&&x<=250.01))bad=true;else{o[q[0]]=x;any=true}});
     return {o:o,any:any,bad:bad};
   }
+  var msKey=null;
+  function msDate(){return $('date').value||today()}
+  function openMs(key){
+    msKey=key;var d=msDate(),cur=key==='height'?state.heights[d]:state.meas[key][d];
+    $('msT').textContent=T(key==='height'?'Visina':MKC[key])+' ('+hu()+') · '+fmtDate(d);
+    $('msV').value=cur!==undefined?nv(dh(cur)):'';$('msM').textContent='';
+    $('mSheet').style.display='flex';setTimeout(function(){try{$('msV').focus()}catch(e){}},60);
+  }
+  function closeMs(){$('mSheet').style.display='none';msKey=null}
+  $('msNo').onclick=closeMs;
+  $('mSheet').onclick=function(e){if(e.target===this)closeMs()};
+  $('msV').addEventListener('keydown',function(e){if(e.key==='Enter')$('msOk').click()});
+  $('msOk').onclick=function(){
+    if(!msKey)return;
+    var x=uh(parseKg($('msV').value)),d=msDate(),lo=msKey==='height'?29.99:19.99;
+    if(!(x>=lo&&x<=250.01)){$('msM').textContent=msKey==='height'?T('Visina mora biti između')+' '+rng(30,250,'h'):T('Mjera mora biti između')+' '+rng(20,250,'h');return}
+    if(msKey==='height')state.heights[d]=rh(x);else state.meas[msKey][d]=rh(x);
+    persist();closeMs();render();
+  };
+  $('mstats').onclick=function(e){var t=e.target.closest?e.target.closest('.stat'):null;if(!t)return;openMs(MK[Array.prototype.indexOf.call($('mstats').children,t)])};
+  $('sH').parentNode.onclick=function(){if(hOn())openMs('height')};
   function parseKg(v){var x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:NaN}
 
   $('save').onclick=function(){
