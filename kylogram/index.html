@@ -561,7 +561,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 10:50</div>
+  <div class="ver"><span>verzija</span> 12.11. 10:52</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -574,7 +574,7 @@
   </div>
 </div>
 <div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
-<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><label class="shrow"><span>Prikaži kilograme</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
+<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
 <div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
 
@@ -1142,7 +1142,7 @@
     var cv=$('shCv'),c=cv.getContext('2d'),W=1080,H=1350,cs=getComputedStyle(document.documentElement);
     function V(n){return cs.getPropertyValue(n).trim()||'#888'}
     var bg=V('--bg'),card=V('--card'),line=V('--line'),tx=V('--text'),mu=V('--mute'),ac=V('--acc'),gr=V('--gr'),mg=V('--mg');
-    var showKg=$('shKg').checked,all=series(),s=all,rg=state.range;
+    var showW=$('shKg').checked,showKg=true,all=series(),s=all,rg=state.range;
     var tl=[];
     if($('shHt').checked&&hOn()){var lh=latest(state.heights);if(lh)tl.push([T('Visina'),dh(lh.v)])}
     if($('shMs').checked&&mOn()){[['chest','Prsa'],['waist','Struk'],['hips','Bokovi']].forEach(function(r){var lm=latest(state.meas[r[0]]);if(lm)tl.push([T(r[1]),dh(lm.v)])})}
@@ -1152,6 +1152,8 @@
     c.textBaseline='alphabetic';
     c.fillStyle=ac;c.font='900 64px PFD,Georgia,serif';c.textAlign='left';c.fillText('kylogram',70,120);
     c.fillStyle=tx;c.font='700 44px '+SF;c.textAlign='right';c.fillText(P().name,W-70,116);
+    function dTile(x,y,w,h,val,lab,fs,col){c.fillStyle=card;c.strokeStyle=line;c.lineWidth=2;c.beginPath();c.roundRect?c.roundRect(x,y,w,h,22):c.rect(x,y,w,h);c.fill();c.stroke();c.textAlign='center';c.fillStyle=col;c.font='800 '+fs+'px '+SF;c.fillText(val,x+w/2,y+h*0.52);c.fillStyle=mu;c.font='500 '+Math.round(fs*0.6)+'px '+SF;c.fillText(lab,x+w/2,y+h*0.52+fs*0.72)}
+    if(showW){
     // big total
     var last=all[all.length-1],first=all[0];
     var tot=all.length>1?last.w-first.w:null;
@@ -1171,9 +1173,12 @@
       c.textAlign='center';c.fillStyle=col;c.font='800 46px '+SF;c.fillText(val,x+tw/2,ty+72);
       c.fillStyle=mu;c.font='500 28px '+SF;c.fillText(lab+(val==='–'?'':' · '+wu()),x+tw/2,ty+118);
     }
+    }
     // chart
+    if(showW){
     var cx=70,cy=722,cw=W-140,ch=500;
-    if(tl.length){
+    if(tl.length){cy=690;ch=380}
+    if(false){
       var tw2=(W-140-(tl.length-1)*20)/tl.length,ty2=690;
       tl.forEach(function(r,j){var x=70+j*(tw2+20);
         c.fillStyle=card;c.strokeStyle=line;c.lineWidth=2;c.beginPath();c.roundRect?c.roundRect(x,ty2,tw2,150,22):c.rect(x,ty2,tw2,150);c.fill();c.stroke();
@@ -1213,6 +1218,13 @@
           c.fillText(lab,Math.min(Math.max(p[0],ix+55),ix+iw-60),Math.min(Math.max(ty2,iy+10),iy+ih+30));
         });
       }
+    }
+    if(tl.length){var tw2=(W-140-(tl.length-1)*20)/tl.length;tl.forEach(function(r,j){dTile(70+j*(tw2+20),1095,tw2,150,f1(r[1]),r[0]+' · '+hu(),46,V('--hc')||tx)})}
+    }else{
+      var n3=tl.length;
+      if(!n3){c.textAlign='center';c.fillStyle=mu;c.font='500 40px '+SF;c.fillText('–',W/2,H/2)}
+      else{var cols=n3===1?1:2,rows=Math.ceil(n3/cols),gw=(W-140-(cols-1)*24)/cols,gh=Math.min(300,(H-420-(rows-1)*24)/rows);
+        tl.forEach(function(r,j){var rr=Math.floor(j/cols),cc=j%cols,rowN=Math.min(cols,n3-rr*cols),off=cols>1&&rowN<cols?(gw+24)/2:0;dTile(70+cc*(gw+24)+off,260+rr*(gh+24),gw,gh,f1(r[1]),r[0]+' · '+hu(),Math.round(gh*0.42),V('--hc')||tx)})}
     }
     c.textAlign='center';c.fillStyle=mu;c.font='500 28px '+SF;c.fillText('kylogram',W/2,H-60);
   }
