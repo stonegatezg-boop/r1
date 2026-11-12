@@ -190,6 +190,12 @@
   #mrow input{flex:1;min-width:0}
   #mSheet{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.62);align-items:center;justify-content:center;padding:20px}
   #mSheet .dscard{width:100%;max-width:340px}
+  #shOv{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:14px;overflow:auto}
+  #shOv .dscard{width:100%;max-width:360px;max-height:100%;overflow:auto}
+  #shCv{width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--line)}
+  .shrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:15px;color:var(--text)}
+  .shrow input{width:22px;height:22px;accent-color:var(--acc)}
+  #shGo{flex:1 1 100%}
   #mstats .stat,#sH{cursor:pointer}
   #mstats .stat:active,#stH:active{filter:brightness(1.2)}
   #sub-s{flex-direction:column;gap:0;margin-top:14px;padding:0 2px 24px}
@@ -435,7 +441,7 @@
       <button class="ghost" data-r="90">90 d</button>
       <button class="ghost" data-r="365">1 god</button>
       <button class="ghost" data-r="0">Sve</button>
-      <span id="who"></span>
+      <span id="who"></span><button class="ghost" id="shBtn" type="button" aria-label="Share" style="padding:8px 10px;display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
     </div>
     <svg id="chart"></svg>
     <div id="tip"></div>
@@ -513,7 +519,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 01:29</div>
+  <div class="ver"><span>verzija</span> 12.11. 01:39</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -526,6 +532,7 @@
   </div>
 </div>
 <div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
+<div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><label class="shrow"><span>Prikaži kilograme</span><input type="checkbox" id="shKg"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
 
 <script>
@@ -559,7 +566,7 @@
   'Još nema slika. Slikaj ili odaberi sliku.':'No photos yet. Take or choose a photo.','Još nema unosa.':'No entries yet.',
   'Odaberi dvije slike':'Choose two photos','Označeno:':'Selected:','Sigurno?':'Sure?','Treba barem dvije slike ove osobe.':'This person needs at least two photos.','isti dan':'same day','razlike':'apart',
   'mjer.':'meas.','prosjek':'avg','u mjesecu':'this month','ovaj mj.':'this mo.','Nema unosa za ovaj dan.':'No entries for this day.','Obriši sve':'Delete all','Uredi':'Edit','Dodaj unos':'Add entry',
-  'Odabran datum':'Selected date','promijeni pa Spremi.':'change it, then Save.','Zvuk i vibracija skale':'Dial sound & vibration','uključeno':'on','isključeno':'off',
+  'Odabran datum':'Selected date','Podijeli':'Share','Spremi sliku':'Save image','Prikaži kilograme':'Show weights','Slika spremljena':'Image saved','Nema dovoljno unosa za graf':'Not enough entries for a chart','promijeni pa Spremi.':'change it, then Save.','Zvuk i vibracija skale':'Dial sound & vibration','uključeno':'on','isključeno':'off',
   'isto kao prije':'same as before','od prije':'from before','još':'still','ispod za':'below by','upravo sada':'right now','Praćenje visine':'Height tracking'};
   function T(s){return LANG==='en'&&EN.hasOwnProperty(s)?EN[s]:s}
   var PL={'slika':['photo','photos'],'mjerenje':['measurement','measurements'],'godina':['year','years'],'mjesec':['month','months'],'dan':['day','days']};
@@ -1053,6 +1060,77 @@
   };
   $('mstats').onclick=function(e){var t=e.target.closest?e.target.closest('.stat'):null;if(!t)return;openMs(MK[Array.prototype.indexOf.call($('mstats').children,t)])};
   $('sH').parentNode.onclick=function(){if(hOn())openMs('height')};
+
+  var shBlob=null;
+  function shDraw(){
+    var cv=$('shCv'),c=cv.getContext('2d'),W=1080,H=1350,cs=getComputedStyle(document.documentElement);
+    function V(n){return cs.getPropertyValue(n).trim()||'#888'}
+    var bg=V('--bg'),card=V('--card'),line=V('--line'),tx=V('--text'),mu=V('--mute'),ac=V('--acc'),gr=V('--gr'),mg=V('--mg');
+    var showKg=$('shKg').checked,all=series(),s=all,rg=state.range;
+    if(rg>0){var lim=all.length?all[all.length-1].d-rg:0;s=all.filter(function(e){return e.d>=lim})}
+    c.clearRect(0,0,W,H);c.fillStyle=bg;c.fillRect(0,0,W,H);
+    var SF='system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+    c.textBaseline='alphabetic';
+    c.fillStyle=ac;c.font='900 64px PFD,Georgia,serif';c.textAlign='left';c.fillText('kylogram',70,120);
+    c.fillStyle=tx;c.font='700 44px '+SF;c.textAlign='right';c.fillText(P().name,W-70,116);
+    // big total
+    var last=all[all.length-1],first=all[0];
+    var tot=all.length>1?last.w-first.w:null;
+    c.textAlign='left';
+    c.fillStyle=mu;c.font='500 34px '+SF;c.fillText(T('ukupno'),70,230);
+    c.font='800 150px '+SF;c.fillStyle=tot===null?tx:tot<0?gr:tot>0?mg:tx;
+    var bt=tot===null?'–':(tot>0?'+':'')+f1(dw(tot))+' '+wu();c.fillText(bt,70,370);
+    if(tot!==null&&first.w>0){c.fillStyle=mu;c.font='500 38px '+SF;var pc=tot/first.w*100;c.fillText((pc>0?'+':'')+f1(pc)+'%  ·  '+fmtShort(first.d)+' → '+fmtShort(last.d),70,430)}
+    // period tiles
+    var N=[7,15,30],tw=(W-140-3*20)/4,ty=480,th=150,i;
+    for(i=0;i<4;i++){
+      var x=70+i*(tw+20),lab,val,col=tx;
+      if(i<3){var base=all.length>1?trendAtDay(all,last.d-N[i]):null;lab=N[i]+' d';
+        if(base===null||base<=0)val='–';else{var cc=last.w-base;val=(cc>0?'+':'')+f1(dw(cc));col=cc<-0.05?gr:cc>0.05?mg:tx}}
+      else{lab=T('ukupno');if(tot===null)val='–';else{val=(tot>0?'+':'')+f1(dw(tot));col=tot<0?gr:tot>0?mg:tx}}
+      c.fillStyle=card;c.strokeStyle=line;c.lineWidth=2;c.beginPath();c.roundRect?c.roundRect(x,ty,tw,th,22):c.rect(x,ty,tw,th);c.fill();c.stroke();
+      c.textAlign='center';c.fillStyle=col;c.font='800 46px '+SF;c.fillText(val,x+tw/2,ty+72);
+      c.fillStyle=mu;c.font='500 28px '+SF;c.fillText(lab+(val==='–'?'':' · '+wu()),x+tw/2,ty+118);
+    }
+    // chart
+    var cx=70,cy=700,cw=W-140,ch=500;
+    c.fillStyle=card;c.strokeStyle=line;c.beginPath();c.roundRect?c.roundRect(cx,cy,cw,ch,26):c.rect(cx,cy,cw,ch);c.fill();c.stroke();
+    if(s.length<2){c.textAlign='center';c.fillStyle=mu;c.font='500 34px '+SF;c.fillText(T('Nema dovoljno unosa za graf'),W/2,cy+ch/2)}
+    else{
+      var pl=showKg?110:40,pr=40,pt=50,pb=60,ix=cx+pl,iw=cw-pl-pr,iy=cy+pt,ih=ch-pt-pb;
+      var ws=s.map(function(e){return e.w}),mn=Math.min.apply(null,ws),mx=Math.max.apply(null,ws);
+      if(state.goal&&state.goal>=mn-(mx-mn)&&state.goal<=mx+(mx-mn)){mn=Math.min(mn,state.goal);mx=Math.max(mx,state.goal)}
+      var sp=(mx-mn)||1;mn-=sp*.12;mx+=sp*.12;
+      var d0=s[0].d,d1=s[s.length-1].d,ds=(d1-d0)||1;
+      function X(d){return ix+(d-d0)/ds*iw}function Y(w){return iy+(1-(w-mn)/(mx-mn))*ih}
+      c.strokeStyle=line;c.lineWidth=1.5;c.fillStyle=mu;c.font='500 26px '+SF;c.textAlign='right';
+      for(i=0;i<=3;i++){var gv=mn+(mx-mn)*i/3,gy=Y(gv);c.beginPath();c.moveTo(ix,gy);c.lineTo(ix+iw,gy);c.stroke();if(showKg)c.fillText(f1(dw(gv)),ix-14,gy+9)}
+      if(state.goal&&state.goal>=mn&&state.goal<=mx&&showKg){c.save();c.setLineDash([12,10]);c.strokeStyle=ac;c.globalAlpha=.7;c.lineWidth=2.5;c.beginPath();c.moveTo(ix,Y(state.goal));c.lineTo(ix+iw,Y(state.goal));c.stroke();c.restore()}
+      var pts=s.map(function(e){return [X(e.d),Y(e.w)]});
+      c.lineWidth=6;c.lineJoin='round';c.lineCap='round';c.strokeStyle=ac;
+      try{c.stroke(new Path2D(monoPath(pts)))}catch(e){c.beginPath();pts.forEach(function(p,j){j?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])});c.stroke()}
+      if(pts.length<=45){c.fillStyle=ac;pts.forEach(function(p){c.beginPath();c.arc(p[0],p[1],6,0,6.2832);c.fill()})}
+      var lp=pts[pts.length-1];c.fillStyle=bg;c.strokeStyle=ac;c.lineWidth=5;c.beginPath();c.arc(lp[0],lp[1],12,0,6.2832);c.fill();c.stroke();
+      c.fillStyle=mu;c.font='500 26px '+SF;c.textAlign='left';c.fillText(fmtShort(s[0].d),ix,cy+ch-20);c.textAlign='right';c.fillText(fmtShort(s[s.length-1].d),ix+iw,cy+ch-20);
+      if(showKg){c.textAlign='center';c.fillStyle=tx;c.font='700 30px '+SF;c.fillText(f1(dw(last.w))+' '+wu(),Math.min(Math.max(lp[0],ix+80),ix+iw-80),Math.max(lp[1]-26,iy+20))}
+    }
+    c.textAlign='center';c.fillStyle=mu;c.font='500 28px '+SF;c.fillText('kylogram',W/2,H-60);
+  }
+  function shBlobGet(cb){$('shCv').toBlob(function(b){cb(b)},'image/png')}
+  function shOpen(){$('shOv').style.display='flex';try{document.fonts.ready.then(shDraw)}catch(e){}shDraw()}
+  $('shBtn').onclick=function(e){e.stopPropagation();shOpen()};
+  $('shKg').onchange=shDraw;
+  $('shNo').onclick=function(){$('shOv').style.display='none'};
+  $('shOv').onclick=function(e){if(e.target===this)$('shOv').style.display='none'};
+  function shMsg(){$('shM').textContent=T('Slika spremljena');setTimeout(function(){$('shM').textContent=''},2500)}
+  function shFile(b){var n='kylogram-'+today()+'.png';try{return new File([b],n,{type:'image/png'})}catch(e){return null}}
+  function shDl(b){var u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='kylogram-'+today()+'.png';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(u)},1500)}
+  $('shSave').onclick=function(){shBlobGet(function(b){if(b){shDl(b);shMsg()}})};
+  $('shGo').onclick=function(){shBlobGet(function(b){
+    if(!b)return;var f=shFile(b);
+    if(f&&navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:'kylogram'}).catch(function(){})}
+    else{shDl(b);shMsg()}
+  })};
   function parseKg(v){var x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:NaN}
 
   $('save').onclick=function(){
