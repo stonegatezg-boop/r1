@@ -603,7 +603,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 10:00</div>
+  <div class="ver"><span>verzija</span> 12.11. 10:02</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1371,10 +1371,19 @@
     ['n','b','s'].forEach(function(k){$('sub-'+k).classList.toggle('open',openSub===k)});
     ['fbn','fbb','fbs'].forEach(function(id){var b=$(id);b.classList.toggle('on',openSub===b.dataset.m)});
     if(openSub==='n'){initRem()}
-    if(openSub==='s')langScroll();
+    if(openSub==='s'){langScroll();subOpenT=Date.now();subMaxY=0}
     if(openSub){try{$('sub-'+openSub).scrollIntoView({block:openSub==='s'?'end':'nearest',behavior:'smooth'})}catch(e){}}
   }
   ['fbn','fbb','fbs'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
+  var subOpenT=0,subMaxY=0,usrT=0;
+  ['touchstart','touchmove','wheel','keydown'].forEach(function(ev){window.addEventListener(ev,function(){usrT=Date.now()},{passive:true})});
+  window.addEventListener('scroll',function(){
+    if(openSub!=='s')return;
+    var y=window.pageYOffset||document.documentElement.scrollTop||0,now=Date.now();
+    if(now-subOpenT<900){subMaxY=Math.max(subMaxY,y);return}
+    if(y>subMaxY)subMaxY=y;
+    if(now-usrT<350&&subMaxY-y>70)showSub('s');
+  },{passive:true});
   $('sndBtn').onclick=function(){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true)};
   document.addEventListener('click',function(e){
     if(!openSub)return;
