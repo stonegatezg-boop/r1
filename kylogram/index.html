@@ -36,6 +36,8 @@
   .row{display:flex;gap:8px;align-items:center}
   input{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:18px;min-width:0}
   input[type=number]{flex:1}
+  input[type=search]{-webkit-appearance:none;appearance:none}
+  input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-search-decoration{-webkit-appearance:none;display:none}
   input[type=date]{font-size:15px}
   button{background:var(--acc);color:var(--navy);border:0;border-radius:10px;padding:12px 18px;font-size:16px;font-weight:600;cursor:pointer}
   button.ghost{background:transparent;color:var(--mute);border:1px solid var(--line);font-weight:500;padding:8px 12px;font-size:14px}
@@ -377,7 +379,7 @@
   <div class="card" id="cardNew">
     <div class="people" id="people"></div>
     <div id="pform">
-      <input id="pname" maxlength="24" placeholder="Ime osobe" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+      <input type="search" id="pname" maxlength="24" placeholder="Ime osobe" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
       <div id="pswatch"></div>
       <label id="pbwrap">Rođen/a (nije obavezno) <input type="date" id="pbirth" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
       <label id="pgwrap">Ciljna težina (nije obavezno) <input type="number" id="pgoal" inputmode="decimal" step="0.1" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
@@ -582,14 +584,14 @@
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
     <select id="rrep" aria-label="Ponavljanje"></select>
-    <input id="rtext" maxlength="60" placeholder="Naziv" value="Vaganje" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+    <input type="search" id="rtext" maxlength="60" placeholder="Naziv" value="Vaganje" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
     <button id="rsave" type="button">Spremi i dodaj u kalendar</button>
     <div class="msg" id="rmsg"></div>
     <div id="rlist"></div>
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 11:45</div>
+  <div class="ver"><span>verzija</span> 12.11. 11:49</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
