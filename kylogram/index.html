@@ -75,7 +75,7 @@
   .subn{flex-direction:column;gap:8px}
   .subn button#rsave{flex:none}
   .rrow{display:flex;gap:8px}.rrow input{flex:1;min-width:0;width:0;font-size:15px!important;padding-left:10px!important;padding-right:30px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background-size:16px!important;background-position:right 8px center!important}.rrow #rdate{flex:1.5}
-  select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;min-width:0;width:100%}
+  select{-webkit-appearance:none;appearance:none;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238a8f9c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px 38px 12px 12px;font-size:16px;min-width:0;width:100%}
   #rlist .ritem{display:flex;gap:6px;align-items:center;padding:6px 0;border-top:1px dashed var(--line);font-size:14px}
   #rlist .ritem span{flex:1;min-width:0}
   #rlist .ritem button{flex:none;padding:6px 10px;font-size:13px}
@@ -236,7 +236,7 @@
   #shBar button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 8px;font-size:15px}
   #shFmt{margin-top:12px;display:flex;flex-direction:column;gap:8px}
   #shFmt .fr{display:flex;gap:8px}
-  #shFmtSel{width:100%;font-size:15px;padding:10px;border-radius:10px;background:var(--card);color:var(--text);border:1px solid var(--line)}
+  #shFmtSel{width:100%;font-size:15px}
   .shrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:15px;color:var(--text)}
   .shrow input{width:22px;height:22px;accent-color:var(--acc)}
   #shGo{flex:1 1 100%}
@@ -600,7 +600,7 @@
     </div></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 18:26</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 18:32</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -627,7 +627,7 @@
   </div>
 </div>
 <div id="mSheet" style="display:none"><div class="dscard"><div class="dtitle" id="msT"></div><input type="number" id="msV" inputmode="decimal" step="0.1" style="width:100%" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="msg" id="msM"></div><div class="dbtns"><button id="msOk" type="button">Spremi</button><button class="ghost" id="msNo" type="button">Zatvori</button></div></div></div>
-<div id="phOv" style="display:none"><div class="dscard" style="max-height:92vh;overflow:auto"><div class="dtitle">Slika: <span id="phWho"></span></div><div class="phrow"><span>Format slike</span><select id="phFmt"><option value="s">9:16</option><option value="p">4:5</option><option value="t">3:4</option><option value="o">1:1 kvadrat</option></select></div><details id="phDet"><summary><span>Što piše na slici</span></summary>
+<div id="phOv" style="display:none"><div class="dscard" style="max-height:92vh;overflow:auto"><div class="dtitle">Slika: <span id="phWho"></span></div><div id="phDet">
     <div id="pfrWrap"><div class="srow shd"><span class="sl">Stil fotografije</span></div><div id="pfrows"></div></div>
     <div id="pfData">
     <div class="srow shd"><span class="sl">Podaci na fotografiji</span></div>
@@ -642,7 +642,7 @@
     <div class="srow"><span class="sl">Boja</span><div class="ptsw" id="ptsw"><button type="button" class="ghost" data-ptc="#ffffff" style="background:#ffffff"></button><button type="button" class="ghost" data-ptc="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-ptc="#3985f7" style="background:#3985f7"></button><button type="button" class="ghost" data-ptc="#f16b65" style="background:#f16b65"></button><button type="button" class="ghost" data-ptc="#11b882" style="background:#11b882"></button><button type="button" class="ghost" data-ptc="#f5ca45" style="background:#f5ca45"></button><button type="button" class="ghost" data-ptc="#f28a38" style="background:#f28a38"></button><button type="button" class="ghost" data-ptc="#e879b5" style="background:#e879b5"></button><button type="button" class="ghost" data-ptc="#a586f5" style="background:#a586f5"></button><button type="button" class="ghost" data-ptc="#929ba8" style="background:#929ba8"></button><button type="button" class="ghost" id="ptcw" aria-label="Odaberi boju"></button></div></div>
     <div class="srow"><span class="sl">Položaj</span><div class="ptpos" id="ptpos"><button type="button" class="ghost" data-ptp="tl" style="align-items:flex-start;justify-content:flex-start"><i></i></button><button type="button" class="ghost" data-ptp="tc" style="align-items:flex-start;justify-content:center"><i></i></button><button type="button" class="ghost" data-ptp="tr" style="align-items:flex-start;justify-content:flex-end"><i></i></button><button type="button" class="ghost" data-ptp="bl" style="align-items:flex-end;justify-content:flex-start"><i></i></button><button type="button" class="ghost" data-ptp="bc" style="align-items:flex-end;justify-content:center"><i></i></button><button type="button" class="ghost" data-ptp="br" style="align-items:flex-end;justify-content:flex-end"><i></i></button></div></div>
     </div>
-</details><div class="dbtns"><button id="phGo" type="button">Napravi sliku</button><button class="ghost" id="phNo" type="button">Odustani</button></div></div></div>
+</div><div class="dbtns"><button id="phGo" type="button">Spremi</button><button class="ghost" id="phNo" type="button">Odustani</button></div></div></div>
 <div id="shOv" style="display:none"><div class="dscard"><canvas id="shCv" width="1080" height="1350"></canvas><div id="shFmt"><select id="shFmtSel"><option value="s">9:16 · Story</option><option value="p">4:5</option><option value="t">3:4</option><option value="o">1:1</option><option value="ip">Instagram</option><option value="is">Instagram Story</option><option value="ir">Instagram Reels</option></select></div><label class="shrow"><span>Težina</span><input type="checkbox" id="shKg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><label class="shrow" id="shHtR"><span>Visina</span><input type="checkbox" id="shHt" autocomplete="off"></label><label class="shrow" id="shMsR"><span>Mjere tijela</span><input type="checkbox" id="shMs" autocomplete="off"></label><div class="msg" id="shM"></div><div class="dbtns"><button id="shGo" type="button">Podijeli</button><button class="ghost" id="shSave" type="button">Spremi sliku</button><button class="ghost" id="shNo" type="button">Zatvori</button></div></div></div>
 <div id="cpOv" style="display:none"><div class="dscard"><div class="dtitle">Odaberi boju</div><canvas id="cpSv" width="300" height="170"></canvas><input type="range" id="cpH" min="0" max="360" value="0" aria-label="Hue" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="range" id="cpL" min="4" max="96" value="50" aria-label="Svjetlina" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><div class="cprow"><i id="cpPrev"></i><span id="cpHex">#ffffff</span></div><div class="cpsug" id="cpSug"><button type="button" class="ghost" data-cps="#3b4048" style="background:#3b4048"></button><button type="button" class="ghost" data-cps="#14b8a6" style="background:#14b8a6"></button><button type="button" class="ghost" data-cps="#38bdf8" style="background:#38bdf8"></button><button type="button" class="ghost" data-cps="#a3e635" style="background:#a3e635"></button><button type="button" class="ghost" data-cps="#9f1239" style="background:#9f1239"></button><button type="button" class="ghost" data-cps="#f1ead7" style="background:#f1ead7"></button></div><div class="dbtns"><button id="cpOk" type="button">U redu</button></div></div></div>
 <div id="undo"><span id="undoTxt"></span><button id="undoBtn">Poništi</button></div>
@@ -1847,7 +1847,7 @@
     Promise.all([loadImg(file),fl]).then(function(r){
       var im=r[0],w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;
       if(person.frame!=='polaroid'){
-        var rr0={s:16/9,p:5/4,t:4/3,o:1}[S.cfg.pr||'s'],HH=Math.round(1000*rr0),sq0=document.createElement('canvas');sq0.width=1000;sq0.height=HH;var cw0=Math.min(w,h/rr0),ch0=cw0*rr0,g0=sq0.getContext('2d');g0.drawImage(im,(w-cw0)/2,(h-ch0)/2,cw0,ch0,0,0,1000,HH);
+        var rr0=1,HH=Math.round(1000*rr0),sq0=document.createElement('canvas');sq0.width=1000;sq0.height=HH;var cw0=Math.min(w,h/rr0),ch0=cw0*rr0,g0=sq0.getContext('2d');g0.drawImage(im,(w-cw0)/2,(h-ch0)/2,cw0,ch0,0,0,1000,HH);
         var kg0=latestOn(person.entries,date),cm0=latestOn(person.heights,date),L1=[],L2=[],pf=S.cfg.pf;
         if(pf.n)L1.push(person.name);if(pf.d)L1.push(fmtDate(date));
         if(pf.a&&person.birth){var at0=ageText(person.birth,date);if(at0)L2.push(at0)}
@@ -1899,9 +1899,8 @@
     phFile=file;var p=P();$('phWho').textContent=p.name;
     var hr=$('pfHrow');if(hr)hr.style.display=(p.hideH||!hOn())?'none':'';
     var wr=document.querySelector('#phOv [data-pf=w]');if(wr&&wr.closest('.srow'))wr.closest('.srow').style.display=p.hideW?'none':'';
-    renderFrames();applyCfg();$('phFmt').value=S.cfg.pr||'s';$('phOv').style.display='flex';
+    renderFrames();applyCfg();$('phOv').style.display='flex';
   }
-  $('phFmt').onchange=function(){S.cfg.pr=this.value;persist()};
   $('phGo').onclick=function(){var f=phFile;phFile=null;$('phOv').style.display='none';if(f)doFile(f)};
   $('phNo').onclick=function(){phFile=null;$('phOv').style.display='none'};
   $('phOv').addEventListener('click',function(e){var b=e.target.closest?e.target.closest('button'):null;if(!b||b.id==='phGo'||b.id==='phNo')return;
