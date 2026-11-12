@@ -390,7 +390,7 @@
     <div id="pform">
       <input type="search" id="pname" maxlength="24" placeholder="Ime osobe" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
       <div id="pswatch"></div>
-      <div id="pshow"><div class="srow shd"><span class="sl">Prikaz na glavnom ekranu</span></div><div class="srow"><span class="sl">Visina</span><button class="sw2" type="button" id="pshH" role="switch" aria-checked="false"></button></div><div class="srow"><span class="sl">Mjere tijela</span><button class="sw2" type="button" id="pshM" role="switch" aria-checked="false"></button></div></div>
+      <div id="pshow"><div class="srow shd"><span class="sl">Prikaz na glavnom ekranu</span></div><div class="srow"><span class="sl">Težina</span><button class="sw2" type="button" id="pshW" role="switch" aria-checked="true"></button></div><div class="srow"><span class="sl">Visina</span><button class="sw2" type="button" id="pshH" role="switch" aria-checked="false"></button></div><div class="srow"><span class="sl">Mjere tijela</span><button class="sw2" type="button" id="pshM" role="switch" aria-checked="false"></button></div></div>
       <label id="pbwrap">Rođen/a (nije obavezno) <input type="date" id="pbirth" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
       <label id="pwwrap">Težina <input type="number" id="pwt" inputmode="decimal" step="0.1" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
       <label id="pgwrap">Ciljna težina (nije obavezno) <input type="number" id="pgoal" inputmode="decimal" step="0.1" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
@@ -597,7 +597,7 @@
       <button class="ghost" type="button" data-th="mb">Crna</button>
     </div></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 17:45</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 17:52</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -668,6 +668,8 @@
   var LB=2.2046226218,IN=0.3937007874;
   function isUS(){return S.cfg.u==='i'}
   function hOn(){if(!S.cfg.h)return false;if(S.all)return selPeople().some(function(p){return !p.hideH});return !P().hideH}
+  function wOn(){var ok;if(S.all)ok=selPeople().some(function(p){return !p.hideW});else ok=!P().hideW;return ok||!(hOn()||mOn())}
+  function wOf(p){return (p.hideW&&(hOn()||mOn()))?{}:p.entries}
   function hOf(p){return p.hideH?{}:(p.heights||{})}
   function wu(){return isUS()?'lb':'kg'}
   function hu(){return isUS()?'in':'cm'}
@@ -693,7 +695,7 @@
   function sane(x){
     if(!x||!x.people||!x.people.length)throw 0;
     x.people=x.people.filter(function(p){return p&&p.entries&&typeof p.entries==='object'}).map(function(p,i){
-      return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),hideH:!!p.hideH,hideM:!!p.hideM,birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?(p.color.toLowerCase()==='#39ff14'?'#11b882':p.color):null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},meas:cleanMeas(p.meas),goal:p.goal||null,frame:p.frame==='polaroid'?'polaroid':'plain'}});
+      return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),hideH:!!p.hideH,hideM:!!p.hideM,hideW:!!p.hideW,birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?(p.color.toLowerCase()==='#39ff14'?'#11b882':p.color):null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},meas:cleanMeas(p.meas),goal:p.goal||null,frame:p.frame==='polaroid'?'polaroid':'plain'}});
     if(!x.people.length)throw 0;
     if(!x.people.some(function(p){return p.id===x.active}))x.active=x.people[0].id;
     if(x.range===undefined)x.range=30;if(x.range===90)x.range=180;if([0,7,30,180,365].indexOf(x.range)<0)x.range=30;
@@ -746,7 +748,7 @@
       else if(r[0].parentNode&&r[0].nodeValue!==t)r[0].nodeValue=t;
     });
   }
-  function applyVis(){var ho=hOn();$('cm').style.display=ho?'':'none';$('sH').parentNode.style.display=ho?'':'none';$('sHp').parentNode.style.display=ho?'':'none';$('mtabs').style.display=(ho||mOn())?'':'none';$('mrow').style.display=mOn()?'':'none'}
+  function applyVis(){var ho=hOn(),wo=wOn();$('sCur').parentNode.style.display=wo?'':'none';$('sTrend').parentNode.style.display=wo?'':'none';$('kg').style.display=wo?'':'none';$('cm').style.display=ho?'':'none';$('sH').parentNode.style.display=ho?'':'none';$('sHp').parentNode.style.display=ho?'':'none';$('mtabs').style.display=(ho||mOn())?'':'none';$('mrow').style.display=mOn()?'':'none'}
   function applyCfg(){
     LANG=S.cfg.lang;document.documentElement.setAttribute('lang',LANG);document.documentElement.setAttribute('dir',RTL[LANG]?'rtl':'ltr');
     trStatic();
@@ -1006,7 +1008,7 @@
     svg.setAttribute('viewBox','0 0 '+W+' '+H);
     var cut=state.range?toDay(today())-state.range:-1e9,cols=pcolors();
     var ds=selPeople().map(function(p){var i=S.people.indexOf(p);
-      var src=m==='h'?hOf(p):p.entries;
+      var src=m==='h'?hOf(p):wOf(p);
       var pts=Object.keys(src).sort().map(function(k){return {k:k,d:toDay(k),v:cv(src[k])}}).filter(function(e){return e.d>=cut});
       return {name:p.name,col:lineCol(cols[i]),pts:pts,src:src,idx:i};
     });
@@ -1096,7 +1098,7 @@
     var cut=state.range?toDay(today())-state.range:-1e9,cols=pcolors();
     var ds=selPeople().map(function(p){var i=S.people.indexOf(p);
       function mk(src,cv){return Object.keys(src||{}).sort().map(function(k){return {k:k,d:toDay(k),v:cv(src[k])}}).filter(function(e){return e.d>=cut})}
-      return {name:p.name,col:lineCol(cols[i]),pw:mk(p.entries,dw),ph:mk(hOf(p),dh),sw:p.entries||{},sh:hOf(p)};
+      return {name:p.name,col:lineCol(cols[i]),pw:mk(wOf(p),dw),ph:mk(hOf(p),dh),sw:wOf(p)||{},sh:hOf(p)};
     });
     var allw=[],allh=[],dd=[];
     ds.forEach(function(x){x.pw.forEach(function(e){allw.push(e.v);dd.push(e.d)});x.ph.forEach(function(e){allh.push(e.v);dd.push(e.d)})});
@@ -1241,10 +1243,12 @@
     var mm0=null;
     renderCmp(all&&hOn());
     var ho=hOn(),mo=mOn(),mm;
+    var wo=wOn();
     if(all)mm=!ho?'w':(S.metric==='b'?'b':(S.metric==='h'?'h':'w'));
     else{mm=S.metric||'b';if(!ho&&(mm==='h'||mm==='b'))mm='w';if(mm==='m'&&!mo)mm='w'}
+    if(!wo&&(mm==='w'||mm==='b'))mm=ho?'h':((mo&&!all)?'m':'w');
     var mt=$('mtabs').children;
-    for(var q=0;q<mt.length;q++){var dm=mt[q].dataset.m;if(dm===undefined)continue;var vis2=dm==='w'||((dm==='h'||dm==='b')&&ho)||(dm==='m'&&mo&&!all);mt[q].classList.toggle('on',dm===mm);mt[q].style.display=vis2?'':'none'}
+    for(var q=0;q<mt.length;q++){var dm=mt[q].dataset.m;if(dm===undefined)continue;var vis2=(dm==='w'&&wo)||(dm==='h'&&ho)||(dm==='b'&&ho&&wo)||(dm==='m'&&mo&&!all);mt[q].classList.toggle('on',dm===mm);mt[q].style.display=vis2?'':'none'}
     var lw=document.querySelectorAll('.legend .lw'),lh=document.querySelectorAll('.legend .lh'),lm=document.querySelectorAll('.legend .lm');
     for(q=0;q<lw.length;q++)lw[q].style.display=(mm==='h'||mm==='m')?'none':'';
     for(q=0;q<lh.length;q++)lh[q].style.display=(mm==='w'||mm==='m')?'none':'';
@@ -1252,7 +1256,7 @@
     $('mstats').style.display=(!all&&mo)?'':'none';$('msNow').style.display=(!all&&mo)?'':'none';mStats();
     if(all){if(mm==='b')chartAllB();else if(mm==='h')chartAllH();else chartAll()}else if(mm==='m')chartMeas();else chart(s,hs,mm);
     document.querySelector('.legend').style.display=all?'none':'';
-    document.querySelector('.stats').style.display=all?'none':'';$('chg').style.display=all?'none':'';$('galCard').style.display='';
+    document.querySelector('.stats').style.display=all?'none':'';$('chg').style.display=(all||!wo)?'none':'';$('galCard').style.display='';
     $('entry').style.display=(all||pmode)?'none':'';
     $('allHint').style.display=all?'block':'none';renderAllSel();
     $('who').textContent=all?T('Svi'):P().name;
@@ -1565,12 +1569,13 @@
     var b=e.target.closest?e.target.closest('button'):null;if(!b)return;
     if(b.id==='pall'){S.all=true;pmode=null;dropUndo();persist();render();return}
     if(b.dataset.p){S.active=b.dataset.p;S.all=false;pmode=null;dropUndo();persist();render();return}
-    if(b.id==='padd'){pmode='add';phH=!!S.cfg.h;phM=!!S.cfg.m;pshSync();pcolor=nextColor();renderPeople();$('pbirth').value='';$('pgoal').value='';pfBody(null);$('pmsg').textContent='';$('pname').value='';$('pname').focus()}
-    else if(b.id==='pedit'){pmode='edit';phH=!!S.cfg.h&&!P().hideH;phM=!!S.cfg.m&&!P().hideM;pshSync();pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal?nv(dw(P().goal)):'';pfBody(P());$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
+    if(b.id==='padd'){pmode='add';phW=true;phH=!!S.cfg.h;phM=!!S.cfg.m;pshSync();pcolor=nextColor();renderPeople();$('pbirth').value='';$('pgoal').value='';pfBody(null);$('pmsg').textContent='';$('pname').value='';$('pname').focus()}
+    else if(b.id==='pedit'){pmode='edit';phW=!P().hideW;phH=!!S.cfg.h&&!P().hideH;phM=!!S.cfg.m&&!P().hideM;pshSync();pcolor=P().color||null;renderPeople();$('pbirth').value=P().birth||'';$('pgoal').value=P().goal?nv(dw(P().goal)):'';pfBody(P());$('pmsg').textContent='';$('pname').value=P().name;$('pname').focus()}
   };
   var PBF=[['chest','pmc'],['waist','pmw2'],['hips','pmh']];
-  var phH=true,phM=true;
-  function pshSync(){$('pshH').classList.toggle('on',phH);$('pshH').setAttribute('aria-checked',phH?'true':'false');$('pshM').classList.toggle('on',phM);$('pshM').setAttribute('aria-checked',phM?'true':'false')}
+  var phW=true,phH=true,phM=true;
+  function pshSync(){$('pshW').classList.toggle('on',phW);$('pshW').setAttribute('aria-checked',phW?'true':'false');$('pshH').classList.toggle('on',phH);$('pshH').setAttribute('aria-checked',phH?'true':'false');$('pshM').classList.toggle('on',phM);$('pshM').setAttribute('aria-checked',phM?'true':'false')}
+  $('pshW').onclick=function(){phW=!phW;pshSync()};
   $('pshH').onclick=function(){phH=!phH;pshSync()};
   $('pshM').onclick=function(){phM=!phM;pshSync()};
   function pfBody(p){
@@ -1595,7 +1600,7 @@
     if(pmode==='add'){var id='p'+Date.now().toString(36);S.people.push({id:id,name:n,birth:bd||null,color:pcolor,entries:{},heights:{},meas:{chest:{},waist:{},hips:{}},goal:gl});S.active=id;S.all=false;dropUndo()}
     else if(pmode==='edit'){P().name=n;P().color=pcolor;P().birth=bd||null;P().goal=gl}
     var pp=P(),dd=today(),cfgCh=false;
-    {var pq=P();pq.hideH=!phH;pq.hideM=!phM;if(phH&&!S.cfg.h){S.cfg.h=true;cfgCh=true}if(phM&&!S.cfg.m){S.cfg.m=true;cfgCh=true}}
+    {var pq=P();pq.hideW=!phW;pq.hideH=!phH;pq.hideM=!phM;if(phH&&!S.cfg.h){S.cfg.h=true;cfgCh=true}if(phM&&!S.cfg.m){S.cfg.m=true;cfgCh=true}}
     if(wtn!==null&&wtv!==$('pwt').dataset.i){pp.entries[dd]=rw(wtn)}
     if(hn!==null&&hv!==$('phgt').dataset.i){pp.heights=pp.heights||{};pp.heights[dd]=rh(hn);if(!S.cfg.h){S.cfg.h=true;cfgCh=true}}
     PBF.forEach(function(r){if(mo[r[0]]!==undefined&&$(r[1]).value.trim()!==$(r[1]).dataset.i){state.meas[r[0]][dd]=rh(mo[r[0]]);mAny=true}});
@@ -2128,7 +2133,7 @@
     $('calBody').innerHTML=h;
   }
   function ptok(p,k,col,withH){
-    var w=p.entries[k],hv=withH&&hOn()&&!p.hideH&&p.heights?p.heights[k]:undefined,o=[];
+    var w=wOf(p)[k],hv=withH&&hOn()&&!p.hideH&&p.heights?p.heights[k]:undefined,o=[];
     if(w!==undefined)o.push(f1(dw(w))+' '+wu());if(hv!==undefined)o.push(fd(dh(hv))+' '+hu());
     return o.length?'<span style="color:'+col+';font-weight:700;font-size:14px;display:block">'+esc(p.name)+' '+o.join(' · ')+'</span>':'';
   }
@@ -2143,7 +2148,7 @@
       for(d=0;d<off;d++)cells+='<i></i>';
       for(d=1;d<=dim;d++){
         var k=y+'-'+pad(m)+'-'+pad(d),sp='',any=false;
-        pp.forEach(function(p){var i=S.people.indexOf(p),w=p.entries[k];if(w!==undefined){any=true;sp+='<span style="color:'+lineCol(cols[i])+';font-size:10.5px">'+f1(dw(w))+'</span>'}else if(hOn()&&p.heights&&p.heights[k]!==undefined)any=true});
+        pp.forEach(function(p){var i=S.people.indexOf(p),w=wOf(p)[k];if(w!==undefined){any=true;sp+='<span style="color:'+lineCol(cols[i])+';font-size:10.5px">'+f1(dw(w))+'</span>'}else if(hOn()&&p.heights&&p.heights[k]!==undefined)any=true});
         cells+='<div class="cd'+(any?' has':'')+(k===t?' tod':'')+'" data-k="'+k+'" style="aspect-ratio:auto;min-height:48px;justify-content:flex-start;padding-top:3px"><u>'+d+'</u>'+sp+'</div>';
       }
       h+='<div class="calm"><div class="calt"><span>'+mname(m-1)+' '+yname(y)+'</span></div><div class="calw">'+wdHead().map(function(x){return '<span>'+x+'</span>'}).join('')+'</div><div class="calg">'+cells+'</div></div>';
@@ -2202,7 +2207,7 @@
   function showDayAll(k){
     dayK=k;var pp=selPeople(),cols=pcolors(),c='<div class="dtitle">'+fmtDate(k)+'</div>',n=0;
     pp.forEach(function(p){
-      var w=p.entries[k],hv=hOn()&&!p.hideH&&p.heights?p.heights[k]:undefined;if(w===undefined&&hv===undefined)return;
+      var w=wOf(p)[k],hv=hOn()&&!p.hideH&&p.heights?p.heights[k]:undefined;if(w===undefined&&hv===undefined)return;
       n++;var o=[];if(w!==undefined)o.push(f1(dw(w))+' '+wu());if(hv!==undefined)o.push(f1(dh(hv))+' '+hu());
       c+='<div class="drow"><span><i class="pdot" style="background:'+lineCol(cols[S.people.indexOf(p)])+'"></i>'+esc(p.name)+'</span><b style="font-size:15px">'+o.join(' · ')+'</b><button class="ghost" data-x="pp:'+esc(p.id)+'">'+T('Uredi')+'</button></div>';
     });
