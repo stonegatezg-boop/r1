@@ -561,7 +561,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 10:48</div>
+  <div class="ver"><span>verzija</span> 12.11. 10:50</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1337,7 +1337,7 @@
     var bd=$('pbirth').value;
     if(bd&&(bd>today()||bd<'1900-01-01')){$('pmsg').textContent=T('Datum rođenja nije ispravan.');return false}
     var gv=$('pgoal').value.trim(),gl=null;
-    if(gv!==''){gl=uw(parseKg(gv));if(!(gl>=19.99&&gl<=400.01)){$('pmsg').textContent=T('Ciljna težina mora biti između')+' '+rng(20,400,'w');return false}gl=rw(gl)}
+    if(gv!==''){gl=uw(parseKg(gv));if(!(gl>=0.99&&gl<=300.01)){$('pmsg').textContent=T('Ciljna težina mora biti između')+' '+rng(1,300,'w');return false}gl=rw(gl)}
     var hv=$('phgt').value.trim(),hn=null,mo={},mAny=false;
     if(hv!==''){hn=uh(parseKg(hv));if(!(hn>=29.99&&hn<=250.01)){$('pmsg').textContent=T('Visina mora biti između')+' '+rng(30,250,'h');return false}}
     for(var qi=0;qi<PBF.length;qi++){var mv=$(PBF[qi][1]).value.trim();if(mv!==''){var mx=uh(parseKg(mv));if(!(mx>=19.99&&mx<=250.01)){$('pmsg').textContent=T('Mjera mora biti između')+' '+rng(20,250,'h');return false}mo[PBF[qi][0]]=mx}}
@@ -1708,11 +1708,12 @@
     var sv=$('chart'),r=sv.getBoundingClientRect(),k=sv.viewBox.baseVal.height/r.height,now=performance.now();
     var dy=(cy-gly)*k,dt=Math.max(now-glt,8);gly=cy;glt=now;
     var gain=Math.min(1.2,0.2+Math.abs(dy)/dt*1.1);
-    gv+=-dy*(gm.hi-gm.lo)/gm.ih*gain;
-    var lo=Math.max(gm.lo,dw(20)),hi=Math.min(gm.hi,dw(400));gv=Math.max(lo,Math.min(hi,gv));
+    var kp=(gm.hi-gm.lo)/gm.ih,outside=(gv>gm.hi+1e-9||gv<gm.lo-1e-9);
+    gv+=-dy*(outside?Math.max(kp,0.4*(1+Math.min(3,Math.abs(dy)/dt*1.1))):kp*gain);
+    var lo=dw(1),hi=dw(300);gv=Math.max(lo,Math.min(hi,gv));
     var v=Math.round(gv*10)/10;gval=v;
     var st=Math.round(v*10);if(st!==gstep){gstep=st;tick(st%10===0)}
-    var gy=gm.padT+(gm.hi-v)/(gm.hi-gm.lo)*gm.ih;
+    var gy=Math.max(gm.padT,Math.min(gm.padT+gm.ih,gm.padT+(gm.hi-v)/(gm.hi-gm.lo)*gm.ih));
     var ln=$('gline');if(ln){ln.setAttribute('y1',gy);ln.setAttribute('y2',gy)}
     var gd=$('gdrag');if(gd)gd.setAttribute('transform','translate(0,'+(gy-gm.gy0)+')');
     var tx=$('gtxt');if(tx){var t=fd(v);tx.textContent=t;tx.setAttribute('font-size',t.length>3?12:14)}
@@ -1727,7 +1728,7 @@
   }
   function gEnd(){
     if(!gdrag)return;gdrag=false;
-    var gk=gval===null?NaN:uw(gval);if(gk>=19.99&&gk<=400.01){state.goal=rw(gk);persist()}
+    var gk=gval===null?NaN:uw(gval);if(gk>=0.99&&gk<=300.01){state.goal=rw(gk);persist()}
     gval=null;render();
   }
   svg.addEventListener('touchstart',function(e){if(e.target.closest&&e.target.closest('#gdrag')&&gm){gdrag=true;gval=null;gv=gm.orig;gstep=Math.round(gm.orig*10);if(snd&&!ac){try{var AC0=window.AudioContext||window.webkitAudioContext;if(AC0)ac=new AC0()}catch(x){}}gly=e.touches[0].clientY;glt=performance.now();e.preventDefault()}},{passive:false});
