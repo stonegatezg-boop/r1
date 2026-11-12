@@ -561,7 +561,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 10:41</div>
+  <div class="ver"><span>verzija</span> 12.11. 10:44</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1159,9 +1159,9 @@
     c.fillStyle=mu;c.font='500 34px '+SF;c.fillText(T('ukupno'),70,230);
     c.font='800 150px '+SF;c.fillStyle=tot===null?tx:tot<0?gr:tot>0?mg:tx;
     var bt=tot===null?'–':(tot>0?'+':'')+f1(dw(tot))+' '+wu();c.fillText(bt,70,370);
-    if(tot!==null&&first.w>0){c.fillStyle=mu;c.font='500 38px '+SF;var pc=tot/first.w*100;c.fillText((pc>0?'+':'')+f1(pc)+'%  ·  '+fmtShort(first.d)+' → '+fmtShort(last.d),70,430)}
+    if(tot!==null&&first.w>0){c.fillStyle=mu;c.font='500 38px '+SF;var pc=tot/first.w*100;c.fillText((pc>0?'+':'')+f1(pc)+'%  ·  '+fmtShort(first.d)+' → '+fmtShort(last.d),70,452)}
     // period tiles
-    var N=[7,15,30],tw=(W-140-3*20)/4,ty=480,th=150,i;
+    var N=[7,15,30],tw=(W-140-3*20)/4,ty=505,th=150,i;
     for(i=0;i<4;i++){
       var x=70+i*(tw+20),lab,val,col=tx;
       if(i<3){var base=all.length>1?trendAtDay(all,last.d-N[i]):null;lab=N[i]+' d';
@@ -1172,14 +1172,14 @@
       c.fillStyle=mu;c.font='500 28px '+SF;c.fillText(lab+(val==='–'?'':' · '+wu()),x+tw/2,ty+118);
     }
     // chart
-    var cx=70,cy=700,cw=W-140,ch=500;
+    var cx=70,cy=722,cw=W-140,ch=500;
     c.fillStyle=card;c.strokeStyle=line;c.beginPath();c.roundRect?c.roundRect(cx,cy,cw,ch,26):c.rect(cx,cy,cw,ch);c.fill();c.stroke();
     if(s.length<2){c.textAlign='center';c.fillStyle=mu;c.font='500 34px '+SF;c.fillText(T('Nema dovoljno unosa za graf'),W/2,cy+ch/2)}
     else{
       var pl=showKg?110:40,pr=40,pt=50,pb=60,ix=cx+pl,iw=cw-pl-pr,iy=cy+pt,ih=ch-pt-pb;
       var ws=s.map(function(e){return e.w}),mn=Math.min.apply(null,ws),mx=Math.max.apply(null,ws);
       if(state.goal&&state.goal>=mn-(mx-mn)&&state.goal<=mx+(mx-mn)){mn=Math.min(mn,state.goal);mx=Math.max(mx,state.goal)}
-      var sp=(mx-mn)||1;mn-=sp*.12;mx+=sp*.12;
+      var sp=(mx-mn)||1,pdv=showKg?.24:.12;mn-=sp*pdv;mx+=sp*pdv;
       var d0=s[0].d,d1=s[s.length-1].d,ds=(d1-d0)||1;
       function X(d){return ix+(d-d0)/ds*iw}function Y(w){return iy+(1-(w-mn)/(mx-mn))*ih}
       c.strokeStyle=line;c.lineWidth=1.5;c.fillStyle=mu;c.font='500 26px '+SF;c.textAlign='right';
@@ -1191,12 +1191,25 @@
       if(pts.length<=45){c.fillStyle=ac;pts.forEach(function(p){c.beginPath();c.arc(p[0],p[1],6,0,6.2832);c.fill()})}
       var lp=pts[pts.length-1];c.fillStyle=bg;c.strokeStyle=ac;c.lineWidth=5;c.beginPath();c.arc(lp[0],lp[1],12,0,6.2832);c.fill();c.stroke();
       c.fillStyle=mu;c.font='500 26px '+SF;c.textAlign='left';c.fillText(fmtShort(s[0].d),ix,cy+ch-20);c.textAlign='right';c.fillText(fmtShort(s[s.length-1].d),ix+iw,cy+ch-20);
-      if(showKg){c.textAlign='center';c.fillStyle=tx;c.font='700 30px '+SF;c.fillText(f1(dw(last.w))+' '+wu(),Math.min(Math.max(lp[0],ix+80),ix+iw-80),Math.max(lp[1]-26,iy+20))}
+      if(showKg){
+        var n2=s.length,idx=[],j2;
+        if(n2<=8){for(j2=0;j2<n2;j2++)idx.push(j2)}
+        else{var imn=0,imx=0;for(j2=1;j2<n2;j2++){if(s[j2].w<s[imn].w)imn=j2;if(s[j2].w>s[imx].w)imx=j2}
+          [0,imn,imx,n2-1].forEach(function(q){if(idx.indexOf(q)<0&&(q===0||q===n2-1||(q>=4&&q<=n2-5)))idx.push(q)});idx.sort(function(a,b){return a-b})}
+        c.textAlign='center';c.fillStyle=tx;c.font='700 30px '+SF;
+        idx.forEach(function(q){
+          var p=pts[q],nb=[];if(q>0)nb.push(pts[q-1][1]);if(q<n2-1)nb.push(pts[q+1][1]);
+          var ay=nb.reduce(function(a,b){return a+b},0)/nb.length,below=ay<p[1]-1||(Math.abs(ay-p[1])<=1&&q===n2-1);
+          var ty2=below?p[1]+(q===n2-1?52:46):p[1]-(q===n2-1?34:28);
+          var lab=f1(dw(s[q].w))+(q===n2-1?' '+wu():'');
+          c.fillText(lab,Math.min(Math.max(p[0],ix+55),ix+iw-60),Math.min(Math.max(ty2,iy+10),iy+ih+30));
+        });
+      }
     }
     c.textAlign='center';c.fillStyle=mu;c.font='500 28px '+SF;c.fillText('kylogram',W/2,H-60);
   }
   function shBlobGet(cb){$('shCv').toBlob(function(b){cb(b)},'image/png')}
-  function shOpen(){$('shOv').style.display='flex';try{document.fonts.ready.then(shDraw)}catch(e){}shDraw()}
+  function shOpen(){$('shKg').checked=true;$('shOv').style.display='flex';try{document.fonts.ready.then(shDraw)}catch(e){}shDraw()}
   $('shBtn').onclick=function(e){e.stopPropagation();shOpen()};
   $('shKg').onchange=shDraw;
   $('shNo').onclick=function(){$('shOv').style.display='none'};
