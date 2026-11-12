@@ -390,11 +390,6 @@
     <div class="stat t3"><b id="sHp">–</b><span id="lHp">prethodna visina (cm)</span></div>
     <div class="stat t4"><b id="sH">–</b><span id="lH">visina (cm)</span></div>
   </div>
-  <div class="stats m3" id="mstats" style="display:none">
-    <div class="stat t1"><b id="sMc">–</b><span id="lMc">prsa</span></div>
-    <div class="stat t2"><b id="sMw">–</b><span id="lMw">struk</span></div>
-    <div class="stat t4"><b id="sMh">–</b><span id="lMh">bokovi</span></div>
-  </div>
   <div class="stats chg" id="chg">
     <div class="stat t1"><b id="c7">–</b><span id="c7l">7 d</span></div>
     <div class="stat t2"><b id="c15">–</b><span id="c15l">15 d</span></div>
@@ -410,14 +405,20 @@
       <button class="ghost" data-m="m">Mjere</button>
     </div>
     <div class="tabs" id="tabs">
+      <button class="ghost" data-r="7">7 d</button>
       <button class="ghost" data-r="30">30 d</button>
-      <button class="ghost" data-r="90">90 d</button>
+      <button class="ghost" data-r="180">6 mj</button>
       <button class="ghost" data-r="365">1 god</button>
       <button class="ghost" data-r="0">Sve</button>
       <span id="who"></span><button class="ghost" id="shBtn" type="button" aria-label="Share" style="padding:8px 10px;display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
     </div>
     <svg id="chart"></svg>
     <div id="tip"></div>
+  <div class="stats m3" id="mstats" style="display:none;margin:12px 0 4px">
+    <div class="stat t1"><b id="sMc">–</b><span id="lMc">prsa</span></div>
+    <div class="stat t2"><b id="sMw">–</b><span id="lMw">struk</span></div>
+    <div class="stat t4"><b id="sMh">–</b><span id="lMh">bokovi</span></div>
+  </div>
     <div id="cmp"></div>
     <div class="legend">
       <span class="lw"><i class="dot" style="background:var(--gr)"></i>pad</span>
@@ -561,7 +562,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 10:52</div>
+  <div class="ver"><span>verzija</span> 12.11. 10:57</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -583,14 +584,14 @@
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
   var PALETTE=[['#3985f7','Plava'],['#f16b65','Koraljna'],['#11b882','Zelena'],['#f5ca45','Žuta'],['#f28a38','Narančasta'],['#e879b5','Roza'],['#a586f5','Ljubičasta'],['#929ba8','Siva']],pcolor=null;
   var THEMES=['m','ml','mb'],NAMES={'80':'80-e','m':'Moderna tamna','ml':'Moderna svijetla','mb':'Moderna crna'},TCOL={'80':'#07060d','m':'#0f1115','ml':'#eef0f4','mb':'#000000'};
-  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr',pf:{n:true,d:true,a:true,w:true,h:true},pt:{c:'#ffffff',p:'bl'}}};
+  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:30,theme:'m',metric:'b',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr',pf:{n:true,d:true,a:true,w:true,h:true},pt:{c:'#ffffff',p:'bl'}}};
   var LANG='hr';
   var MK=['chest','waist','hips'],MKL={chest:'prsa',waist:'struk',hips:'bokovi'},MKC={chest:'Prsa',waist:'Struk',hips:'Bokovi'},MCOL=['#ff6bd6','var(--acc)','#6bd6ff'],MAB={hr:['P','S','B'],en:['C','W','H'],de:['B','T','H'],es:['Pe','Ci','Ca'],it:['P','V','F'],pt:['P','C','Q'],pl:['K','T','B'],zh:['胸','腰','臀'],ja:['胸','腰','臀'],he:['ח','מ','י'],fr:['P','T','H'],cs:['H','P','B'],sk:['H','P','B'],hu:['M','D','Cs'],ro:['Pi','Ta','Șo'],bg:['Г','Т','Х'],el:['Σ','Μ','Γ'],ko:['가','허','엉'],nl:['B','T','H'],no:['Br','Mi','Ho'],fi:['R','V','L'],sv:['B','M','H'],da:['B','T','H'],ar:['ص','خ','و'],hi:['छा','क','कू'],sl:['Pr','Pa','Bo'],ru:['Гр','Та','Бё'],uk:['Гр','Та','Ст'],tr:['G','B','K'],sq:['Gj','B','I'],id:['D','Pi','Pg'],fil:['D','B','Ba'],vi:['N','E','H'],th:['อก','เอว','สะ'],bn:['বু','কো','নি'],sw:['Ki','Kn','Ny'],sr:['Гр','Ст','Ку'],mk:['Гр','По','Ко'],lt:['K','Ta','Kl'],lv:['K','V','G'],et:['R','V','P'],ca:['P','C','M'],is:['Br','Mi','Mj'],mt:['Si','Qa','Ġe'],ka:['მკ','წე','თე'],hy:['կր','գո','կո'],bs:['P','S','B'],fa:['سی','کم','با'],ur:['سی','کم','کو'],ms:['D','P','Pi'],ta:['மா','இடை','இடு'],te:['ఛా','న','తు'],mr:['छा','कं','नि'],ha:['Ƙ','K','D'],am:['ደ','ወ','ዳ'],af:['B','M','H']};
   function mOn(){return !!S.cfg.m}
   var EN={'Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
   'Dodaj':'Add','Obriši':'Delete','Spremi':'Save','Slikaj':'Take photo','Odaberi sliku':'Choose photo','Prikaz svih osoba. Za unos odaberi osobu.':'Showing everyone. Pick a person to add entries.',
   'zadnja':'latest','zadnje mjerenje':'latest measurement','prethodna visina':'previous height','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
-  'Težina':'Weight','Visina':'Height','Oboje':'Both','Sve':'All','Svi':'All','1 god':'1 y','pad':'drop','rast':'gain','cilj':'goal','Cilj':'Goal',
+  'Težina':'Weight','Visina':'Height','Oboje':'Both','Sve':'All','Svi':'All','1 god':'1 y','6 mj':'6 mo','pad':'drop','rast':'gain','cilj':'goal','Cilj':'Goal',
   'Usporedba':'Comparison','Zamijeni':'Swap','Zatvori':'Close','Galerija i kalendar':'Gallery & calendar','Galerija':'Gallery','Kalendar':'Calendar',
   'Usporedi':'Compare','Označi':'Select','Odustani':'Cancel','Zadnja ↔ prije mjesec dana':'Latest ↔ a month earlier','Lista':'List',
   '· zeleno = niže od prethodnog mjerenja, crveno = više · dodir na dan otvara detalje':'· green = lower than the previous weigh-in, red = higher · tap a day for details',
@@ -644,7 +645,7 @@
       return {id:String(p.id||('p'+(i+1))),name:String(p.name||'Osoba').slice(0,24),birth:(typeof p.birth==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.birth))?p.birth:null,color:(typeof p.color==='string'&&/^#[0-9a-f]{6}$/i.test(p.color))?(p.color.toLowerCase()==='#39ff14'?'#11b882':p.color):null,entries:p.entries,heights:(p.heights&&typeof p.heights==='object')?p.heights:{},meas:cleanMeas(p.meas),goal:p.goal||null,frame:p.frame==='polaroid'?'polaroid':'plain'}});
     if(!x.people.length)throw 0;
     if(!x.people.some(function(p){return p.id===x.active}))x.active=x.people[0].id;
-    if(x.range===undefined)x.range=90;
+    if(x.range===undefined)x.range=30;if(x.range===90)x.range=180;if([0,7,30,180,365].indexOf(x.range)<0)x.range=30;
     if(['w','h','b','m'].indexOf(x.metric)<0)x.metric='b';
     x.all=!!x.all&&x.people.length>1;
     x.reminders=(Array.isArray(x.reminders)?x.reminders:[]).filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time)&&['once','day','week','month','first','year'].indexOf(r.rep)>=0}).slice(0,50).map(function(r,i){return {id:String(r.id||('r'+i+Date.now().toString(36))),date:r.date,time:r.time,rep:r.rep,text:String(r.text||'Vaganje').slice(0,60),dis:(typeof r.dis==='string'?r.dis:'')}});
@@ -1144,8 +1145,8 @@
     var bg=V('--bg'),card=V('--card'),line=V('--line'),tx=V('--text'),mu=V('--mute'),ac=V('--acc'),gr=V('--gr'),mg=V('--mg');
     var showW=$('shKg').checked,showKg=true,all=series(),s=all,rg=state.range;
     var tl=[];
-    if($('shHt').checked&&hOn()){var lh=latest(state.heights);if(lh)tl.push([T('Visina'),dh(lh.v)])}
-    if($('shMs').checked&&mOn()){[['chest','Prsa'],['waist','Struk'],['hips','Bokovi']].forEach(function(r){var lm=latest(state.meas[r[0]]);if(lm)tl.push([T(r[1]),dh(lm.v)])})}
+    if($('shHt').checked&&hOn()){var lh=latest(state.heights);if(lh)tl.push([T('Visina'),dh(lh.v),V('--hc')])}
+    if($('shMs').checked&&mOn()){[['chest','Prsa','#ff6bd6'],['waist','Struk',ac],['hips','Bokovi','#6bd6ff']].forEach(function(r){var lm=latest(state.meas[r[0]]);if(lm)tl.push([T(r[1]),dh(lm.v),r[2]])})}
     if(rg>0){var lim=all.length?all[all.length-1].d-rg:0;s=all.filter(function(e){return e.d>=lim})}
     c.clearRect(0,0,W,H);c.fillStyle=bg;c.fillRect(0,0,W,H);
     var SF='system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
@@ -1219,12 +1220,12 @@
         });
       }
     }
-    if(tl.length){var tw2=(W-140-(tl.length-1)*20)/tl.length;tl.forEach(function(r,j){dTile(70+j*(tw2+20),1095,tw2,150,f1(r[1]),r[0]+' · '+hu(),46,V('--hc')||tx)})}
+    if(tl.length){var tw2=(W-140-(tl.length-1)*20)/tl.length;tl.forEach(function(r,j){dTile(70+j*(tw2+20),1095,tw2,150,f1(r[1]),r[0]+' · '+hu(),46,r[2]||tx)})}
     }else{
       var n3=tl.length;
       if(!n3){c.textAlign='center';c.fillStyle=mu;c.font='500 40px '+SF;c.fillText('–',W/2,H/2)}
       else{var cols=n3===1?1:2,rows=Math.ceil(n3/cols),gw=(W-140-(cols-1)*24)/cols,gh=Math.min(300,(H-420-(rows-1)*24)/rows);
-        tl.forEach(function(r,j){var rr=Math.floor(j/cols),cc=j%cols,rowN=Math.min(cols,n3-rr*cols),off=cols>1&&rowN<cols?(gw+24)/2:0;dTile(70+cc*(gw+24)+off,260+rr*(gh+24),gw,gh,f1(r[1]),r[0]+' · '+hu(),Math.round(gh*0.42),V('--hc')||tx)})}
+        tl.forEach(function(r,j){var rr=Math.floor(j/cols),cc=j%cols,rowN=Math.min(cols,n3-rr*cols),off=cols>1&&rowN<cols?(gw+24)/2:0;dTile(70+cc*(gw+24)+off,260+rr*(gh+24),gw,gh,f1(r[1]),r[0]+' · '+hu(),Math.round(gh*0.42),r[2]||tx)})}
     }
     c.textAlign='center';c.fillStyle=mu;c.font='500 28px '+SF;c.fillText('kylogram',W/2,H-60);
   }
