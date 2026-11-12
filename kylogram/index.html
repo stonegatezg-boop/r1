@@ -485,7 +485,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 01:02</div>
+  <div class="ver"><span>verzija</span> 12.11. 01:05</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -687,14 +687,14 @@
     sp.textContent=N+' d · '+sg(p)+'%';
   }
   function stats(s,hs){
-    var U=' ('+wu()+')';
+    var U=' ('+wu()+')',GL=state.goal?' ('+fd(dw(state.goal))+' '+wu()+')':'';
     $('sH').textContent=hs.length?f1(dh(hs[hs.length-1].h)):'–';
     $('sHp').textContent=hs.length>1?f1(dh(hs[hs.length-2].h)):'–';
-    if(!s.length){$('sCur').textContent=$('sTrend').textContent=$('sChg').textContent='–';$('lChg').textContent=T('ukupno');$('sTrendL').textContent=state.goal?T('do cilja')+U:T('najniža')+U;$('sChg').style.color='';['c7','c15','c30'].forEach(function(id,i){$(id).textContent='–';$(id).style.color='';$(id+'l').textContent=[7,15,30][i]+' d'});return}
+    if(!s.length){$('sCur').textContent=$('sTrend').textContent=$('sChg').textContent='–';$('lChg').textContent=T('ukupno');$('sTrendL').textContent=state.goal?T('do cilja')+GL:T('najniža');$('sTrend').textContent='–';$('sChg').style.color='';['c7','c15','c30'].forEach(function(id,i){$(id).textContent='–';$(id).style.color='';$(id+'l').textContent=[7,15,30][i]+' d'});return}
     var last=s[s.length-1];
     $('sCur').textContent=f1(dw(last.w));
-    if(state.goal){var rem=last.w-state.goal;$('sTrendL').textContent=rem>0?T('do cilja')+U:rem<0?T('ispod cilja')+U:T('cilj dosegnut');$('sTrend').textContent=f1(dw(Math.abs(rem)))}
-    else{var mn=Math.min.apply(null,s.map(function(e){return e.w}));$('sTrendL').textContent=T('najniža')+U;$('sTrend').textContent=f1(dw(mn))}
+    if(state.goal){var rem=last.w-state.goal;$('sTrendL').textContent=rem>0?T('do cilja')+GL:rem<0?T('ispod cilja')+GL:T('cilj dosegnut')+GL;$('sTrend').textContent=f1(dw(Math.abs(rem)))+' '+wu()}
+    else{var mn=Math.min.apply(null,s.map(function(e){return e.w}));$('sTrendL').textContent=T('najniža');$('sTrend').textContent=f1(dw(mn))+' '+wu()}
     var tot=last.w-s[0].w;
     if(s.length>1){var tp=tot/s[0].w*100;$('sChg').textContent=(tot>0?'+':'')+f1(dw(tot))+' '+wu();$('lChg').textContent=T('ukupno')+' · '+(tp>0?'+':'')+f1(tp)+'%';$('sChg').style.color=tot<0?'var(--gr)':tot>0?'var(--mg)':''}
     else{$('sChg').textContent='–';$('lChg').textContent=T('ukupno');$('sChg').style.color=''}
