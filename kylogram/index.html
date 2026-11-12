@@ -201,7 +201,18 @@
   #sub-s{flex-direction:column;gap:0;margin-top:14px;padding:0 2px 24px}
   #sub-s.open{display:flex}
   #sub-s .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-bottom:1px solid var(--line)}
-  #sub-s .srow:last-child{border-bottom:0}
+  #sub-s>.srow:last-child{border-bottom:0}
+  #sub-s .shd{min-height:40px;margin-top:8px;border-bottom:0}
+  #sub-s .shd .sl{color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+  .ptsw{display:flex;gap:5px;align-items:center;justify-content:flex-end}
+  .ptsw button,.ptsw label{width:21px;height:21px;padding:0;border-radius:50%;border:2px solid var(--line);position:relative;cursor:pointer;flex:0 0 auto}
+  .ptsw button.on,.ptsw label.on{border-color:var(--text);box-shadow:0 0 0 2px var(--card),0 0 0 3.5px var(--acc)}
+  .ptsw label{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);overflow:hidden}
+  .ptsw input{position:absolute;inset:-6px;opacity:0;width:40px;height:40px;cursor:pointer}
+  .ptpos{display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,26px);gap:4px}
+  .ptpos button{padding:3px;display:flex;border-radius:6px;min-width:0}
+  .ptpos button i{width:12px;height:4px;border-radius:2px;background:var(--mute)}
+  .ptpos button.on{border-color:var(--acc)}.ptpos button.on i{background:var(--acc)}
   #sub-s .sl{font-size:15px;color:var(--text)}
   #sub-s .seg{display:flex;gap:4px;overflow-x:auto;max-width:66%;padding:2px}
   #sub-s .seg button{flex:0 0 auto;padding:6px 11px;font-size:14px;border-radius:10px;display:flex;align-items:center;gap:6px;min-width:0}
@@ -502,14 +513,19 @@
     </div></div>
     <div class="srow"><span class="sl">Praćenje visine</span><button class="sw2" type="button" id="hBtn" role="switch" aria-checked="false"></button></div>
     <div class="srow"><span class="sl">Mjere tijela</span><button class="sw2" type="button" id="mBtn" role="switch" aria-checked="false"></button></div>
-    <div id="pfrWrap"><div class="srow" style="min-height:40px"><span class="sl" style="color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em">Stil fotografije</span></div><div id="pfrows"></div></div>
+    <div id="pfrWrap"><div class="srow shd"><span class="sl">Stil fotografije</span></div><div id="pfrows"></div></div>
     <div id="pfData">
-    <div class="srow" style="min-height:40px"><span class="sl" style="color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em">Podaci na polaroidu</span></div>
+    <div class="srow shd"><span class="sl">Podaci na fotografiji</span></div>
     <div class="srow"><span class="sl">Ime</span><button class="sw2" type="button" data-pf="n" role="switch" aria-checked="true"></button></div>
     <div class="srow"><span class="sl">Datum</span><button class="sw2" type="button" data-pf="d" role="switch" aria-checked="true"></button></div>
     <div class="srow"><span class="sl">Godine</span><button class="sw2" type="button" data-pf="a" role="switch" aria-checked="true"></button></div>
     <div class="srow"><span class="sl">Težina</span><button class="sw2" type="button" data-pf="w" role="switch" aria-checked="true"></button></div>
     <div class="srow" id="pfHrow"><span class="sl">Visina</span><button class="sw2" type="button" data-pf="h" role="switch" aria-checked="true"></button></div>
+    </div>
+    <div id="pfPlain">
+    <div class="srow shd"><span class="sl">Tekst na običnoj fotografiji</span></div>
+    <div class="srow"><span class="sl">Boja</span><div class="ptsw" id="ptsw"><button type="button" class="ghost" data-ptc="#ffffff" style="background:#ffffff"></button><button type="button" class="ghost" data-ptc="#111111" style="background:#111111"></button><button type="button" class="ghost" data-ptc="#e3ff00" style="background:#e3ff00"></button><button type="button" class="ghost" data-ptc="#11b882" style="background:#11b882"></button><button type="button" class="ghost" data-ptc="#ef4444" style="background:#ef4444"></button><button type="button" class="ghost" data-ptc="#f97316" style="background:#f97316"></button><button type="button" class="ghost" data-ptc="#ff2bd6" style="background:#ff2bd6"></button><button type="button" class="ghost" data-ptc="#2a7bff" style="background:#2a7bff"></button><button type="button" class="ghost" data-ptc="#22d3ee" style="background:#22d3ee"></button><button type="button" class="ghost" data-ptc="#a855f7" style="background:#a855f7"></button><label id="ptcw"><input type="color" id="ptci" value="#ffffff"></label></div></div>
+    <div class="srow"><span class="sl">Položaj</span><div class="ptpos" id="ptpos"><button type="button" class="ghost" data-ptp="tl" style="align-items:flex-start;justify-content:flex-start"><i></i></button><button type="button" class="ghost" data-ptp="tc" style="align-items:flex-start;justify-content:center"><i></i></button><button type="button" class="ghost" data-ptp="tr" style="align-items:flex-start;justify-content:flex-end"><i></i></button><button type="button" class="ghost" data-ptp="bl" style="align-items:flex-end;justify-content:flex-start"><i></i></button><button type="button" class="ghost" data-ptp="bc" style="align-items:flex-end;justify-content:center"><i></i></button><button type="button" class="ghost" data-ptp="br" style="align-items:flex-end;justify-content:flex-end"><i></i></button></div></div>
     </div>
     <div class="srow"><span class="sl">Tema</span><div class="seg" id="sub-t">
       <button class="ghost" type="button" data-th="m">Tamna</button>
@@ -528,7 +544,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 09:09</div>
+  <div class="ver"><span>verzija</span> 12.11. 09:17</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -549,7 +565,7 @@
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
   var PALETTE=[['#e3ff00','Žuta'],['#11b882','Zelena'],['#ff2bd6','Roza'],['#2a7bff','Plava']],pcolor=null;
   var THEMES=['m','ml','mb'],NAMES={'90':'90-e','80':'80-e','m':'Moderna tamna','ml':'Moderna svijetla','mb':'Moderna crna'},TCOL={'90':'#008080','80':'#07060d','m':'#0f1115','ml':'#eef0f4','mb':'#000000'};
-  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr',pf:{n:true,d:true,a:true,w:true,h:true}}};
+  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr',pf:{n:true,d:true,a:true,w:true,h:true},pt:{c:'#ffffff',p:'bl'}}};
   var LANG='hr';
   var MK=['chest','waist','hips'],MKL={chest:'prsa',waist:'struk',hips:'bokovi'},MKC={chest:'Prsa',waist:'Struk',hips:'Bokovi'},MCOL=['#ff6bd6','var(--acc)','#6bd6ff'],MAB={hr:['P','S','B'],en:['C','W','H']};
   function mOn(){return !!S.cfg.m}
@@ -575,7 +591,7 @@
   'Još nema slika. Slikaj ili odaberi sliku.':'No photos yet. Take or choose a photo.','Još nema unosa.':'No entries yet.',
   'Odaberi dvije slike':'Choose two photos','Označeno:':'Selected:','Sigurno?':'Sure?','Treba barem dvije slike ove osobe.':'This person needs at least two photos.','isti dan':'same day','razlike':'apart',
   'mjer.':'meas.','prosjek':'avg','u mjesecu':'this month','ovaj mj.':'this mo.','Nema unosa za ovaj dan.':'No entries for this day.','Obriši sve':'Delete all','Uredi':'Edit','Dodaj unos':'Add entry',
-  'Odabran datum':'Selected date','Stil fotografije':'Photo style','Obična':'Plain','Podaci na polaroidu':'Data on the polaroid','Podaci na fotografiji':'Data on the photo','Ime':'Name','Datum':'Date','Godine':'Age','Podijeli':'Share','Spremi sliku':'Save image','Prikaži kilograme':'Show weights','Slika spremljena':'Image saved','Nema dovoljno unosa za graf':'Not enough entries for a chart','promijeni pa Spremi.':'change it, then Save.','Zvuk i vibracija skale':'Dial sound & vibration','uključeno':'on','isključeno':'off',
+  'Odabran datum':'Selected date','Stil fotografije':'Photo style','Tekst na običnoj fotografiji':'Text on plain photo','Boja':'Color','Položaj':'Position','Obična':'Plain','Podaci na fotografiji':'Data on the photo','Ime':'Name','Datum':'Date','Godine':'Age','Podijeli':'Share','Spremi sliku':'Save image','Prikaži kilograme':'Show weights','Slika spremljena':'Image saved','Nema dovoljno unosa za graf':'Not enough entries for a chart','promijeni pa Spremi.':'change it, then Save.','Zvuk i vibracija skale':'Dial sound & vibration','uključeno':'on','isključeno':'off',
   'isto kao prije':'same as before','od prije':'from before','još':'still','ispod za':'below by','upravo sada':'right now','Praćenje visine':'Height tracking'};
   function T(s){return LANG==='en'&&EN.hasOwnProperty(s)?EN[s]:s}
   var PL={'slika':['photo','photos'],'mjerenje':['measurement','measurements'],'godina':['year','years'],'mjesec':['month','months'],'dan':['day','days']};
@@ -614,7 +630,7 @@
     x.reminders=(Array.isArray(x.reminders)?x.reminders:[]).filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time)&&['once','day','week','month','first','year'].indexOf(r.rep)>=0}).slice(0,50).map(function(r,i){return {id:String(r.id||('r'+i+Date.now().toString(36))),date:r.date,time:r.time,rep:r.rep,text:String(r.text||'Vaganje').slice(0,60),dis:(typeof r.dis==='string'?r.dis:'')}});
     if(THEMES.indexOf(x.theme)<0)x.theme='m';
     var cf=x.cfg||{},hadH=x.people.some(function(p){return p.heights&&Object.keys(p.heights).length});
-    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,u:cf.u==='i'?'i':'m',lang:cf.lang==='en'?'en':'hr',pf:{n:!(cf.pf&&cf.pf.n===false),d:!(cf.pf&&cf.pf.d===false),a:!(cf.pf&&cf.pf.a===false),w:!(cf.pf&&cf.pf.w===false),h:!(cf.pf&&cf.pf.h===false)}};
+    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,u:cf.u==='i'?'i':'m',lang:cf.lang==='en'?'en':'hr',pt:{c:(cf.pt&&/^#[0-9a-f]{6}$/i.test(cf.pt.c))?cf.pt.c.toLowerCase():'#ffffff',p:(cf.pt&&['tl','tc','tr','bl','bc','br'].indexOf(cf.pt.p)>=0)?cf.pt.p:'bl'},pf:{n:!(cf.pf&&cf.pf.n===false),d:!(cf.pf&&cf.pf.d===false),a:!(cf.pf&&cf.pf.a===false),w:!(cf.pf&&cf.pf.w===false),h:!(cf.pf&&cf.pf.h===false)}};
     return x;
   }
   function load(){
@@ -694,7 +710,12 @@
       });
       r.appendChild(sg);box.appendChild(r);
     });
-    $('pfData').style.display=any?'':'none';
+    var anyPlain=S.people.some(function(q){return q.frame!=='polaroid'});
+    $('pfPlain').style.display=anyPlain?'':'none';
+    var pc=document.querySelectorAll('#ptsw [data-ptc]'),isP=false,i;
+    for(i=0;i<pc.length;i++){var on=pc[i].dataset.ptc===S.cfg.pt.c;if(on)isP=true;pc[i].classList.toggle('on',on)}
+    $('ptcw').classList.toggle('on',!isP);if(!isP)$('ptci').value=S.cfg.pt.c;
+    var pp=document.querySelectorAll('#ptpos [data-ptp]');for(i=0;i<pp.length;i++)pp[i].classList.toggle('on',pp[i].dataset.ptp===S.cfg.pt.p);
   }
   $('sub-s').onclick=function(e){
     var b=e.target.closest?e.target.closest('button'):null;if(!b)return;
@@ -705,6 +726,8 @@
     else if(b.id==='hBtn')S.cfg.h=!S.cfg.h;
     else if(b.id==='mBtn')S.cfg.m=!S.cfg.m;
     else if(b.dataset.fr){var fq=b.dataset.fr.split('|');S.people.forEach(function(q){if(q.id===fq[0])q.frame=fq[1]==='polaroid'?'polaroid':'plain'})}
+    else if(b.dataset.ptc)S.cfg.pt.c=b.dataset.ptc
+    else if(b.dataset.ptp)S.cfg.pt.p=b.dataset.ptp
     else if(b.dataset.pf)S.cfg.pf[b.dataset.pf]=!S.cfg.pf[b.dataset.pf];
     else return;
     persist();applyCfg();
@@ -714,6 +737,7 @@
     mids.forEach(function(id,i){if(isFinite(mk0[i]))$(id).value=nv(dh(mk0[i]))});
     render();
   };
+  $('ptci').addEventListener('input',function(){S.cfg.pt.c=this.value.toLowerCase();persist();renderFrames()});
   function applyTheme(){
     document.documentElement.setAttribute('data-theme',S.theme);
     $('tc').setAttribute('content',TCOL[S.theme]);
@@ -1440,7 +1464,21 @@
     var fl=Promise.all([document.fonts.load('700 60px Caveat','kylogram 0123'),document.fonts.load('700 60px Caveat','čćđšž')]).catch(function(){});
     Promise.all([loadImg(file),fl]).then(function(r){
       var im=r[0],w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;
-      if(person.frame!=='polaroid'){var sq0=document.createElement('canvas');sq0.width=sq0.height=1000;var sw0=Math.min(w,h);sq0.getContext('2d').drawImage(im,(w-sw0)/2,(h-sw0)/2,sw0,sw0,0,0,1000,1000);sq0.toBlob(function(b0){cb(b0,b0)},'image/jpeg',0.92);return}
+      if(person.frame!=='polaroid'){
+        var sq0=document.createElement('canvas');sq0.width=sq0.height=1000;var sw0=Math.min(w,h),g0=sq0.getContext('2d');g0.drawImage(im,(w-sw0)/2,(h-sw0)/2,sw0,sw0,0,0,1000,1000);
+        var kg0=latestOn(person.entries,date),cm0=latestOn(person.heights,date),L1=[],L2=[],pf=S.cfg.pf;
+        if(pf.n)L1.push(person.name);if(pf.d)L1.push(fmtDate(date));
+        if(pf.a&&person.birth){var at0=ageText(person.birth,date);if(at0)L2.push(at0)}
+        if(pf.w&&kg0!==null)L2.push(f1(dw(kg0))+' '+wu());if(pf.h&&cm0!==null&&hOn())L2.push(f1(dh(cm0))+' '+hu());
+        var LN=[L1.join('  ·  '),L2.join('  ·  ')].filter(function(t){return t});
+        sq0.toBlob(function(clean){
+          if(!LN.length){cb(clean,clean);return}
+          var ps=S.cfg.pt.p,fs=56,lh=62,m=40,al=ps[1]==='l'?'left':ps[1]==='r'?'right':'center',tx=ps[1]==='l'?m:ps[1]==='r'?1000-m:500;
+          g0.textAlign=al;g0.textBaseline='alphabetic';g0.fillStyle=S.cfg.pt.c;g0.shadowColor='rgba(0,0,0,.6)';g0.shadowBlur=10;g0.shadowOffsetX=0;g0.shadowOffsetY=2;
+          LN.forEach(function(t,i){var f=fitFont(g0,t,'700',fs,1000-2*m);g0.font='700 '+f+'px Caveat, cursive';
+            var y=ps[0]==='t'?m+fs-8+i*lh:1000-m-(LN.length-1-i)*lh-8;g0.fillText(t,tx,y)});
+          sq0.toBlob(function(b0){cb(b0,clean)},'image/jpeg',0.92);
+        },'image/jpeg',0.92);return}
       var W=900,H=1180,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
       x.fillStyle='#fbfaf4';x.fillRect(0,0,W,H);
       x.strokeStyle='#e4e0d3';x.lineWidth=2;x.strokeRect(1,1,W-2,H-2);
