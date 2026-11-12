@@ -583,7 +583,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 13:51</div>
+  <div class="ver"><span>verzija</span> 12.11. 13:54</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1033,8 +1033,8 @@
     ds.forEach(function(x){x.pw.forEach(function(e){allw.push(e.v);dd.push(e.d)});x.ph.forEach(function(e){allh.push(e.v);dd.push(e.d)})});
     if(!dd.length){svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" text-anchor="middle" font-size="14">'+T('Nema podataka')+'</text>';geo=null;return}
     var d0=Math.min.apply(null,dd),d1=Math.max.apply(null,dd);if(d1===d0){d0-=1;d1+=1}
-    var hp=ds.filter(function(x){return x.ph.length}),colW=40;
-    var padL=40,padR=18+Math.max(hp.length,1)*colW,padT=36,padB=26,iw=W-padL-padR,ih=H-padT-padB;
+    var hp=ds.filter(function(x){return x.ph.length}),colW=46;
+    var padL=40,padR=14+Math.max(hp.length,1)*colW,padT=36,padB=26,iw=W-padL-padR,ih=H-padT-padB;
     function X(d){return padL+(d-d0)/(d1-d0)*iw}
     var sw=allw.length?scaleOf(allw,dw(0.5)):{lo:0,hi:1},sh=allh.length?scaleOf(allh,dh(1)):{lo:0,hi:1};
     function YW(v){return padT+(sw.hi-v)/(sw.hi-sw.lo)*ih}
@@ -1051,21 +1051,27 @@
       var p=x.pw.map(function(e){return [X(e.d),YW(e.v)]});
       if(p.length>1)g+='<path d="'+smoothPath(p)+'" fill="none" stroke="'+x.col+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
       p.forEach(function(q){g+='<rect x="'+(q[0]-3.5)+'" y="'+(q[1]-3.5)+'" width="7" height="7" fill="'+x.col+'"/>'});
-      if(x.pw.length)labs.push({y:p[p.length-1][1],col:x.col,t:x.name+'  '+f1(x.pw[x.pw.length-1].v)+' '+wu()});
+      if(x.pw.length)labs.push({y:p[0][1],lx:Math.max(p[0][0]-4,padL),col:x.col,t:x.name+'  '+f1(x.pw[x.pw.length-1].v)+' '+wu()});
     });
+    var hst=niceStep((sh.hi-sh.lo)/6),hmn=hst/5;
     hp.forEach(function(x,i){
-      var cx=W-padR+20+i*colW,f=x.ph[0].v,l=x.ph[x.ph.length-1].v,mid=(f+l)/2,rg=Math.max(Math.abs(l-f)*1.8,dh(2)),yf=padT+(mid+rg/2-f)/rg*ih,yl=padT+(mid+rg/2-l)/rg*ih;
-      g+='<path d="M'+cx+' '+yf+'V'+yl+'" stroke="'+x.col+'" stroke-width="3.5" stroke-linecap="round" opacity=".55"/>';
-      g+='<circle cx="'+cx+'" cy="'+yl+'" r="5" fill="'+x.col+'"/>';
+      var cx=W-padR+22+i*colW,f=x.ph[0].v,l=x.ph[x.ph.length-1].v,yf=YH(f),yl=YH(l);
+      g+='<path d="M'+cx+' '+padT+'V'+(H-padB)+'" stroke="'+x.col+'" stroke-width="2" opacity=".45"/>';
+      for(var kk=Math.ceil(sh.lo/hmn-1e-9);kk*hmn<=sh.hi+1e-9;kk++){
+        var tv=kk*hmn,isM=Math.abs(tv/hst-Math.round(tv/hst))<1e-6,ty=YH(tv);
+        g+='<path d="M'+cx+' '+ty+'h'+(isM?9:5)+'" stroke="'+x.col+'" stroke-width="'+(isM?1.6:1)+'" opacity=".6"/>';
+      }
+      if(Math.abs(l-f)>1e-9)g+='<path d="M'+cx+' '+yf+'V'+yl+'" stroke="'+x.col+'" stroke-width="5" stroke-linecap="round" opacity=".9"/>';
+      g+='<circle cx="'+cx+'" cy="'+yl+'" r="5.5" fill="'+x.col+'" stroke="var(--card)" stroke-width="2"/>';
       var up=l>=f;
-      g+='<text x="'+cx+'" y="'+(yl+(up?-10:17))+'" text-anchor="middle" font-size="11" style="fill:'+x.col+';font-weight:700">'+f1(l)+'</text>';
+      var cl=Math.abs(yl-yf)<16;g+='<text x="'+(cx-9)+'" y="'+(cl?(up?yl-3:yl+11):yl+4)+'" text-anchor="end" font-size="11" style="fill:'+x.col+';font-weight:700;paint-order:stroke;stroke:var(--card);stroke-width:3px">'+f1(l)+'</text>';
       if(x.ph.length>1&&Math.abs(l-f)>1e-9){
-        g+='<circle cx="'+cx+'" cy="'+yf+'" r="3.5" fill="'+x.col+'" opacity=".6"/><text x="'+cx+'" y="'+(yf+(up?16:-9))+'" text-anchor="middle" font-size="10" style="fill:'+x.col+';opacity:.8">'+f1(f)+'</text>';
+        g+='<circle cx="'+cx+'" cy="'+yf+'" r="3.5" fill="'+x.col+'" stroke="var(--card)" stroke-width="1.5"/><text x="'+(cx-9)+'" y="'+(cl?(up?yf+13:yf-3):yf+4)+'" text-anchor="end" font-size="10" style="fill:'+x.col+';opacity:.85;paint-order:stroke;stroke:var(--card);stroke-width:3px">'+f1(f)+'</text>';
       }
     });
     labs.sort(function(a,b){return a.y-b.y});
     for(var j=1;j<labs.length;j++)if(labs[j].y<labs[j-1].y+15)labs[j].y=labs[j-1].y+15;
-    labs.forEach(function(l){g+='<text x="'+(W-padR)+'" y="'+(l.y-9)+'" text-anchor="end" font-size="11.5" style="fill:'+l.col+';font-weight:700;paint-order:stroke;stroke:var(--card);stroke-width:3px">'+esc(l.t)+'</text>'});
+    labs.forEach(function(l){g+='<text x="'+l.lx+'" y="'+(l.y-9)+'" text-anchor="start" font-size="11.5" style="fill:'+l.col+';font-weight:700;paint-order:stroke;stroke:var(--card);stroke-width:3px">'+esc(l.t)+'</text>'});
     g+='<line id="cur" x1="0" x2="0" y1="'+padT+'" y2="'+(H-padB)+'" stroke="var(--mute)" opacity="0"/>';
     svg.innerHTML=g;
     var seen={},pts=[];ds.forEach(function(x){x.pw.concat(x.ph).forEach(function(e){if(!seen[e.k]){seen[e.k]=1;pts.push({k:e.k,d:e.d})}})});
