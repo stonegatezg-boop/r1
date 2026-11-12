@@ -502,6 +502,12 @@
     </div></div>
     <div class="srow"><span class="sl">Praćenje visine</span><button class="sw2" type="button" id="hBtn" role="switch" aria-checked="false"></button></div>
     <div class="srow"><span class="sl">Mjere tijela</span><button class="sw2" type="button" id="mBtn" role="switch" aria-checked="false"></button></div>
+    <div class="srow" style="min-height:40px"><span class="sl" style="color:var(--mute);font-size:13px;text-transform:uppercase;letter-spacing:.06em">Podaci na fotografiji</span></div>
+    <div class="srow"><span class="sl">Ime</span><button class="sw2" type="button" data-pf="n" role="switch" aria-checked="true"></button></div>
+    <div class="srow"><span class="sl">Datum</span><button class="sw2" type="button" data-pf="d" role="switch" aria-checked="true"></button></div>
+    <div class="srow"><span class="sl">Godine</span><button class="sw2" type="button" data-pf="a" role="switch" aria-checked="true"></button></div>
+    <div class="srow"><span class="sl">Težina</span><button class="sw2" type="button" data-pf="w" role="switch" aria-checked="true"></button></div>
+    <div class="srow" id="pfHrow"><span class="sl">Visina</span><button class="sw2" type="button" data-pf="h" role="switch" aria-checked="true"></button></div>
     <div class="srow"><span class="sl">Tema</span><div class="seg" id="sub-t">
       <button class="ghost" type="button" data-th="m">Tamna</button>
       <button class="ghost" type="button" data-th="ml">Svijetla</button>
@@ -519,7 +525,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 08:58</div>
+  <div class="ver"><span>verzija</span> 12.11. 09:00</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -540,7 +546,7 @@
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
   var PALETTE=[['#e3ff00','Žuta'],['#11b882','Zelena'],['#ff2bd6','Roza'],['#2a7bff','Plava']],pcolor=null;
   var THEMES=['m','ml','mb'],NAMES={'90':'90-e','80':'80-e','m':'Moderna tamna','ml':'Moderna svijetla','mb':'Moderna crna'},TCOL={'90':'#008080','80':'#07060d','m':'#0f1115','ml':'#eef0f4','mb':'#000000'};
-  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr'}};
+  var S={people:[{id:'p1',name:'Ja',entries:{},heights:{},goal:null}],active:'p1',range:90,theme:'m',metric:'b',reminders:[],cfg:{h:false,m:false,u:'m',lang:'hr',pf:{n:true,d:true,a:true,w:true,h:true}}};
   var LANG='hr';
   var MK=['chest','waist','hips'],MKL={chest:'prsa',waist:'struk',hips:'bokovi'},MKC={chest:'Prsa',waist:'Struk',hips:'Bokovi'},MCOL=['#ff6bd6','var(--acc)','#6bd6ff'],MAB={hr:['P','S','B'],en:['C','W','H']};
   function mOn(){return !!S.cfg.m}
@@ -566,7 +572,7 @@
   'Još nema slika. Slikaj ili odaberi sliku.':'No photos yet. Take or choose a photo.','Još nema unosa.':'No entries yet.',
   'Odaberi dvije slike':'Choose two photos','Označeno:':'Selected:','Sigurno?':'Sure?','Treba barem dvije slike ove osobe.':'This person needs at least two photos.','isti dan':'same day','razlike':'apart',
   'mjer.':'meas.','prosjek':'avg','u mjesecu':'this month','ovaj mj.':'this mo.','Nema unosa za ovaj dan.':'No entries for this day.','Obriši sve':'Delete all','Uredi':'Edit','Dodaj unos':'Add entry',
-  'Odabran datum':'Selected date','Podijeli':'Share','Spremi sliku':'Save image','Prikaži kilograme':'Show weights','Slika spremljena':'Image saved','Nema dovoljno unosa za graf':'Not enough entries for a chart','promijeni pa Spremi.':'change it, then Save.','Zvuk i vibracija skale':'Dial sound & vibration','uključeno':'on','isključeno':'off',
+  'Odabran datum':'Selected date','Podaci na fotografiji':'Data on the photo','Ime':'Name','Datum':'Date','Godine':'Age','Podijeli':'Share','Spremi sliku':'Save image','Prikaži kilograme':'Show weights','Slika spremljena':'Image saved','Nema dovoljno unosa za graf':'Not enough entries for a chart','promijeni pa Spremi.':'change it, then Save.','Zvuk i vibracija skale':'Dial sound & vibration','uključeno':'on','isključeno':'off',
   'isto kao prije':'same as before','od prije':'from before','još':'still','ispod za':'below by','upravo sada':'right now','Praćenje visine':'Height tracking'};
   function T(s){return LANG==='en'&&EN.hasOwnProperty(s)?EN[s]:s}
   var PL={'slika':['photo','photos'],'mjerenje':['measurement','measurements'],'godina':['year','years'],'mjesec':['month','months'],'dan':['day','days']};
@@ -605,7 +611,7 @@
     x.reminders=(Array.isArray(x.reminders)?x.reminders:[]).filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time)&&['once','day','week','month','first','year'].indexOf(r.rep)>=0}).slice(0,50).map(function(r,i){return {id:String(r.id||('r'+i+Date.now().toString(36))),date:r.date,time:r.time,rep:r.rep,text:String(r.text||'Vaganje').slice(0,60),dis:(typeof r.dis==='string'?r.dis:'')}});
     if(THEMES.indexOf(x.theme)<0)x.theme='m';
     var cf=x.cfg||{},hadH=x.people.some(function(p){return p.heights&&Object.keys(p.heights).length});
-    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,u:cf.u==='i'?'i':'m',lang:cf.lang==='en'?'en':'hr'};
+    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,u:cf.u==='i'?'i':'m',lang:cf.lang==='en'?'en':'hr',pf:{n:!(cf.pf&&cf.pf.n===false),d:!(cf.pf&&cf.pf.d===false),a:!(cf.pf&&cf.pf.a===false),w:!(cf.pf&&cf.pf.w===false),h:!(cf.pf&&cf.pf.h===false)}};
     return x;
   }
   function load(){
@@ -667,6 +673,8 @@
     var lb=document.querySelectorAll('#sub-s [data-lang]');for(i=0;i<lb.length;i++)lb[i].classList.toggle('on',lb[i].dataset.lang===S.cfg.lang);
     $('mBtn').classList.toggle('on',mOn());$('mBtn').setAttribute('aria-checked',mOn()?'true':'false');
     $('hBtn').classList.toggle('on',ho);$('hBtn').setAttribute('aria-checked',ho?'true':'false');
+    var pb=document.querySelectorAll('#sub-s [data-pf]');for(i=0;i<pb.length;i++){var on=!!S.cfg.pf[pb[i].dataset.pf];pb[i].classList.toggle('on',on);pb[i].setAttribute('aria-checked',on?'true':'false')}
+    $('pfHrow').style.display=ho?'':'none';
     sndLabel();fillRep();renderRem();
   }
   $('sub-s').onclick=function(e){
@@ -677,6 +685,7 @@
     else if(b.dataset.lang)S.cfg.lang=b.dataset.lang;
     else if(b.id==='hBtn')S.cfg.h=!S.cfg.h;
     else if(b.id==='mBtn')S.cfg.m=!S.cfg.m;
+    else if(b.dataset.pf)S.cfg.pf[b.dataset.pf]=!S.cfg.pf[b.dataset.pf];
     else return;
     persist();applyCfg();
     if(isFinite(kk))$('kg').value=nv(dw(kk));
@@ -1428,14 +1437,14 @@
       x.strokeStyle='rgba(0,0,0,.28)';x.lineWidth=2;x.strokeRect(pad,pad,sz,sz);
       x.textAlign='center';x.textBaseline='alphabetic';
       var ink='#2b2b2b',col=person.color?shade(person.color,0.6):'#444';
-      var s0=fitFont(x,person.name,'700',96,780);x.font='700 '+s0+'px Caveat, cursive';x.fillStyle=ink;x.fillText(person.name,W/2,958);
+      var s0=fitFont(x,person.name,'700',96,780);x.font='700 '+s0+'px Caveat, cursive';x.fillStyle=ink;if(S.cfg.pf.n)x.fillText(person.name,W/2,958);
       var lines=[];
-      lines.push({t:fmtDate(date),w:'700',s:46,c:'#777'});
-      if(person.birth){var at=ageText(person.birth,date);if(at)lines.push({t:at,w:'700',s:54,c:ink})}
+      if(S.cfg.pf.d)lines.push({t:fmtDate(date),w:'700',s:46,c:'#777'});
+      if(S.cfg.pf.a&&person.birth){var at=ageText(person.birth,date);if(at)lines.push({t:at,w:'700',s:54,c:ink})}
       var kg=latestOn(person.entries,date),cm=latestOn(person.heights,date),ms=[];
-      if(kg!==null)ms.push(f1(dw(kg))+' '+wu());if(cm!==null&&hOn())ms.push(f1(dh(cm))+' '+hu());
+      if(S.cfg.pf.w&&kg!==null)ms.push(f1(dw(kg))+' '+wu());if(S.cfg.pf.h&&cm!==null&&hOn())ms.push(f1(dh(cm))+' '+hu());
       if(ms.length)lines.push({t:ms.join('   ·   '),w:'700',s:58,c:col});
-      var y=1016;
+      var y=S.cfg.pf.n?1016:985;
       lines.forEach(function(l){var s1=fitFont(x,l.t,l.w,l.s,780);x.font=l.w+' '+s1+'px Caveat, cursive';x.fillStyle=l.c;x.fillText(l.t,W/2,y);y+=60});
       x.textAlign='right';x.font='700 26px Caveat, cursive';x.fillStyle='rgba(0,0,0,.28)';x.fillText('kylogram',W-34,H-22);
       var sq=document.createElement('canvas');sq.width=sq.height=1000;
