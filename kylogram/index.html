@@ -180,6 +180,11 @@
   .gal{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
   .gal .thumb{cursor:pointer}
   .gal .thumb img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;background:#222}
+  #setOv{position:fixed;inset:0;z-index:150;background:var(--bg);flex-direction:column;padding:12px 14px;display:none}
+  #setOv .galbar .foot{flex:1}
+  #setOv .foot button::after{content:none}
+  #setOv .sub{margin-top:12px}
+  #gear{background:transparent;border:0;color:var(--mute);padding:6px;display:flex;align-items:center}
   #galOv,#calOv{position:fixed;inset:0;z-index:150;background:var(--bg);flex-direction:column;padding:12px 14px}
   .galbar{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
   .galbar .tabs{flex:1;margin-bottom:0}
@@ -375,7 +380,7 @@
   <div class="brand">
     <h1 class="wm" role="img" aria-label="kylogram"><svg viewBox="340 246 653 653" aria-hidden="true"><path d="M350 371H518V600L868 256L983 370L467 888H350Z"/><rect x="670" y="707" width="201" height="181"/></svg></h1>
     <div id="motiv" aria-live="off"><span id="motT"></span></div>
-    <div id="brandR"><button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button></div>
+    <div id="brandR"><button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button><button id="gear" type="button" aria-label="Postavke"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="6.4"/><circle cx="12" cy="12" r="2.6"/><circle cx="12" cy="12" r="9" stroke-width="3.4" stroke-dasharray="3.53 3.53"/></svg></button></div>
   </div>
 
   <div class="card" id="cardNew">
@@ -488,12 +493,16 @@
     <div id="daySheet"><div class="dscard" id="dayCard"></div></div>
   </div>
 
+  <div id="setOv" style="display:none">
+  <div class="galbar">
   <div class="foot">
     <button class="ghost" id="fbn" type="button" data-m="n">Obavijesti</button>
     <button class="ghost" id="fbb" type="button" data-m="b">Backup</button>
     <button class="ghost" id="fbs" type="button" data-m="s">Postavke</button>
     <input type="file" id="file" accept="application/json" hidden autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
   </div>
+  <button class="ghost" id="setClose" type="button">Zatvori</button></div>
+  <div class="galscroll" id="setScroll">
   <div id="sub-b" class="sub">
     <button class="ghost" id="exp" type="button">Izvezi backup</button>
     <button class="ghost" id="imp" type="button">Uvezi backup</button>
@@ -594,9 +603,11 @@
     <div class="msg" id="rmsg"></div>
     <div id="rlist"></div>
   </div>
+  </div>
+  </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 17:24</div>
+  <div class="ver"><span>verzija</span> 12.11. 17:30</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
@@ -1600,10 +1611,14 @@
     if(openSub){try{$('sub-'+openSub).scrollIntoView({block:openSub==='s'?'start':'nearest',behavior:'smooth'})}catch(e){}}
   }
   ['fbn','fbb','fbs'].forEach(function(id){$(id).onclick=function(){showSub(this.dataset.m)}});
+  function openSet(m){$('setOv').style.display='flex';document.body.style.overflow='hidden';if(openSub!==m)showSub(m)}
+  function closeSet(){$('setOv').style.display='none';document.body.style.overflow='';if(openSub)showSub(openSub)}
+  $('gear').onclick=function(){openSet('s')};
+  $('setClose').onclick=closeSet;
   var subOpenT=0,usrT=0;
   ['touchstart','touchmove','wheel','keydown'].forEach(function(ev){window.addEventListener(ev,function(){usrT=Date.now()},{passive:true})});
   window.addEventListener('scroll',function(){
-    if(openSub!=='s')return;
+    if(openSub!=='s'||$('setOv').style.display==='flex')return;
     var now=Date.now();if(now-subOpenT<900||now-usrT>350)return;
     var el=$('sub-s');if(!el)return;
     var gc=$('galCard');if(gc&&gc.getBoundingClientRect().bottom>=window.innerHeight)showSub('s');
@@ -1612,7 +1627,7 @@
   document.addEventListener('click',function(e){
     if(!openSub)return;
     var t=e.target;if(!t||!t.closest||!t.isConnected)return;
-    if(t.closest('.foot,#sub-b,#sub-s,#sub-n,#bell,#cpOv'))return;
+    if(t.closest('#setOv,#gear,#bell,#cpOv'))return;
     showSub(openSub);
   });
   $('sub-t').onclick=function(e){var b=e.target.closest?e.target.closest('button'):null;if(b&&b.id==='sndBtn'){snd=!snd;try{localStorage.setItem('kilogram.snd',snd?'on':'off')}catch(x){}sndLabel();if(snd)tick(true);return}if(!b||!b.dataset.th)return;S.theme=b.dataset.th;persist();applyTheme();render()};
@@ -1674,7 +1689,7 @@
     $('rmsg').textContent='';
     var r={id:'r'+Date.now().toString(36),date:d,time:t,rep:$('rrep').value,text:($('rtext').value.trim()||T('Vaganje')).slice(0,60),dis:''};
     if(!S.reminders)S.reminders=[];S.reminders.push(r);persist();renderRem();checkRem();
-    showSub('n');
+    closeSet();
     var ok=$('remOk');ok.innerHTML='<span>✓ '+T('Podsjetnik uključen:')+' '+esc(remDesc(r))+'. '+T('Otvori preuzetu datoteku i spremi je u Kalendar.')+'</span>';ok.style.display='flex';
     try{ok.scrollIntoView({block:'end',behavior:'smooth'})}catch(e){}
     clearTimeout(window._okT);window._okT=setTimeout(function(){ok.style.display='none'},15000);
@@ -1690,7 +1705,7 @@
     b.style.display=(S.reminders&&S.reminders.length)?'':'none';
     b.classList.toggle('due',!!due);
   }
-  $('bell').onclick=function(){if(openSub!=='n')showSub('n');else try{$('sub-n').scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}};
+  $('bell').onclick=function(){openSet('n')};
   function checkRem(){
     var d=today(),n=new Date(),hm=pad(n.getHours())+':'+pad(n.getMinutes()),h='';
     (S.reminders||[]).forEach(function(r){
