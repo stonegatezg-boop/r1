@@ -102,9 +102,7 @@
   .cur{display:inline;color:var(--acc);animation:blink 1s steps(1) infinite}
   html[data-theme="m"] .cur,html[data-theme="ml"] .cur,html[data-theme="mb"] .cur{display:none}
   .brand h1{white-space:nowrap}
-  .brand h1 .y{color:var(--pc,#fff);-webkit-text-fill-color:currentColor}
-  html[data-theme="ml"]:not([style*="--pc"]) .brand h1 .y{-webkit-text-stroke:1.2px #14161a;paint-order:stroke fill}
-  html[data-theme="ml"][style*="--pc"] .brand h1 .y{color:var(--logo)}
+  .brand h1 .cur{display:inline!important;color:var(--text);-webkit-text-fill-color:currentColor;animation:none;font-size:1.3em;line-height:0}
   #brandR{margin-left:auto;display:flex;align-items:center;gap:6px}
   #chHead{display:flex;align-items:center;justify-content:space-between;margin:2px 0 6px}
   #shWrap{position:relative;margin-left:auto}
@@ -367,7 +365,7 @@
 <body>
 <div class="wrap">
   <div class="brand">
-    <h1>k<span class="y">y</span>logram<span class="cur">_</span></h1>
+    <h1>kylogram<span class="cur">.</span></h1>
     <div id="brandR"><button id="bell" type="button" aria-label="Podsjetnik je uključen" style="display:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 22a2.4 2.4 0 0 0 2.3-1.8H9.7A2.4 2.4 0 0 0 12 22zm7-6.2V11a7 7 0 0 0-5.2-6.8V3.5a1.8 1.8 0 0 0-3.6 0v.7A7 7 0 0 0 5 11v4.8l-1.7 1.7v1h17.4v-1z"/></svg></button></div>
   </div>
 
@@ -588,7 +586,7 @@
   </div>
   <div id="remOk" class="rb" style="display:none"></div>
   <div id="remBanner" style="display:none"></div>
-  <div class="ver"><span>verzija</span> 12.11. 15:21</div>
+  <div class="ver"><span>verzija</span> 12.11. 15:24</div>
 </div>
 <div id="lb" style="display:none">
   <img id="lbImg" alt="">
