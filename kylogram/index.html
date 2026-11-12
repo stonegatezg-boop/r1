@@ -198,6 +198,10 @@
   .stats.m3 .stat b{font-size:16px;white-space:nowrap}
   .stats.m3 .stat span{font-size:11px;white-space:nowrap}
   #mrow input{flex:1;min-width:0}
+  .ml{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;font-size:12px;color:var(--mute);text-align:center}
+  .ml input{width:100%!important;min-width:0;box-sizing:border-box}
+  #pmwrap .pmin .ml{flex:1}
+  #mrow{align-items:flex-end}
   #mSheet{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.62);align-items:center;justify-content:center;padding:20px}
   #mSheet .dscard{width:100%;max-width:340px}
   #cpOv{position:fixed;inset:0;z-index:350;background:rgba(0,0,0,.62);align-items:center;justify-content:center;padding:20px}
@@ -395,7 +399,7 @@
       <label id="pwwrap">Težina <input type="number" id="pwt" inputmode="decimal" step="0.1" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
       <label id="pgwrap">Ciljna težina (nije obavezno) <input type="number" id="pgoal" inputmode="decimal" step="0.1" placeholder="kg" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
       <label id="phwrap">Visina <input type="number" id="phgt" inputmode="decimal" step="0.1" placeholder="cm" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
-      <div id="pmwrap"><span>Mjere tijela</span><div class="pmin"><input type="number" id="pmc" inputmode="decimal" step="0.1" placeholder="prsa" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="number" id="pmw2" inputmode="decimal" step="0.1" placeholder="struk" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="number" id="pmh" inputmode="decimal" step="0.1" placeholder="bokovi" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div></div>
+      <div id="pmwrap"><span>Mjere tijela</span><div class="pmin"><label class="ml"><small>Prsa</small><input type="number" id="pmc" inputmode="decimal" step="0.1" placeholder="prsa" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><label class="ml"><small>Struk</small><input type="number" id="pmw2" inputmode="decimal" step="0.1" placeholder="struk" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label><label class="ml"><small>Bokovi</small><input type="number" id="pmh" inputmode="decimal" step="0.1" placeholder="bokovi" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label></div></div>
       <div class="msg" id="pmsg"></div>
       <button id="pok" type="button">Dodaj</button>
       <button class="ghost" id="pdel" type="button">Obriši</button>
@@ -408,9 +412,9 @@
       <input type="number" id="cm" inputmode="decimal" step="0.1" min="30" max="250" placeholder="cm" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
     </div>
     <div class="row" id="mrow" style="display:none;margin-top:8px">
-      <input type="number" id="mc" inputmode="decimal" step="0.1" placeholder="prsa" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
-      <input type="number" id="mw" inputmode="decimal" step="0.1" placeholder="struk" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
-      <input type="number" id="mh" inputmode="decimal" step="0.1" placeholder="bokovi" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+      <label class="ml"><small>Prsa</small><input type="number" id="mc" inputmode="decimal" step="0.1" placeholder="prsa" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
+      <label class="ml"><small>Struk</small><input type="number" id="mw" inputmode="decimal" step="0.1" placeholder="struk" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
+      <label class="ml"><small>Bokovi</small><input type="number" id="mh" inputmode="decimal" step="0.1" placeholder="bokovi" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></label>
     </div>
     <button id="save" type="button">Spremi</button>
     <div class="camrow">
@@ -597,7 +601,7 @@
       <button class="ghost" type="button" data-th="mb">Crna</button>
     </div></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 17:52</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 12.11. 17:55</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
