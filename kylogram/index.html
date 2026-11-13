@@ -424,12 +424,15 @@
   html[data-theme="3d"] button.ghost:active{transform:translateY(2px);box-shadow:inset 0 2px 5px rgba(0,0,0,.7)}
   html[data-theme="3d"] button.ghost.on,html[data-theme="3d"] .seg button.on,html[data-theme="3d"] .tabs button.on{color:var(--acc);border-color:color-mix(in srgb,var(--acc) 55%,transparent);box-shadow:inset 0 2px 5px rgba(0,0,0,.7),0 0 12px -2px color-mix(in srgb,var(--acc) 45%,transparent)}
   html[data-theme="3d"] :is(input,select,textarea){background:linear-gradient(180deg,#0a0b10,#11131a);border:1px solid rgba(255,255,255,.06);border-top-color:rgba(0,0,0,.7);box-shadow:inset 0 3px 6px rgba(0,0,0,.75),inset 0 -1px 0 rgba(255,255,255,.05),0 1px 0 rgba(255,255,255,.05)}
-  html[data-theme="3d"] #chart{overflow:visible}
-  html[data-theme="3d"] #chart rect[width="7"]{filter:drop-shadow(0 3px 2px rgba(0,0,0,.85)) drop-shadow(0 0 4px rgba(255,255,255,.18))}
+    html[data-theme="3d"] #chart rect[width="7"]{filter:drop-shadow(0 3px 2px rgba(0,0,0,.85)) drop-shadow(0 0 4px rgba(255,255,255,.18))}
   html[data-theme="3d"] #chart .x3s{filter:blur(5px)}
   html[data-theme="3d"] .gbar{box-shadow:inset 0 2px 4px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.06)}
   html[data-theme="3d"] .gbar i{background:linear-gradient(180deg,#9dffd0,#2fbf7c);box-shadow:0 0 10px rgba(95,227,161,.5),inset 0 1px 0 rgba(255,255,255,.5)}
   html[data-theme="3d"] .chip{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 3px 6px -2px rgba(0,0,0,.7)}
+  html[data-theme="3d"] #galCard{background:none;border:0;box-shadow:none;padding:0}
+  html[data-theme="3d"] #galCard .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  html[data-theme="3d"] #chart{background:linear-gradient(180deg,#0b0d12 0%,#12151c 100%);border-radius:14px;border:1px solid rgba(255,255,255,.05);border-bottom-color:rgba(255,255,255,.1);box-shadow:inset 0 5px 12px rgba(0,0,0,.75),inset 0 -1px 0 rgba(255,255,255,.06);overflow:hidden}
+  html[data-theme="3d"] #chart .x3a{filter:blur(7px)}
 </style>
 </head>
 <body>
@@ -651,7 +654,7 @@
     <div class="srow" id="eyeRow" style="display:none"><span class="sl">Zatamnjenje podloge</span><input type="range" id="eyeS" min="0" max="100" value="35" aria-label="Zatamnjenje podloge" autocomplete="off"></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:57</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 02:00</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -1100,6 +1103,7 @@
       var pts=vw.map(function(e){return [X(e.d),Y(sw,dw(e.w))]}),bot=H-padB;
       if(pts.length>1){
         var lp=monoPath(pts);
+        if(eff()==='3d')g+='<path class="x3a" d="'+lp+' L'+pts[pts.length-1][0]+','+bot+' L'+pts[0][0]+','+bot+' Z" transform="translate(0,14)" fill="#000" opacity=".55"/>';
         g+='<path d="'+lp+' L'+pts[pts.length-1][0]+','+bot+' L'+pts[0][0]+','+bot+' Z" fill="url(#ag)" stroke="none"/>';
         g+='<path d="'+lp+'" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".38" filter="url(#gl)"/>';
         if(eff()==='3d'){g+='<path class="x3s" d="'+lp+'" transform="translate(0,12)" fill="none" stroke="#000" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/><path d="'+lp+'" transform="translate(0,6)" fill="none" style="stroke:color-mix(in srgb,var(--acc) 42%,#000)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>'}
