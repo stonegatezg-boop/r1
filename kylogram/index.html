@@ -26,7 +26,7 @@
   html[data-theme="mb"]{--bg:#000000;--card:#0e0e10;--line:#1e1e21;--text:#f4f4f5;--mute:#8d8d93;--acc:#c6f432;--raw:#6b7280;--warn:#6ec1ff;--cy:#6b7280;--mg:#f0629f;--gr:#b6f24a;--navy:#000000;--yl:#ffd84d;--hc:#c084fc;--logo:#c6f432}
   html[data-theme="ml"]{--bg:#eef0f4;--card:#ffffff;--line:#d9dde5;--text:#14161a;--mute:#5b6372;--acc:#8a9a00;--raw:#5b6372;--warn:#0b6fc2;--cy:#5b6372;--mg:#d32f2f;--gr:#15803d;--navy:#ffffff;--yl:#b7791f;--hc:#7c3aed;--logo:#8a9a00}
   html[data-theme="mp"]{--bg:#f1e9d8;--card:#f8f2e4;--line:#dccfb3;--text:#3a3125;--mute:#75684f;--acc:#7a8500;--raw:#75684f;--warn:#1f5f99;--cy:#75684f;--mg:#b3382c;--gr:#2f7d32;--navy:#f8f2e4;--yl:#9a6a00;--hc:#6d3fb5;--logo:#7a8500}
-  html[data-theme="3d"]{--bg:#08090c;--card:#14161c;--line:#262a35;--text:#f1eee6;--mute:#8f8c99;--acc:#e6c15a;--raw:#6b7280;--warn:#6fb7ff;--cy:#7d8494;--mg:#ff6f91;--gr:#5fe3a1;--navy:#1a1405;--yl:#ffd166;--hc:#b794ff;--logo:#e6c15a;color-scheme:dark}
+  html[data-theme="3d"]{--bg:#08090c;--card:#14161c;--line:#262a35;--text:#f1eee6;--mute:#8f8c99;--acc:#e6c15a;--raw:#6b7280;--warn:#6fb7ff;--cy:#7d8494;--mg:#ff6f91;--gr:#5fe3a1;--navy:#1a1405;--yl:#ffd166;--hc:#b794ff;--logo:#e6c15a;--onacc:#1a1405;color-scheme:dark}
   html[data-theme="mp"]{color-scheme:light}
   html[data-theme="80"]{--bg:#07060d;--card:#0d0b18;--line:#3b3a12;--text:#f3ffb8;--mute:#9aa04a;--acc:#e3ff00;--raw:#00e5ff;--warn:#ff9a1f;--cy:#00e5ff;--mg:#ff3df2;--gr:#39ff14;--navy:#07060d;--yl:#ffd84d;--hc:#9d4dff;--logo:#e3ff00}
   *{box-sizing:border-box}
@@ -416,25 +416,28 @@
   html[data-theme="3d"] :is(.card,.stat,.tile,#goalRow,.dscard,.calm){background:linear-gradient(155deg,#222633 0%,#171a22 46%,#10121a 100%);border:1px solid rgba(255,255,255,.07);border-top-color:rgba(255,255,255,.16);border-bottom-color:rgba(0,0,0,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 -2px 3px rgba(0,0,0,.55),0 1px 1px rgba(0,0,0,.6),0 8px 14px -4px rgba(0,0,0,.7),0 22px 38px -14px rgba(0,0,0,.85)}
   html[data-theme="3d"] .stat{position:relative;border-radius:16px}
   html[data-theme="3d"] .stat::before{content:"";position:absolute;left:12px;right:12px;top:0;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--tc,var(--acc)),transparent);opacity:.8;filter:drop-shadow(0 0 5px var(--tc,var(--acc)))}
-  html[data-theme="3d"] .stat b{text-shadow:0 2px 0 rgba(0,0,0,.65),0 0 14px color-mix(in srgb,currentColor 28%,transparent)}
-  html[data-theme="3d"] .stat span{text-shadow:0 1px 0 rgba(0,0,0,.7)}
-  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell){background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 62%,#fff) 0%,var(--acc) 50%,color-mix(in srgb,var(--acc) 70%,#000) 100%);color:var(--navy);border:1px solid color-mix(in srgb,var(--acc) 55%,#000);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 2px color-mix(in srgb,var(--acc) 50%,#000),0 2px 0 color-mix(in srgb,var(--acc) 45%,#000),0 8px 14px -3px rgba(0,0,0,.75);text-shadow:0 1px 0 rgba(255,255,255,.35)}
-  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell):active{transform:translateY(2px);box-shadow:inset 0 2px 4px color-mix(in srgb,var(--acc) 40%,#000),0 3px 6px -2px rgba(0,0,0,.7)}
-  html[data-theme="3d"] button.ghost{background:linear-gradient(180deg,#232734,#14171f);color:var(--mute);border:1px solid rgba(255,255,255,.08);border-bottom-color:rgba(0,0,0,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 0 rgba(0,0,0,.65),0 6px 10px -3px rgba(0,0,0,.7)}
-  html[data-theme="3d"] button.ghost:active{transform:translateY(2px);box-shadow:inset 0 2px 5px rgba(0,0,0,.7)}
-  html[data-theme="3d"] button.ghost.on,html[data-theme="3d"] .seg button.on,html[data-theme="3d"] .tabs button.on{color:var(--acc);border-color:color-mix(in srgb,var(--acc) 55%,transparent);box-shadow:inset 0 2px 5px rgba(0,0,0,.7),0 0 12px -2px color-mix(in srgb,var(--acc) 45%,transparent)}
   html[data-theme="3d"] :is(input,select,textarea){background:linear-gradient(180deg,#0a0b10,#11131a);border:1px solid rgba(255,255,255,.06);border-top-color:rgba(0,0,0,.7);box-shadow:inset 0 3px 6px rgba(0,0,0,.75),inset 0 -1px 0 rgba(255,255,255,.05),0 1px 0 rgba(255,255,255,.05)}
-    html[data-theme="3d"] #chart .x3s{filter:blur(5px)}
   html[data-theme="3d"] .gbar{box-shadow:inset 0 2px 4px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.06)}
   html[data-theme="3d"] .gbar i{background:linear-gradient(180deg,#9dffd0,#2fbf7c);box-shadow:0 0 10px rgba(95,227,161,.5),inset 0 1px 0 rgba(255,255,255,.5)}
   html[data-theme="3d"] .chip{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 3px 6px -2px rgba(0,0,0,.7)}
   html[data-theme="3d"] #galCard{background:none;border:0;box-shadow:none;padding:0}
   html[data-theme="3d"] #galCard .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   html[data-theme="3d"] #chart{overflow:visible}
-  html[data-theme="3d"] #chart :is(path[stroke-width="2.5"],.x3l,.x3r){filter:drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2))}
+  html[data-theme="3d"] #chart :is(path[stroke-width="2.5"],.x3l,.x3r){filter:drop-shadow(2px 2px 1px rgba(0,0,0,.16)) drop-shadow(2px 2px 1px rgba(0,0,0,.16)) drop-shadow(2px 2px 1px rgba(0,0,0,.16)) drop-shadow(2px 2px 1px rgba(0,0,0,.16)) drop-shadow(2px 2px 1px rgba(0,0,0,.16)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2))}
   html[data-theme="3d"] #chart :is(path[d$="Z"][style*="--hc"],rect[width="7"]){filter:drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25)) drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25)) drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25)) drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25)) drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25)) drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25))}
-  html[data-theme="3d"] #chart text{filter:drop-shadow(0 2px 1px rgba(0,0,0,.9))}
-  html[data-theme="3d"] #chart .x3a{filter:blur(7px)}
+  /* neumorfni gumbi */
+  html[data-theme="3d"]{--nl:rgba(255,255,255,.05);--nd:rgba(0,0,0,.72)}
+  html[data-theme="3d"] button.ghost{background:linear-gradient(145deg,#1d2029,#161920);color:var(--mute);border:0;box-shadow:-4px -4px 9px var(--nl),5px 5px 11px var(--nd)}
+  html[data-theme="3d"] button.ghost:active{box-shadow:inset 3px 3px 7px var(--nd),inset -3px -3px 7px var(--nl)}
+  html[data-theme="3d"] button.ghost.on,html[data-theme="3d"] .seg button.on,html[data-theme="3d"] .tabs button.on{background:linear-gradient(145deg,#13151b,#191c24);color:var(--acc);border:0;box-shadow:inset 3px 3px 7px var(--nd),inset -3px -3px 7px var(--nl),0 0 0 1.5px color-mix(in srgb,var(--acc) 55%,transparent)}
+  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell):not(.sw):not(.sw2){background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 72%,#fff) 0%,var(--acc) 55%,color-mix(in srgb,var(--acc) 80%,#000) 100%);color:var(--onacc);border:0;border-radius:16px;text-shadow:none;box-shadow:-4px -4px 9px var(--nl),6px 6px 14px var(--nd),0 10px 22px -8px color-mix(in srgb,var(--acc) 65%,transparent)}
+  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell):not(.sw):not(.sw2):active{box-shadow:inset 3px 3px 8px rgba(0,0,0,.45),inset -2px -2px 6px rgba(255,255,255,.12)}
+  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2{background:#0e1015;box-shadow:inset 3px 3px 6px var(--nd),inset -2px -2px 5px var(--nl)}
+  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2::after{background:linear-gradient(145deg,#f3f3f6,#b9bcc6);box-shadow:2px 3px 6px rgba(0,0,0,.75),-1px -1px 3px rgba(255,255,255,.12)}
+  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2.on{background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 70%,#fff),var(--acc) 60%,color-mix(in srgb,var(--acc) 78%,#000));box-shadow:inset 2px 2px 5px rgba(0,0,0,.4),inset -2px -2px 5px rgba(255,255,255,.1),0 0 14px -2px color-mix(in srgb,var(--acc) 60%,transparent)}
+  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2.on::after{background:linear-gradient(145deg,#fff,#d4d6de)}
+  html[data-theme="3d"] #gdrag circle:nth-of-type(2){fill:#1f232d!important;stroke:var(--warn);stroke-width:2.5;filter:drop-shadow(-2px -2px 3px rgba(255,255,255,.09)) drop-shadow(3px 4px 5px rgba(0,0,0,.85)) drop-shadow(0 0 6px color-mix(in srgb,var(--warn) 45%,transparent))}
+  html[data-theme="3d"] #gtxt{fill:#fff!important;font-weight:700}
 </style>
 </head>
 <body>
@@ -656,7 +659,7 @@
     <div class="srow" id="eyeRow" style="display:none"><span class="sl">Zatamnjenje podloge</span><input type="range" id="eyeS" min="0" max="100" value="35" aria-label="Zatamnjenje podloge" autocomplete="off"></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 02:08</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 02:16</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -803,10 +806,10 @@
   function shade(hex,f){var n=parseInt(hex.slice(1),16),r=n>>16&255,g=n>>8&255,b=n&255;
     function h(x){x=Math.round(x*f);return (x<16?'0':'')+x.toString(16)}return '#'+h(r)+h(g)+h(b)}
   function applyColor(){
-    var st=document.documentElement.style,c=S.all?null:P().color,props=['--acc','--logo','--pc','--pcd','--bg'];
+    var st=document.documentElement.style,c=S.all?null:P().color,props=['--acc','--logo','--pc','--pcd','--bg','--onacc'];
     if(!c){props.forEach(function(p){st.removeProperty(p)});$('tc').setAttribute('content',TCOL[eff()]);return}
     var d=shade(c,0.55),lt=isLt(),ca=lt?forLight(c):c;
-    st.setProperty('--pc',c);st.setProperty('--pcd',d);st.setProperty('--logo',ca);
+    st.setProperty('--pc',c);st.setProperty('--pcd',d);st.setProperty('--logo',ca);(function(){var n=parseInt(ca.slice(1),16),l=(0.2126*(n>>16&255)+0.7152*(n>>8&255)+0.0722*(n&255))/255;st.setProperty('--onacc',l>0.62?'#1a1405':'#ffffff')})();
     {st.setProperty('--acc',ca);st.removeProperty('--bg');$('tc').setAttribute('content',TCOL[eff()])}
   }
   (function(){[].forEach.call(document.querySelectorAll('input:not([type=range]):not([type=file]):not([type=checkbox])'),function(i,n){i.setAttribute('autocomplete','nope');i.setAttribute('name','k'+n+'_'+(i.id||'x'));i.setAttribute('aria-autocomplete','none');i.setAttribute('enterkeyhint','done')})})();
@@ -1067,13 +1070,13 @@
     }
     function ruler(x,dir){
       var major=niceStep((sh.hi-sh.lo)/4),minor=major/5,a=Math.ceil(sh.lo/minor-1e-9),b=Math.floor(sh.hi/minor+1e-9);
-      var o='<line x1="'+x+'" x2="'+x+'" y1="'+padT+'" y2="'+(H-padB)+'" style="stroke:var(--hc)" stroke-width="1.5"/>';
+      var o='<line x1="'+x+'" x2="'+x+'" y1="'+padT+'" y2="'+(H-padB)+'" style="stroke:var(--hc)" stroke-width="1.5"/>',tx='';
       for(var k=a;k<=b;k++){
         var v=k*minor,isM=Math.abs(v/major-Math.round(v/major))<1e-6,y=Y(sh,v);
         o+='<line x1="'+x+'" x2="'+(x+dir*(isM?10:5))+'" y1="'+y+'" y2="'+y+'" style="stroke:var(--hc)" stroke-width="'+(isM?1.5:1)+'"/>';
-        if(isM)o+='<text x="'+(x+dir*14)+'" y="'+(y+4)+'" text-anchor="'+(dir>0?'start':'end')+'" font-size="12.5" style="fill:var(--hc)">'+(+v.toFixed(2))+'</text>';
+        if(isM)tx+='<text x="'+(x+dir*14)+'" y="'+(y+4)+'" text-anchor="'+(dir>0?'start':'end')+'" font-size="12.5" style="fill:var(--hc)">'+(+v.toFixed(2))+'</text>';
       }
-      return eff()==='3d'?'<g class="x3r">'+o+'</g>':o;
+      return (eff()==='3d'?'<g class="x3r">'+o+'</g>':o)+tx;
     }
     function icoKettle(x,y,c){return '<g transform="translate('+x+','+y+')" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:'+c+'"><path d="M4.5 6V4.5a3.5 3.5 0 0 1 7 0V6"/><circle cx="8" cy="11.5" r="5" style="fill:'+c+';stroke:'+c+'"/></g>'}
     function icoRuler(x,y,c){return '<g transform="translate('+x+','+y+')" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:'+c+'"><rect x="3.5" y="0.5" width="9" height="16" rx="1.5"/><path d="M3.5 4H8M3.5 8H10.5M3.5 12H8"/></g>'}
@@ -1105,7 +1108,6 @@
       var pts=vw.map(function(e){return [X(e.d),Y(sw,dw(e.w))]}),bot=H-padB;
       if(pts.length>1){
         var lp=monoPath(pts);
-        if(eff()==='3d')g+='<path class="x3a" d="'+lp+' L'+pts[pts.length-1][0]+','+bot+' L'+pts[0][0]+','+bot+' Z" transform="translate(0,14)" fill="#000" opacity=".55"/>';
         g+='<path d="'+lp+' L'+pts[pts.length-1][0]+','+bot+' L'+pts[0][0]+','+bot+' Z" fill="url(#ag)" stroke="none"/>';
         g+='<path d="'+lp+'" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".38" filter="url(#gl)"/>';
         g+='<path d="'+lp+'" fill="none" stroke="var(--acc)" stroke-width="'+(eff()==='3d'?4:2.75)+'" stroke-linecap="round" stroke-linejoin="round" class="glow'+(eff()==='3d'?' x3l':'')+'"/>';
