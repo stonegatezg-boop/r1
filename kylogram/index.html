@@ -156,12 +156,16 @@
   html:is([data-theme="m"],[data-theme="ml"],[data-theme="mb"],[data-theme="mp"]) #galCard .galhead{display:none}
   html:is([data-theme="m"],[data-theme="ml"],[data-theme="mb"],[data-theme="mp"]) .tile{background:var(--card);border:1px solid var(--line);border-radius:18px}
   html[data-theme="mb"] .tile{background:linear-gradient(150deg,color-mix(in srgb,var(--tc) 16%,var(--card)),var(--card) 72%);border:1px solid color-mix(in srgb,var(--tc) 30%,var(--line))}
-  .lr{display:flex;align-items:center;gap:10px;padding:11px 4px;border-top:1px solid var(--line);cursor:pointer}
+  .lr{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:12px 4px;border-top:1px solid var(--line);cursor:pointer}
   .calm .lr:first-of-type{border-top:0}
   .lr .ld{flex:1;color:var(--mute);font-size:14px}
   .lr .lw{font-weight:700;font-size:17px}
   .lr .lcm{color:var(--hc);font-size:13px}
-  .lr .lch{min-width:96px;text-align:right;font-weight:600;font-size:14px}
+  .lr .lch{text-align:right;font-weight:600;font-size:14px;white-space:nowrap}
+  .lr .lt{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{--cc:var(--text);display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap;border:1px solid color-mix(in srgb,var(--cc) 40%,var(--line));background:color-mix(in srgb,var(--cc) 10%,var(--card));color:var(--cc);border-radius:10px;padding:5px 10px;font-size:15px;font-weight:700}
+  .chip i{font-style:normal;font-weight:500;font-size:12.5px;opacity:.8}
   #selBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 2px 8px;color:var(--text);font-size:14px}
   #selTxt{flex:1 1 100%;font-weight:600}
   #selBtn.on{color:var(--text);border-color:var(--acc)}
@@ -624,7 +628,7 @@
     <div class="srow" id="eyeRow" style="display:none"><span class="sl">Zatamnjenje podloge</span><input type="range" id="eyeS" min="0" max="100" value="35" aria-label="Zatamnjenje podloge" autocomplete="off"></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:39</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:41</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -2325,7 +2329,8 @@
       ks.forEach(function(k){
         var w=e[k],hv=hh[k],pv=prev[k],ch='',col='var(--mute)';
         if(w!==undefined&&pv!==null&&pv!==undefined){var d=w-pv,pc=d/pv*100;ch=(d>0?'+':'')+f1(dw(d))+' ('+(pc>0?'+':'')+f1(pc)+'%)';col=d<0?'var(--gr)':d>0?'var(--mg)':'var(--mute)'}
-        h+='<div class="lr" data-k="'+k+'"><span class="ld">'+fmtDate(k)+'</span>'+(w!==undefined?'<span class="lw">'+f1(dw(w))+' '+wu()+'</span>':'')+(hv!==undefined?'<span class="lcm">'+fd(dh(hv))+' '+hu()+'</span>':'')+(hasMeas(k)?'<span class="lcm">'+measStr(k)+'</span>':'')+'<span class="lch" style="color:'+col+'">'+ch+'</span></div>';
+        var ch2='';if(w!==undefined)ch2+='<span class="chip cw"><i>'+T('kg')+'</i>'+f1(dw(w))+'</span>';if(hv!==undefined)ch2+='<span class="chip" style="--cc:var(--hc)"><i>'+T('cm')+'</i>'+fd(dh(hv))+'</span>';MK.forEach(function(m,mi2){var mv=state.meas[m][k];if(mv!==undefined)ch2+='<span class="chip" style="--cc:'+MCOL[mi2]+'"><i>'+MAB[LANG][mi2]+'</i>'+fd(dh(mv))+'</span>'});
+        h+='<div class="lr" data-k="'+k+'"><div class="lt"><span class="ld">'+fmtDate(k)+'</span><span class="lch" style="color:'+col+'">'+ch+'</span></div><div class="chips">'+ch2+'</div></div>';
       });
       h+='</div>';
     });
