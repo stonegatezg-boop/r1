@@ -624,7 +624,7 @@
     <div class="srow" id="eyeRow" style="display:none"><span class="sl">Zatamnjenje podloge</span><input type="range" id="eyeS" min="0" max="100" value="35" aria-label="Zatamnjenje podloge" autocomplete="off"></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:30</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:34</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -682,7 +682,7 @@
   var LANG='hr';
   var MK=['chest','waist','hips'],MKL={chest:'prsa',waist:'struk',hips:'bokovi'},MKC={chest:'Prsa',waist:'Struk',hips:'Bokovi'},MCOL=['#ff6bd6','var(--acc)','#6bd6ff'],MAB={hr:['P','S','B'],en:['C','W','H'],de:['B','T','H'],es:['Pe','Ci','Ca'],it:['P','V','F'],pt:['P','C','Q'],pl:['K','T','B'],zh:['胸','腰','臀'],ja:['胸','腰','臀'],he:['ח','מ','י'],fr:['P','T','H'],cs:['H','P','B'],sk:['H','P','B'],hu:['M','D','Cs'],ro:['Pi','Ta','Șo'],bg:['Г','Т','Х'],el:['Σ','Μ','Γ'],ko:['가','허','엉'],nl:['B','T','H'],no:['Br','Mi','Ho'],fi:['R','V','L'],sv:['B','M','H'],da:['B','T','H'],ar:['ص','خ','و'],hi:['छा','क','कू'],sl:['Pr','Pa','Bo'],ru:['Гр','Та','Бё'],uk:['Гр','Та','Ст'],tr:['G','B','K'],sq:['Gj','B','I'],id:['D','Pi','Pg'],fil:['D','B','Ba'],vi:['N','E','H'],th:['อก','เอว','สะ'],bn:['বু','কো','নি'],sw:['Ki','Kn','Ny'],sr:['Гр','Ст','Ку'],mk:['Гр','По','Ко'],lt:['K','Ta','Kl'],lv:['K','V','G'],et:['R','V','P'],ca:['P','C','M'],is:['Br','Mi','Mj'],mt:['Si','Qa','Ġe'],ka:['მკ','წე','თე'],hy:['կր','գո','կո'],bs:['P','S','B'],fa:['سی','کم','با'],ur:['سی','کم','کو'],ms:['D','P','Pi'],ta:['மா','இடை','இடு'],te:['ఛా','న','తు'],mr:['छा','कं','नि'],ha:['Ƙ','K','D'],am:['ደ','ወ','ዳ'],af:['B','M','H']};
   function mOn(){return S.all||!P().hideM}
-  var EN={'Prikaz na glavnom ekranu':'Shown on main screen','Trend linija na grafu':'Trend line on chart','Tempo':'Pace','upiši visinu':'add height','zdrav raspon':'healthy range','Raspon zdrave težine na grafu':'Healthy weight range on chart','Veličina teksta':'Text size','Normalno':'Normal','Veće':'Larger','Najveće':'Largest','Automatski':'Automatic','Za oči':'Eye comfort','tj':'wk','cilj oko':'goal around','etapa':'next step','Oznaka dana (npr. putovanje)':'Day note (e.g. trip)','Označi':'Set','Izvezi CSV (Excel)':'Export CSV (Excel)','Poruke o napretku':'Progress messages','Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
+  var EN={'Prikaz na glavnom ekranu':'Shown on main screen','Trend linija na grafu':'Trend line on chart','Tempo':'Pace','prije':'before','prsa':'chest','struk':'waist','bokovi':'hips','upiši visinu':'add height','zdrav raspon':'healthy range','Raspon zdrave težine na grafu':'Healthy weight range on chart','Veličina teksta':'Text size','Normalno':'Normal','Veće':'Larger','Najveće':'Largest','Automatski':'Automatic','Za oči':'Eye comfort','tj':'wk','cilj oko':'goal around','etapa':'next step','Oznaka dana (npr. putovanje)':'Day note (e.g. trip)','Označi':'Set','Izvezi CSV (Excel)':'Export CSV (Excel)','Poruke o napretku':'Progress messages','Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
   'Dodaj':'Add','Obriši':'Delete','Spremi':'Save','Slikaj':'Take photo','Odaberi sliku':'Choose photo','Prikaz svih osoba. Za unos odaberi osobu.':'Showing everyone. Pick a person to add entries.',
   'zadnja':'latest','zadnje mjerenje':'latest measurement','prethodna visina':'previous height','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
   'Težina':'Weight','Visina':'Height','Oboje':'Both','Sve':'All','Svi':'All','1 god':'1 y','6 mj':'6 mo','pad':'drop','rast':'gain','cilj':'goal','Cilj':'Goal',
@@ -1371,7 +1371,10 @@
       if(ks.length>1){r.a=o[ks[0]];r.b=o[ks[ks.length-1]];r.d=r.b-r.a;mx=Math.max(mx,Math.abs(r.d))}
       else if(ks.length===1){r.b=o[ks[0]]}
       rows.push(r)});
-    MK.forEach(function(k,i){var o=state.meas[k],ks=Object.keys(o).sort(),b=$(['sMc','sMw','sMh'][i]);b.textContent=ks.length?f1(dh(o[ks[ks.length-1]]))+' '+hu():'–';b.style.color=MCOL[i]});
+    MK.forEach(function(k,i){var o=state.meas[k],ks=Object.keys(o).sort(),b=$(['sMc','sMw','sMh'][i]);b.textContent=ks.length?f1(dh(o[ks[ks.length-1]]))+' '+hu():'–';b.style.color=MCOL[i];
+      var sp=b.nextElementSibling,nm=['prsa','struk','bokovi'][i],ex='';
+      if(ks.length>1){var cu=o[ks[ks.length-1]],pv=o[ks[ks.length-2]],pc=pv?(cu-pv)/pv*100:0;ex='<small style="display:block;margin-top:2px;opacity:.85">'+T('prije')+' '+f1(dh(pv))+' · '+(pc>0?'+':'')+f1(pc)+'%</small>'}
+      sp.innerHTML=T(nm)+ex});
     $('mstats').innerHTML=rows.map(function(r){
       var c=MCOL[r.i],bar='',txt='–',sm='';
       if(r.d!==undefined){
@@ -1673,7 +1676,7 @@
   };
   var PBF=[['chest','pmc'],['waist','pmw2'],['hips','pmh']];
   var phW=true,phH=true,phM=true;
-  function pfVis(){var ad=pmode==='add';$('pwwrap').style.display=(ad&&phW)?'':'none';$('phwrap').style.display=(ad&&phH)?'':'none';$('pmwrap').style.display=(ad&&phM)?'':'none'}
+  function pfVis(){$('pwwrap').style.display='';$('phwrap').style.display='';$('pmwrap').style.display=''}
   function pshSync(){pfVis();$('pshW').classList.toggle('on',phW);$('pshW').setAttribute('aria-checked',phW?'true':'false');$('pshH').classList.toggle('on',phH);$('pshH').setAttribute('aria-checked',phH?'true':'false');$('pshM').classList.toggle('on',phM);$('pshM').setAttribute('aria-checked',phM?'true':'false')}
   $('pshW').onclick=function(){phW=!phW;pshSync()};
   $('pshH').onclick=function(){phH=!phH;pshSync()};
