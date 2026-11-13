@@ -624,7 +624,7 @@
     <div class="srow" id="eyeRow" style="display:none"><span class="sl">Zatamnjenje podloge</span><input type="range" id="eyeS" min="0" max="100" value="35" aria-label="Zatamnjenje podloge" autocomplete="off"></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:19</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:24</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -682,7 +682,7 @@
   var LANG='hr';
   var MK=['chest','waist','hips'],MKL={chest:'prsa',waist:'struk',hips:'bokovi'},MKC={chest:'Prsa',waist:'Struk',hips:'Bokovi'},MCOL=['#ff6bd6','var(--acc)','#6bd6ff'],MAB={hr:['P','S','B'],en:['C','W','H'],de:['B','T','H'],es:['Pe','Ci','Ca'],it:['P','V','F'],pt:['P','C','Q'],pl:['K','T','B'],zh:['胸','腰','臀'],ja:['胸','腰','臀'],he:['ח','מ','י'],fr:['P','T','H'],cs:['H','P','B'],sk:['H','P','B'],hu:['M','D','Cs'],ro:['Pi','Ta','Șo'],bg:['Г','Т','Х'],el:['Σ','Μ','Γ'],ko:['가','허','엉'],nl:['B','T','H'],no:['Br','Mi','Ho'],fi:['R','V','L'],sv:['B','M','H'],da:['B','T','H'],ar:['ص','خ','و'],hi:['छा','क','कू'],sl:['Pr','Pa','Bo'],ru:['Гр','Та','Бё'],uk:['Гр','Та','Ст'],tr:['G','B','K'],sq:['Gj','B','I'],id:['D','Pi','Pg'],fil:['D','B','Ba'],vi:['N','E','H'],th:['อก','เอว','สะ'],bn:['বু','কো','নি'],sw:['Ki','Kn','Ny'],sr:['Гр','Ст','Ку'],mk:['Гр','По','Ко'],lt:['K','Ta','Kl'],lv:['K','V','G'],et:['R','V','P'],ca:['P','C','M'],is:['Br','Mi','Mj'],mt:['Si','Qa','Ġe'],ka:['მკ','წე','თე'],hy:['կր','գո','կո'],bs:['P','S','B'],fa:['سی','کم','با'],ur:['سی','کم','کو'],ms:['D','P','Pi'],ta:['மா','இடை','இடு'],te:['ఛా','న','తు'],mr:['छा','कं','नि'],ha:['Ƙ','K','D'],am:['ደ','ወ','ዳ'],af:['B','M','H']};
   function mOn(){return S.all||!P().hideM}
-  var EN={'Prikaz na glavnom ekranu':'Shown on main screen','Trend linija na grafu':'Trend line on chart','Tempo':'Pace','zdrav raspon':'healthy range','Raspon zdrave težine na grafu':'Healthy weight range on chart','Veličina teksta':'Text size','Normalno':'Normal','Veće':'Larger','Najveće':'Largest','Automatski':'Automatic','Za oči':'Eye comfort','tj':'wk','cilj oko':'goal around','etapa':'next step','Oznaka dana (npr. putovanje)':'Day note (e.g. trip)','Označi':'Set','Izvezi CSV (Excel)':'Export CSV (Excel)','Poruke o napretku':'Progress messages','Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
+  var EN={'Prikaz na glavnom ekranu':'Shown on main screen','Trend linija na grafu':'Trend line on chart','Tempo':'Pace','upiši visinu':'add height','zdrav raspon':'healthy range','Raspon zdrave težine na grafu':'Healthy weight range on chart','Veličina teksta':'Text size','Normalno':'Normal','Veće':'Larger','Najveće':'Largest','Automatski':'Automatic','Za oči':'Eye comfort','tj':'wk','cilj oko':'goal around','etapa':'next step','Oznaka dana (npr. putovanje)':'Day note (e.g. trip)','Označi':'Set','Izvezi CSV (Excel)':'Export CSV (Excel)','Poruke o napretku':'Progress messages','Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
   'Dodaj':'Add','Obriši':'Delete','Spremi':'Save','Slikaj':'Take photo','Odaberi sliku':'Choose photo','Prikaz svih osoba. Za unos odaberi osobu.':'Showing everyone. Pick a person to add entries.',
   'zadnja':'latest','zadnje mjerenje':'latest measurement','prethodna visina':'previous height','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
   'Težina':'Weight','Visina':'Height','Oboje':'Both','Sve':'All','Svi':'All','1 god':'1 y','6 mj':'6 mo','pad':'drop','rast':'gain','cilj':'goal','Cilj':'Goal',
@@ -752,7 +752,7 @@
     if(THEMES.indexOf(x.theme)<0)x.theme='ml';if(!x.tm1){x.theme='ml';x.tm1=1}
     var cf=x.cfg||{},hadH=x.people.some(function(p){return p.heights&&Object.keys(p.heights).length});
     var cfH=cf.h===undefined?hadH:!!cf.h,cfM=!!cf.m;x.people.forEach(function(p){if(p.hideH===undefined)p.hideH=!(cfH&&p.heights&&Object.keys(p.heights).length);if(p.hideM===undefined)p.hideM=!(cfM&&p.meas&&['chest','waist','hips'].some(function(k){return p.meas[k]&&Object.keys(p.meas[k]).length}))});
-    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,mot:cf.mot!==false,tr:cf.tr===undefined?true:!!cf.tr,eye:(typeof cf.eye==='number'&&cf.eye>=0&&cf.eye<=100)?cf.eye:35,hb:!!cf.hb,fs:(cf.fs==='l'||cf.fs==='x')?cf.fs:'n',u:cf.u==='i'?'i':'m',lang:LANGS.indexOf(cf.lang)>=0?cf.lang:'hr',pr:['s','p','t','o'].indexOf(cf.pr)>=0?cf.pr:'s',pt:{c:(cf.pt&&/^#[0-9a-f]{6}$/i.test(cf.pt.c))?cf.pt.c.toLowerCase():'#ffffff',p:(cf.pt&&['tl','tc','tr','bl','bc','br'].indexOf(cf.pt.p)>=0)?cf.pt.p:'bl'},pf:{n:!(cf.pf&&cf.pf.n===false),d:!(cf.pf&&cf.pf.d===false),a:!(cf.pf&&cf.pf.a===false),w:!(cf.pf&&cf.pf.w===false),h:!(cf.pf&&cf.pf.h===false)}};
+    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,mot:cf.mot!==false,tr:(cf.trv!==2||cf.tr===undefined)?true:!!cf.tr,trv:2,eye:(typeof cf.eye==='number'&&cf.eye>=0&&cf.eye<=100)?cf.eye:35,hb:!!cf.hb,fs:(cf.fs==='l'||cf.fs==='x')?cf.fs:'n',u:cf.u==='i'?'i':'m',lang:LANGS.indexOf(cf.lang)>=0?cf.lang:'hr',pr:['s','p','t','o'].indexOf(cf.pr)>=0?cf.pr:'s',pt:{c:(cf.pt&&/^#[0-9a-f]{6}$/i.test(cf.pt.c))?cf.pt.c.toLowerCase():'#ffffff',p:(cf.pt&&['tl','tc','tr','bl','bc','br'].indexOf(cf.pt.p)>=0)?cf.pt.p:'bl'},pf:{n:!(cf.pf&&cf.pf.n===false),d:!(cf.pf&&cf.pf.d===false),a:!(cf.pf&&cf.pf.a===false),w:!(cf.pf&&cf.pf.w===false),h:!(cf.pf&&cf.pf.h===false)}};
     return x;
   }
   function load(){
@@ -933,6 +933,7 @@
   }
   function bmiSet(s,hs){
     var box=$('bmiBox'),p=P(),ok=hOn()&&!S.all&&s.length&&hs.length&&wOn();
+    if(hOn()&&!S.all&&s.length&&!hs.length&&wOn()&&!(p.birth&&(Date.now()-new Date(p.birth).getTime())/31557600000<18)){box.style.display='';$('sBmi').textContent='–';$('lBmi').textContent='BMI · '+T('upiši visinu');return}
     if(ok&&p.birth){var ag=(Date.now()-new Date(p.birth).getTime())/31557600000;if(ag<18)ok=false}
     if(!ok){box.style.display='none';return}
     var h=hs[hs.length-1].h/100,w=s[s.length-1].w,b=w/(h*h),lo=18.5*h*h,hi=24.9*h*h;
@@ -1014,8 +1015,8 @@
     var vh=m==='w'?[]:hs.filter(function(e){return e.d>=cut});
     if(!vw.length&&!vh.length){svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" text-anchor="middle" font-size="14">'+T(m==='h'?'Unesi prvu visinu':'Unesi prvo vaganje')+'</text>';geo=null;return}
     var two=vw.length&&vh.length;
-    var leftIsH=!vw.length;
-    var padL=leftIsH?50:40,padR=two?50:12,padT=28,padB=26,iw=W-padL-padR,ih=H-padT-padB;
+    var leftIsH=false;
+    var padL=vw.length?40:12,padR=vh.length?50:12,padT=28,padB=26,iw=W-padL-padR,ih=H-padT-padB;
     var wv=[];vw.forEach(function(e){wv.push(dw(e.w))});
     if(state.goal&&vw.length)wv.push(dw(state.goal));
     var sw=vw.length?(state.goal?{lo:Math.min.apply(null,wv)-dw(3),hi:Math.max.apply(null,wv)+dw(2)}:scaleOf(wv,dw(0.5))):null,sh=vh.length?scaleOf(vh.map(function(e){return dh(e.h)}),dh(1)):null;
@@ -1030,7 +1031,7 @@
     var step=niceStep((left.hi-left.lo)/((sw&&left===sw&&state.goal)?8:4));
     for(var v=Math.ceil(left.lo/step)*step;v<=left.hi;v+=step){
       g+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+Y(left,v)+'" y2="'+Y(left,v)+'" stroke="var(--line)" stroke-dasharray="2 5"/>';
-      if(!leftIsH&&!(state.goal&&sw&&left===sw&&Math.abs(Y(left,v)-Y(sw,dw(state.goal)))<14))g+='<text x="'+(padL-6)+'" y="'+(Y(left,v)+4)+'" text-anchor="end" font-size="11"'+lst+'>'+(+v.toFixed(2))+'</text>';
+      if(sw&&!(state.goal&&sw&&left===sw&&Math.abs(Y(left,v)-Y(sw,dw(state.goal)))<14))g+='<text x="'+(padL-6)+'" y="'+(Y(left,v)+4)+'" text-anchor="end" font-size="11"'+lst+'>'+(+v.toFixed(2))+'</text>';
     }
     function ruler(x,dir){
       var major=niceStep((sh.hi-sh.lo)/4),minor=major/5,a=Math.ceil(sh.lo/minor-1e-9),b=Math.floor(sh.hi/minor+1e-9);
