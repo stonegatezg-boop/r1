@@ -312,7 +312,10 @@
   .cd.tod{outline:2px solid var(--acc);outline-offset:-1px}
   .galempty{grid-column:1/-1;text-align:center;color:var(--mute);padding:18px 0}
   #lb{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.9);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
-  #lb img{max-width:92vw;max-height:72vh;box-shadow:0 8px 30px rgba(0,0,0,.6);background:#fff}
+  .lbnav{position:absolute;top:42%;width:42px;height:56px;border:0;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font-size:34px;line-height:1;padding:0;cursor:pointer}
+  .lbnav[disabled]{opacity:.25}
+  #lbCnt{position:absolute;top:14px;left:0;right:0;text-align:center;color:#fff;opacity:.7;font-size:14px}
+  #lb img{touch-action:pan-y;max-width:92vw;max-height:72vh;box-shadow:0 8px 30px rgba(0,0,0,.6);background:#fff}
   .lbbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
   #allHint{color:var(--mute);font-size:15px;padding:2px 0 4px}
   #cmp{display:none;margin:8px 0 4px}
@@ -600,7 +603,7 @@
     </div></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 00:57</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:00</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -617,7 +620,7 @@
   <div class="ver">kylogram</div>
 </div>
 <div id="lb" style="display:none">
-  <img id="lbImg" alt="">
+  <img id="lbImg" alt=""><button type="button" id="lbPrev" class="lbnav" style="left:6px">&#8249;</button><button type="button" id="lbNext" class="lbnav" style="right:6px">&#8250;</button><div id="lbCnt"></div>
   <div class="lbbar">
     <button id="lbSave" type="button">Spremi</button>
     <button class="ghost" id="lbRefresh" type="button">Osvježi</button>
@@ -1933,8 +1936,16 @@
       });
     });
   }
+  function lbList(){var ids={};S.people.forEach(function(p){ids[p.id]=1});return photos.filter(function(r){return galSel==='all'?ids[r.pid]:r.pid===galSel})}
+  function lbGo(d){var l=lbList(),i=-1;for(var k=0;k<l.length;k++)if(l[k].id===(lbRec&&lbRec.id))i=k;if(i<0)return;var j=i+d;if(j<0||j>=l.length)return;openLb(l[j])}
+  $('lbPrev').onclick=function(e){e.stopPropagation();lbGo(-1)};
+  $('lbNext').onclick=function(e){e.stopPropagation();lbGo(1)};
+  var lbX=null,lbY=null;
+  $('lb').addEventListener('touchstart',function(e){var t=e.touches[0];lbX=t.clientX;lbY=t.clientY},{passive:true});
+  $('lb').addEventListener('touchend',function(e){if(lbX===null)return;var t=e.changedTouches[0],dx=t.clientX-lbX,dy=t.clientY-lbY;lbX=null;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5)lbGo(dx<0?1:-1)},{passive:true});
+  document.addEventListener('keydown',function(e){if($('lb').style.display==='flex'){if(e.key==='ArrowLeft')lbGo(-1);else if(e.key==='ArrowRight')lbGo(1)}});
   function openLb(rec){
-    lbRec=rec;$('lbRefresh').style.display=rec.src?'':'none';$('lbImg').src=urlOf(rec);$('lbDel').textContent=T('Obriši');$('lb').style.display='flex';
+    lbRec=rec;(function(){var l=lbList(),i=-1;for(var k=0;k<l.length;k++)if(l[k].id===rec.id)i=k;$('lbPrev').disabled=i<=0;$('lbNext').disabled=i<0||i>=l.length-1;$('lbCnt').textContent=i>=0&&l.length>1?(i+1)+' / '+l.length:''})();$('lbRefresh').style.display=rec.src?'':'none';$('lbImg').src=urlOf(rec);$('lbDel').textContent=T('Obriši');$('lb').style.display='flex';
     $('lbShare').style.display=(navigator.canShare&&navigator.canShare({files:[new File([rec.blob],'a.jpg',{type:'image/jpeg'})]}))?'':'none';
   }
   function closeLb(){$('lb').style.display='none';lbRec=null;clearTimeout(lbDelT)}
