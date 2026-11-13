@@ -195,6 +195,10 @@
   #setOv .galbar .foot{flex:1}
   #setOv .foot button::after{content:none}
   #setOv .sub{margin-top:12px}
+  .dmk input{flex:1;min-width:0;font-size:15px;padding:10px}
+  #goalRow{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:10px 0}
+  .gbar{height:8px;border-radius:6px;background:var(--line);overflow:hidden}.gbar i{display:block;height:100%;width:0;background:var(--gr);border-radius:6px;transition:width .4s}
+  .gtx{display:flex;gap:10px;align-items:baseline;margin-top:8px;font-size:13px;color:var(--mute)}.gtx b{font-size:15px;color:var(--text)}
   .scard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 14px 2px;margin-top:12px}
   .sct{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-bottom:2px}
   .scard .srow:last-child{border-bottom:0}
@@ -444,7 +448,7 @@
   <div class="stats">
     <div class="stat t1"><b id="sCur">–</b><span id="lCur">zadnje mjerenje</span></div>
     <div class="stat t2"><b id="sTrend">–</b><span id="sTrendL">do cilja (kg)</span></div>
-    <div class="stat t3"><b id="sHp">–</b><span id="lHp">prethodna visina (cm)</span></div>
+    <div class="stat t3" id="bmiBox"><b id="sBmi">–</b><span id="lBmi">BMI</span></div>
     <div class="stat t4"><b id="sH">–</b><span id="lH">visina (cm)</span></div>
   </div>
   <div class="stats m3" id="msNow" style="display:none">
@@ -458,6 +462,7 @@
     <div class="stat t4"><b id="c30">–</b><span id="c30l">30 d</span></div>
     <div class="stat t3"><b id="sChg">–</b><span id="lChg">ukupno</span></div>
   </div>
+  <div id="goalRow" style="display:none"><div class="gbar"><i id="goalBar"></i></div><div class="gtx"><b id="goalPc"></b><span id="goalTx"></span></div></div>
 
   <div class="card" id="cardChart">
     <div class="tabs" id="mtabs">
@@ -526,6 +531,7 @@
   <div class="galscroll" id="setScroll">
   <div id="sub-b" class="sub">
     <button class="ghost" id="exp" type="button">Izvezi backup</button>
+    <button class="ghost" id="expCsv" type="button">Izvezi CSV (Excel)</button>
     <button class="ghost" id="imp" type="button">Uvezi backup</button>
   </div>
   <div id="sub-s" class="sub">
@@ -596,6 +602,7 @@
       <button class="ghost" type="button" data-u="i">lb · in</button>
     </div></div>
     <div class="srow"><span class="sl">Poruke o napretku</span><button class="sw2" type="button" id="motBtn" role="switch" aria-checked="true"></button></div>
+    <div class="srow"><span class="sl">Trend linija na grafu</span><button class="sw2" type="button" id="trBtn" role="switch" aria-checked="false"></button></div>
     <div class="srow"><span class="sl">Tema</span><div class="seg" id="sub-t">
       <button class="ghost" type="button" data-th="m">Tamna</button>
       <button class="ghost" type="button" data-th="ml">Svijetla</button>
@@ -603,7 +610,7 @@
     </div></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:00</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:11</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -659,7 +666,7 @@
   var LANG='hr';
   var MK=['chest','waist','hips'],MKL={chest:'prsa',waist:'struk',hips:'bokovi'},MKC={chest:'Prsa',waist:'Struk',hips:'Bokovi'},MCOL=['#ff6bd6','var(--acc)','#6bd6ff'],MAB={hr:['P','S','B'],en:['C','W','H'],de:['B','T','H'],es:['Pe','Ci','Ca'],it:['P','V','F'],pt:['P','C','Q'],pl:['K','T','B'],zh:['胸','腰','臀'],ja:['胸','腰','臀'],he:['ח','מ','י'],fr:['P','T','H'],cs:['H','P','B'],sk:['H','P','B'],hu:['M','D','Cs'],ro:['Pi','Ta','Șo'],bg:['Г','Т','Х'],el:['Σ','Μ','Γ'],ko:['가','허','엉'],nl:['B','T','H'],no:['Br','Mi','Ho'],fi:['R','V','L'],sv:['B','M','H'],da:['B','T','H'],ar:['ص','خ','و'],hi:['छा','क','कू'],sl:['Pr','Pa','Bo'],ru:['Гр','Та','Бё'],uk:['Гр','Та','Ст'],tr:['G','B','K'],sq:['Gj','B','I'],id:['D','Pi','Pg'],fil:['D','B','Ba'],vi:['N','E','H'],th:['อก','เอว','สะ'],bn:['বু','কো','নি'],sw:['Ki','Kn','Ny'],sr:['Гр','Ст','Ку'],mk:['Гр','По','Ко'],lt:['K','Ta','Kl'],lv:['K','V','G'],et:['R','V','P'],ca:['P','C','M'],is:['Br','Mi','Mj'],mt:['Si','Qa','Ġe'],ka:['მკ','წე','თე'],hy:['կր','գո','կո'],bs:['P','S','B'],fa:['سی','کم','با'],ur:['سی','کم','کو'],ms:['D','P','Pi'],ta:['மா','இடை','இடு'],te:['ఛా','న','తు'],mr:['छा','कं','नि'],ha:['Ƙ','K','D'],am:['ደ','ወ','ዳ'],af:['B','M','H']};
   function mOn(){return S.all||!P().hideM}
-  var EN={'Prikaz na glavnom ekranu':'Shown on main screen','Poruke o napretku':'Progress messages','Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
+  var EN={'Prikaz na glavnom ekranu':'Shown on main screen','Trend linija na grafu':'Trend line on chart','Tempo':'Pace','tj':'wk','cilj oko':'goal around','etapa':'next step','Oznaka dana (npr. putovanje)':'Day note (e.g. trip)','Označi':'Set','Izvezi CSV (Excel)':'Export CSV (Excel)','Poruke o napretku':'Progress messages','Podsjetnik je uključen':'Reminder is on','Ime osobe':'Name','Rođen/a (nije obavezno)':'Born (optional)','Ciljna težina (nije obavezno)':'Goal weight (optional)',
   'Dodaj':'Add','Obriši':'Delete','Spremi':'Save','Slikaj':'Take photo','Odaberi sliku':'Choose photo','Prikaz svih osoba. Za unos odaberi osobu.':'Showing everyone. Pick a person to add entries.',
   'zadnja':'latest','zadnje mjerenje':'latest measurement','prethodna visina':'previous height','do cilja':'to goal','ukupno':'total','visina':'height','najniža':'lowest','ispod cilja':'below goal','cilj dosegnut':'goal reached',
   'Težina':'Weight','Visina':'Height','Oboje':'Both','Sve':'All','Svi':'All','1 god':'1 y','6 mj':'6 mo','pad':'drop','rast':'gain','cilj':'goal','Cilj':'Goal',
@@ -729,7 +736,7 @@
     if(THEMES.indexOf(x.theme)<0)x.theme='ml';if(!x.tm1){x.theme='ml';x.tm1=1}
     var cf=x.cfg||{},hadH=x.people.some(function(p){return p.heights&&Object.keys(p.heights).length});
     var cfH=cf.h===undefined?hadH:!!cf.h,cfM=!!cf.m;x.people.forEach(function(p){if(p.hideH===undefined)p.hideH=!(cfH&&p.heights&&Object.keys(p.heights).length);if(p.hideM===undefined)p.hideM=!(cfM&&p.meas&&['chest','waist','hips'].some(function(k){return p.meas[k]&&Object.keys(p.meas[k]).length}))});
-    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,mot:cf.mot!==false,u:cf.u==='i'?'i':'m',lang:LANGS.indexOf(cf.lang)>=0?cf.lang:'hr',pr:['s','p','t','o'].indexOf(cf.pr)>=0?cf.pr:'s',pt:{c:(cf.pt&&/^#[0-9a-f]{6}$/i.test(cf.pt.c))?cf.pt.c.toLowerCase():'#ffffff',p:(cf.pt&&['tl','tc','tr','bl','bc','br'].indexOf(cf.pt.p)>=0)?cf.pt.p:'bl'},pf:{n:!(cf.pf&&cf.pf.n===false),d:!(cf.pf&&cf.pf.d===false),a:!(cf.pf&&cf.pf.a===false),w:!(cf.pf&&cf.pf.w===false),h:!(cf.pf&&cf.pf.h===false)}};
+    x.cfg={h:cf.h===undefined?hadH:!!cf.h,m:!!cf.m,mot:cf.mot!==false,tr:!!cf.tr,u:cf.u==='i'?'i':'m',lang:LANGS.indexOf(cf.lang)>=0?cf.lang:'hr',pr:['s','p','t','o'].indexOf(cf.pr)>=0?cf.pr:'s',pt:{c:(cf.pt&&/^#[0-9a-f]{6}$/i.test(cf.pt.c))?cf.pt.c.toLowerCase():'#ffffff',p:(cf.pt&&['tl','tc','tr','bl','bc','br'].indexOf(cf.pt.p)>=0)?cf.pt.p:'bl'},pf:{n:!(cf.pf&&cf.pf.n===false),d:!(cf.pf&&cf.pf.d===false),a:!(cf.pf&&cf.pf.a===false),w:!(cf.pf&&cf.pf.w===false),h:!(cf.pf&&cf.pf.h===false)}};
     return x;
   }
   function load(){
@@ -771,18 +778,17 @@
       else if(r[0].parentNode&&r[0].nodeValue!==t)r[0].nodeValue=t;
     });
   }
-  function applyVis(){var ho=hOn(),wo=wOn();$('sCur').parentNode.style.display=wo?'':'none';$('sTrend').parentNode.style.display=wo?'':'none';$('kg').style.display=wo?'':'none';$('cm').style.display=ho?'':'none';$('sH').parentNode.style.display=ho?'':'none';$('sHp').parentNode.style.display=ho?'':'none';$('mtabs').style.display=(ho||mOn())?'':'none';$('mrow').style.display=mOn()?'':'none'}
+  function applyVis(){var ho=hOn(),wo=wOn();$('sCur').parentNode.style.display=wo?'':'none';$('sTrend').parentNode.style.display=wo?'':'none';$('kg').style.display=wo?'':'none';$('cm').style.display=ho?'':'none';$('sH').parentNode.style.display=ho?'':'none';$('mtabs').style.display=(ho||mOn())?'':'none';$('mrow').style.display=mOn()?'':'none'}
   function applyCfg(){
     LANG=S.cfg.lang;document.documentElement.setAttribute('lang',LANG);document.documentElement.setAttribute('dir',RTL[LANG]?'rtl':'ltr');
     trStatic();
     var ho=hOn();
     $('kg').placeholder=wu();$('cm').placeholder=hu();$('pgoal').placeholder=wu();
     $('cm').style.display=ho?'':'none';
-    $('sH').parentNode.style.display=ho?'':'none';$('sHp').parentNode.style.display=ho?'':'none';
+    $('sH').parentNode.style.display=ho?'':'none';
     $('mtabs').style.display=(ho||mOn())?'':'none';
     $('mrow').style.display=mOn()?'':'none';
     $('lCur').textContent=T('zadnje mjerenje');
-    $('lHp').textContent=T('prethodna visina');
     $('lH').textContent=T('visina');
     $('galCard').setAttribute('data-t',T('Galerija i kalendar'));
     $('cardNew').setAttribute('data-t',T('Novo vaganje'));
@@ -791,6 +797,7 @@
     var ub=document.querySelectorAll('#sub-s [data-u]');for(var i=0;i<ub.length;i++)ub[i].classList.toggle('on',ub[i].dataset.u===S.cfg.u);
     var lb=document.querySelectorAll('#sub-s [data-lang]');for(i=0;i<lb.length;i++)lb[i].classList.toggle('on',lb[i].dataset.lang===S.cfg.lang);
     langScroll();
+    $('trBtn').classList.toggle('on',!!S.cfg.tr);$('trBtn').setAttribute('aria-checked',S.cfg.tr?'true':'false');
     $('motBtn').classList.toggle('on',S.cfg.mot!==false);$('motBtn').setAttribute('aria-checked',S.cfg.mot!==false?'true':'false');
     var pb=document.querySelectorAll('#phOv [data-pf]');for(i=0;i<pb.length;i++){var on=!!S.cfg.pf[pb[i].dataset.pf];pb[i].classList.toggle('on',on);pb[i].setAttribute('aria-checked',on?'true':'false')}
     $('pfHrow').style.display=ho?'':'none';
@@ -825,6 +832,7 @@
     if(b.dataset.u)S.cfg.u=b.dataset.u;
     else if(b.dataset.lang)S.cfg.lang=b.dataset.lang;
     else if(b.id==='motBtn')S.cfg.mot=!(S.cfg.mot!==false);
+    else if(b.id==='trBtn')S.cfg.tr=!S.cfg.tr;
     else if(b.dataset.fr){var fq=b.dataset.fr.split('|');S.people.forEach(function(q){if(q.id===fq[0])q.frame=fq[1]==='polaroid'?'polaroid':'plain'})}
     else if(b.dataset.ptc)S.cfg.pt.c=b.dataset.ptc
     else if(b.dataset.ptp)S.cfg.pt.p=b.dataset.ptp
@@ -892,10 +900,37 @@
     el.textContent=sg(dw(c))+' '+wu();el.style.color=c<-0.05?'var(--gr)':c>0.05?'var(--mg)':'';
     sp.textContent=N+' d · '+sg(p)+'%';
   }
+  function bmiSet(s,hs){
+    var box=$('bmiBox'),p=P(),ok=hOn()&&!S.all&&s.length&&hs.length&&wOn();
+    if(ok&&p.birth){var ag=(Date.now()-new Date(p.birth).getTime())/31557600000;if(ag<18)ok=false}
+    if(!ok){box.style.display='none';return}
+    var h=hs[hs.length-1].h/100,w=s[s.length-1].w,b=w/(h*h),lo=18.5*h*h,hi=24.9*h*h;
+    box.style.display='';$('sBmi').textContent=f1(b);$('lBmi').textContent='BMI · '+Math.round(dw(lo))+'–'+Math.round(dw(hi))+' '+wu();
+  }
+  function goalRow(s){
+    var el=$('goalRow');if(!el)return;
+    if(S.all||!wOn()||!state.goal||s.length<2){el.style.display='none';return}
+    var g=state.goal,st=s[0].w,last=s[s.length-1].w,tot=st-g,done=st-last,pc=tot===0?100:Math.max(0,Math.min(100,done/tot*100));
+    var reached=tot>0?last<=g:last>=g,dir=tot>0?-1:1;
+    var cut=s[s.length-1].d-28,rec=s.filter(function(e){return e.d>=cut}),sl=null;
+    if(rec.length>=3&&rec[rec.length-1].d-rec[0].d>=7){var n=rec.length,sx=0,sy=0,sxy=0,sxx=0;rec.forEach(function(e){sx+=e.d;sy+=e.w;sxy+=e.d*e.w;sxx+=e.d*e.d});var den=n*sxx-sx*sx;if(den)sl=(n*sxy-sx*sy)/den}
+    var l2='';
+    if(reached)l2=T('Cilj dosegnut');
+    else{
+      var parts=[];
+      if(sl!==null){var wk=sl*7;parts.push(T('Tempo')+' '+(wk>0?'+':'')+f1(dw(wk))+' '+wu()+'/'+T('tj'));
+        if(sl*dir>0.0005){var days=Math.round((g-last)/sl);if(days>0&&days<3650){var dt=new Date(Date.now()+days*864e5),iso=dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2);parts.push(T('cilj oko')+' '+fmtDate(iso))}}}
+      var stepK=5,nx=dir<0?Math.max(g,Math.floor((last-0.001)/stepK)*stepK):Math.min(g,Math.ceil((last+0.001)/stepK)*stepK);
+      if(Math.abs(nx-g)>0.05&&Math.abs(nx-last)>0.05)parts.push(T('etapa')+' '+fd(dw(nx))+' '+wu());
+      l2=parts.join(' · ');
+    }
+    el.style.display='';
+    $('goalBar').style.width=pc+'%';$('goalPc').textContent=Math.round(pc)+'%';$('goalTx').textContent=l2;
+  }
   function stats(s,hs){
     var U=' ('+wu()+')',GL=state.goal?' ('+fd(dw(state.goal))+' '+wu()+')':'';
     $('sH').textContent=hs.length?f1(dh(hs[hs.length-1].h))+' '+hu():'–';
-    $('sHp').textContent=hs.length>1?f1(dh(hs[hs.length-2].h))+' '+hu():'–';
+    bmiSet(s,hs);goalRow(s);
     if(!s.length){$('sCur').textContent=$('sTrend').textContent=$('sChg').textContent='–';$('lChg').textContent=T('ukupno');$('sTrendL').textContent=state.goal?T('do cilja')+GL:T('najniža');$('sTrend').textContent='–';$('sChg').style.color='';['c7','c15','c30'].forEach(function(id,i){$(id).textContent='–';$(id).style.color='';$(id+'l').textContent=[7,15,30][i]+' d'});return}
     var last=s[s.length-1];
     $('sCur').textContent=f1(dw(last.w))+' '+wu();
@@ -985,6 +1020,7 @@
       else g+=icoRuler(W-18,2,'var(--hc)')+'<text x="'+(W-22)+'" y="15" font-size="11" text-anchor="end" style="fill:var(--hc)">'+hu()+'</text>';
     }
     g+=xTicks(X,d0,d1,all.length>1?4:1,H);
+    var mk=P().marks||{};Object.keys(mk).forEach(function(k){var dd=toDay(k);if(dd<d0||dd>d1)return;var x=X(dd),t=String(mk[k]).slice(0,14);g+='<line x1="'+x+'" x2="'+x+'" y1="'+(padT+14)+'" y2="'+(H-padB)+'" stroke="var(--mute)" stroke-width="1.2" stroke-dasharray="2 4" opacity=".8"/><text x="'+x+'" y="'+(padT+8)+'" text-anchor="'+(x>W-padR-34?'end':'middle')+'" font-size="10" style="fill:var(--mute)">'+esc(t)+'</text>'});
     if(state.goal&&sw){
       var gy=Y(sw,dw(state.goal)),gt=fd(dw(state.goal));
       gm={padT:padT,ih:ih,hi:sw.hi,lo:sw.lo,gy0:gy,W:W,padR:padR,last:dw(vw[vw.length-1].w),orig:dw(state.goal)};
@@ -1004,6 +1040,15 @@
         g+='<path d="'+lp+' L'+pts[pts.length-1][0]+','+bot+' L'+pts[0][0]+','+bot+' Z" fill="url(#ag)" stroke="none"/>';
         g+='<path d="'+lp+'" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".38" filter="url(#gl)"/>';
         g+='<path d="'+lp+'" fill="none" stroke="var(--acc)" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" class="glow"/>';
+      }
+      if(S.cfg.tr&&vw.length>=3){
+        var all2=s.slice().sort(function(a,b){return a.d-b.d}),mkd=Object.keys(mk).map(toDay).sort(function(a,b){return a-b}),ema=null,pd=null,tp=[];
+        all2.forEach(function(e){
+          var brk=pd!==null&&mkd.some(function(m){return m>pd&&m<=e.d});
+          if(ema===null||brk)ema=e.w;else ema=ema+(1-Math.pow(0.9,Math.min(7,e.d-pd)))*(e.w-ema);
+          pd=e.d;if(e.d>=d0&&e.d<=d1)tp.push([X(e.d),Y(sw,dw(ema))]);
+        });
+        if(tp.length>1)g+='<path d="'+monoPath(tp)+'" fill="none" stroke="var(--text)" stroke-width="2" stroke-dasharray="6 4" stroke-linecap="round" opacity=".6"/>';
       }
       vw.forEach(function(e){g+='<rect x="'+(X(e.d)-3.5)+'" y="'+(Y(sw,dw(e.w))-3.5)+'" width="7" height="7" rx="'+2+'" style="fill:'+dotColor(e)+'"/>'});
     }
@@ -1272,7 +1317,7 @@
     for(q=0;q<lw.length;q++)lw[q].style.display=(mm==='h'||mm==='m')?'none':'';
     for(q=0;q<lh.length;q++)lh[q].style.display=(mm==='w'||mm==='m')?'none':'';
     for(q=0;q<lm.length;q++)lm[q].style.display=mm==='m'?'':'none';
-    $('mstats').style.display=(!all&&mo)?'':'none';$('msNow').style.display=(!all&&mo)?'':'none';mStats();
+    $('mstats').style.display=(!all&&mo&&mm==='m')?'':'none';$('msNow').style.display=(!all&&mo)?'':'none';mStats();
     if(all){if(mm==='b')chartAllB();else if(mm==='h')chartAllH();else chartAll()}else if(mm==='m')chartMeas();else chart(s,hs,mm);
     document.querySelector('.legend').style.display=all?'none':'';
     document.querySelector('.stats').style.display=all?'none':'';$('chg').style.display=(all||!wo)?'none':'';$('galCard').style.display='';
@@ -1593,7 +1638,8 @@
   };
   var PBF=[['chest','pmc'],['waist','pmw2'],['hips','pmh']];
   var phW=true,phH=true,phM=true;
-  function pshSync(){$('pshW').classList.toggle('on',phW);$('pshW').setAttribute('aria-checked',phW?'true':'false');$('pshH').classList.toggle('on',phH);$('pshH').setAttribute('aria-checked',phH?'true':'false');$('pshM').classList.toggle('on',phM);$('pshM').setAttribute('aria-checked',phM?'true':'false')}
+  function pfVis(){var ad=pmode==='add';$('pwwrap').style.display=(ad&&phW)?'':'none';$('phwrap').style.display=(ad&&phH)?'':'none';$('pmwrap').style.display=(ad&&phM)?'':'none'}
+  function pshSync(){pfVis();$('pshW').classList.toggle('on',phW);$('pshW').setAttribute('aria-checked',phW?'true':'false');$('pshH').classList.toggle('on',phH);$('pshH').setAttribute('aria-checked',phH?'true':'false');$('pshM').classList.toggle('on',phM);$('pshM').setAttribute('aria-checked',phM?'true':'false')}
   $('pshW').onclick=function(){phW=!phW;pshSync()};
   $('pshH').onclick=function(){phH=!phH;pshSync()};
   $('pshM').onclick=function(){phM=!phM;pshSync()};
@@ -2044,6 +2090,13 @@
   document.addEventListener('mousemove',function(e){if(gdrag)gMove(e.clientY)});
   document.addEventListener('mouseup',gEnd);
 
+  $('expCsv').onclick=function(){
+    var rows=[['osoba','datum','tezina_kg','visina_cm','prsa_cm','struk_cm','bokovi_cm','oznaka']];
+    S.people.forEach(function(p){var ds={};['entries','heights'].forEach(function(k){Object.keys(p[k]||{}).forEach(function(d){ds[d]=1})});['chest','waist','hips'].forEach(function(k){Object.keys((p.meas&&p.meas[k])||{}).forEach(function(d){ds[d]=1})});Object.keys(p.marks||{}).forEach(function(d){ds[d]=1});
+      Object.keys(ds).sort().forEach(function(d){var m=p.meas||{};rows.push([p.name,d,(p.entries||{})[d],(p.heights||{})[d],(m.chest||{})[d],(m.waist||{})[d],(m.hips||{})[d],(p.marks||{})[d]].map(function(v){v=v===undefined||v===null?'':String(v);return /[",;\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}))})});
+    var blob=new Blob(['\ufeff'+rows.map(function(r){return r.join(',')}).join('\r\n')],{type:'text/csv'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kylogram-'+today()+'.csv';document.body.appendChild(a);a.click();a.remove();
+  };
   $('exp').onclick=function(){
     var blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
     var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kilogram-backup-'+today()+'.json';a.click();
@@ -2268,6 +2321,7 @@
     var np=(w!==undefined?1:0)+(h!==undefined?1:0);
     if(mOn())MK.forEach(function(m){var v=state.meas[m][k];if(v!==undefined){np++;c+='<div class="drow"><span>'+T(MKC[m])+'</span><b>'+f1(dh(v))+' '+hu()+'</b><button class="ghost" data-x="m:'+m+'">'+T('Obriši')+'</button></div>'}});
     if(np===0)c+='<div class="dnone">'+T('Nema unosa za ovaj dan.')+'</div>';
+    var mkv=(P().marks&&P().marks[k])||'';c+='<div class="drow dmk"><input id="dmk" maxlength="14" placeholder="'+T('Oznaka dana (npr. putovanje)')+'" value="'+esc(mkv)+'" autocomplete="off"><button class="ghost" data-x="mk">'+T('Označi')+'</button></div>';
     c+='<div class="dbtns">'+(np>1?'<button class="ghost" data-x="all">'+T('Obriši sve')+'</button>':'')+'<button data-x="edit">'+T(np===0?'Dodaj unos':'Uredi')+'</button><button class="ghost" data-x="close">'+T('Zatvori')+'</button></div>';
     $('dayCard').innerHTML=c;$('daySheet').style.display='flex';
   }
@@ -2280,6 +2334,7 @@
     var b=ev.target.closest?ev.target.closest('[data-x]'):null;if(!b||!dayK)return;
     var x=b.dataset.x,k=dayK;
     if(x==='close'){closeDay();return}
+    if(x==='mk'){var pm=P();pm.marks=pm.marks||{};var tv=($('dmk').value||'').trim().slice(0,14);if(tv)pm.marks[k]=tv;else delete pm.marks[k];persist();render();renderCalView();showDay(k);return}
     if(x.indexOf('pp:')===0){S.active=x.slice(3);S.all=false;dropUndo();persist();render();renderCalView();x='edit'}
     if(x==='edit'){
       var w=state.entries[k];
