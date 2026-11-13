@@ -430,14 +430,14 @@
   html[data-theme="3d"] button.ghost{background:linear-gradient(145deg,#1d2029,#161920);color:var(--mute);border:0;box-shadow:-4px -4px 9px var(--nl),5px 5px 11px var(--nd)}
   html[data-theme="3d"] button.ghost:active{box-shadow:inset 3px 3px 7px var(--nd),inset -3px -3px 7px var(--nl)}
   html[data-theme="3d"] button.ghost.on,html[data-theme="3d"] .seg button.on,html[data-theme="3d"] .tabs button.on{background:linear-gradient(145deg,#13151b,#191c24);color:var(--acc);border:0;box-shadow:inset 3px 3px 7px var(--nd),inset -3px -3px 7px var(--nl),0 0 0 1.5px color-mix(in srgb,var(--acc) 55%,transparent)}
-  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell):not(.sw):not(.sw2){background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 72%,#fff) 0%,var(--acc) 55%,color-mix(in srgb,var(--acc) 80%,#000) 100%);color:var(--onacc);border:0;border-radius:16px;text-shadow:none;box-shadow:-4px -4px 9px var(--nl),6px 6px 14px var(--nd),0 10px 22px -8px color-mix(in srgb,var(--acc) 65%,transparent)}
-  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell):not(.sw):not(.sw2):active{box-shadow:inset 3px 3px 8px rgba(0,0,0,.45),inset -2px -2px 6px rgba(255,255,255,.12)}
-  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2{background:#0e1015;box-shadow:inset 3px 3px 6px var(--nd),inset -2px -2px 5px var(--nl)}
-  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2::after{background:linear-gradient(145deg,#f3f3f6,#b9bcc6);box-shadow:2px 3px 6px rgba(0,0,0,.75),-1px -1px 3px rgba(255,255,255,.12)}
-  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2.on{background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 70%,#fff),var(--acc) 60%,color-mix(in srgb,var(--acc) 78%,#000));box-shadow:inset 2px 2px 5px rgba(0,0,0,.4),inset -2px -2px 5px rgba(255,255,255,.1),0 0 14px -2px color-mix(in srgb,var(--acc) 60%,transparent)}
-  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2.on::after{background:linear-gradient(145deg,#fff,#d4d6de)}
   html[data-theme="3d"] #gdrag circle:nth-of-type(2){fill:#1f232d!important;stroke:var(--warn);stroke-width:2.5;filter:drop-shadow(-2px -2px 3px rgba(255,255,255,.09)) drop-shadow(3px 4px 5px rgba(0,0,0,.85)) drop-shadow(0 0 6px color-mix(in srgb,var(--warn) 45%,transparent))}
   html[data-theme="3d"] #gtxt{fill:#fff!important;font-weight:700}
+  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell):not(.sw):not(.sw2){background:linear-gradient(145deg,#2b2d33,#1c1e23);color:#fff;border:0;border-radius:16px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;text-shadow:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),-4px -4px 10px var(--nl),6px 6px 14px var(--nd)}
+  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell):not(.sw):not(.sw2):active{box-shadow:inset 3px 3px 8px var(--nd),inset -3px -3px 7px var(--nl)}
+  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2{width:54px;height:28px;background:#0d0e12;box-shadow:inset 3px 3px 7px rgba(0,0,0,.85),inset -2px -2px 5px var(--nl)}
+  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2::after{top:1px;left:1px;width:26px;height:26px;background:radial-gradient(circle at 35% 30%,#fafafc,#c9ccd4 70%,#9da1ab);box-shadow:2px 3px 6px rgba(0,0,0,.8),-1px -1px 3px rgba(255,255,255,.1)}
+  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2.on{background:#0d0e12}
+  html[data-theme="3d"] :is(#sub-s,#pshow,#phOv) .sw2.on::after{transform:translateX(26px);background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--acc) 55%,#fff),var(--acc) 60%,color-mix(in srgb,var(--acc) 70%,#000));box-shadow:2px 3px 6px rgba(0,0,0,.8),0 0 12px -1px color-mix(in srgb,var(--acc) 70%,transparent)}
 </style>
 </head>
 <body>
@@ -659,7 +659,7 @@
     <div class="srow" id="eyeRow" style="display:none"><span class="sl">Zatamnjenje podloge</span><input type="range" id="eyeS" min="0" max="100" value="35" aria-label="Zatamnjenje podloge" autocomplete="off"></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 02:16</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 02:22</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
