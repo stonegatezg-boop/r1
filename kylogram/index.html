@@ -48,7 +48,7 @@
   .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
   .stat b{display:block;font-size:22px}
-  .stat span{color:var(--mute);font-size:13px}
+  .stat span{display:block;color:var(--mute);font-size:13px;margin-bottom:3px}
   .tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
   #mtabs,#tabs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px;margin-bottom:8px}
   #mtabs button,#tabs button{padding:10px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
@@ -459,21 +459,23 @@
   </div>
 
   <div class="stats">
-    <div class="stat t1"><b id="sCur">–</b><span id="lCur">zadnje mjerenje</span></div>
-    <div class="stat t2"><b id="sTrend">–</b><span id="sTrendL">do cilja (kg)</span></div>
-    <div class="stat t5" id="bmiBox"><b id="sBmi">–</b><span id="lBmi">BMI</span></div>
-    <div class="stat t4"><b id="sH">–</b><span id="lH">visina (cm)</span></div>
+    <div class="stat t1"><span id="lCur">zadnje mjerenje</span><b id="sCur">–</b></div>
+    <div class="stat t2"><span id="sTrendL">do cilja (kg)</span><b id="sTrend">–</b></div>
   </div>
   <div class="stats chg" id="chg">
-    <div class="stat t1"><b id="c7">–</b><span id="c7l">7 d</span></div>
-    <div class="stat t2"><b id="c15">–</b><span id="c15l">15 d</span></div>
-    <div class="stat t4"><b id="c30">–</b><span id="c30l">30 d</span></div>
-    <div class="stat t3"><b id="sChg">–</b><span id="lChg">ukupno</span></div>
+    <div class="stat t1"><span id="c7l">7 d</span><b id="c7">–</b></div>
+    <div class="stat t2"><span id="c15l">15 d</span><b id="c15">–</b></div>
+    <div class="stat t4"><span id="c30l">30 d</span><b id="c30">–</b></div>
+    <div class="stat t3"><span id="lChg">ukupno</span><b id="sChg">–</b></div>
+  </div>
+  <div class="stats" id="bhRow">
+    <div class="stat t5" id="bmiBox"><span id="lBmi">BMI</span><b id="sBmi">–</b></div>
+    <div class="stat t4"><span id="lH">visina (cm)</span><b id="sH">–</b></div>
   </div>
   <div class="stats m3" id="msNow" style="display:none">
-    <div class="stat t1"><b id="sMc">–</b><span>prsa</span></div>
-    <div class="stat t2"><b id="sMw">–</b><span>struk</span></div>
-    <div class="stat t4"><b id="sMh">–</b><span>bokovi</span></div>
+    <div class="stat t1"><span>prsa</span><b id="sMc">–</b></div>
+    <div class="stat t2"><span>struk</span><b id="sMw">–</b></div>
+    <div class="stat t4"><span>bokovi</span><b id="sMh">–</b></div>
   </div>
   <div id="goalRow" style="display:none"><div class="gbar"><i id="goalBar"></i></div><div class="gtx"><b id="goalPc"></b><span id="goalTx"></span></div></div>
 
@@ -628,7 +630,7 @@
     <div class="srow" id="eyeRow" style="display:none"><span class="sl">Zatamnjenje podloge</span><input type="range" id="eyeS" min="0" max="100" value="35" aria-label="Zatamnjenje podloge" autocomplete="off"></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:45</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 01:47</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -1376,7 +1378,7 @@
       else if(ks.length===1){r.b=o[ks[0]]}
       rows.push(r)});
     MK.forEach(function(k,i){var o=state.meas[k],ks=Object.keys(o).sort(),b=$(['sMc','sMw','sMh'][i]);b.textContent=ks.length?f1(dh(o[ks[ks.length-1]]))+' '+hu():'–';b.style.color=MCOL[i];
-      var sp=b.nextElementSibling,nm=['prsa','struk','bokovi'][i],ex='';
+      var sp=b.previousElementSibling,nm=['prsa','struk','bokovi'][i],ex='';
       if(ks.length>1){var cu=o[ks[ks.length-1]],pv=o[ks[ks.length-2]],pc=pv?(cu-pv)/pv*100:0;ex='<small style="display:block;margin-top:3px;font-size:12.5px;opacity:.9">'+T('prije')+' '+f1(dh(pv))+'<br>'+(pc>0?'+':'')+f1(pc)+'%</small>'}
       sp.innerHTML=T(nm)+ex});
     $('mstats').innerHTML=rows.map(function(r){
