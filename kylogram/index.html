@@ -418,23 +418,21 @@
   html[data-theme="3d"] .stat::before{content:"";position:absolute;left:12px;right:12px;top:0;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--tc,var(--acc)),transparent);opacity:.8;filter:drop-shadow(0 0 5px var(--tc,var(--acc)))}
   html[data-theme="3d"] .stat b{text-shadow:0 2px 0 rgba(0,0,0,.65),0 0 14px color-mix(in srgb,currentColor 28%,transparent)}
   html[data-theme="3d"] .stat span{text-shadow:0 1px 0 rgba(0,0,0,.7)}
-  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell){background:linear-gradient(180deg,#f6dd92 0%,#e6c15a 48%,#c79a34 100%);color:#1a1405;border:1px solid #8a6a1c;box-shadow:inset 0 1px 0 rgba(255,255,255,.65),inset 0 -2px 2px rgba(120,80,0,.45),0 2px 0 #7a5c14,0 8px 14px -3px rgba(0,0,0,.75);text-shadow:0 1px 0 rgba(255,255,255,.4)}
-  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell):active{transform:translateY(2px);box-shadow:inset 0 2px 4px rgba(120,80,0,.6),0 0 0 #7a5c14,0 3px 6px -2px rgba(0,0,0,.7)}
+  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell){background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 62%,#fff) 0%,var(--acc) 50%,color-mix(in srgb,var(--acc) 70%,#000) 100%);color:var(--navy);border:1px solid color-mix(in srgb,var(--acc) 55%,#000);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 2px color-mix(in srgb,var(--acc) 50%,#000),0 2px 0 color-mix(in srgb,var(--acc) 45%,#000),0 8px 14px -3px rgba(0,0,0,.75);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+  html[data-theme="3d"] button:not(.ghost):not(.tile):not(#gear):not(#bell):active{transform:translateY(2px);box-shadow:inset 0 2px 4px color-mix(in srgb,var(--acc) 40%,#000),0 3px 6px -2px rgba(0,0,0,.7)}
   html[data-theme="3d"] button.ghost{background:linear-gradient(180deg,#232734,#14171f);color:var(--mute);border:1px solid rgba(255,255,255,.08);border-bottom-color:rgba(0,0,0,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 0 rgba(0,0,0,.65),0 6px 10px -3px rgba(0,0,0,.7)}
   html[data-theme="3d"] button.ghost:active{transform:translateY(2px);box-shadow:inset 0 2px 5px rgba(0,0,0,.7)}
   html[data-theme="3d"] button.ghost.on,html[data-theme="3d"] .seg button.on,html[data-theme="3d"] .tabs button.on{color:var(--acc);border-color:color-mix(in srgb,var(--acc) 55%,transparent);box-shadow:inset 0 2px 5px rgba(0,0,0,.7),0 0 12px -2px color-mix(in srgb,var(--acc) 45%,transparent)}
   html[data-theme="3d"] :is(input,select,textarea){background:linear-gradient(180deg,#0a0b10,#11131a);border:1px solid rgba(255,255,255,.06);border-top-color:rgba(0,0,0,.7);box-shadow:inset 0 3px 6px rgba(0,0,0,.75),inset 0 -1px 0 rgba(255,255,255,.05),0 1px 0 rgba(255,255,255,.05)}
-    html[data-theme="3d"] #chart rect[width="7"]{filter:drop-shadow(0 3px 2px rgba(0,0,0,.85)) drop-shadow(0 0 4px rgba(255,255,255,.18))}
-  html[data-theme="3d"] #chart .x3s{filter:blur(5px)}
+    html[data-theme="3d"] #chart .x3s{filter:blur(5px)}
   html[data-theme="3d"] .gbar{box-shadow:inset 0 2px 4px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.06)}
   html[data-theme="3d"] .gbar i{background:linear-gradient(180deg,#9dffd0,#2fbf7c);box-shadow:0 0 10px rgba(95,227,161,.5),inset 0 1px 0 rgba(255,255,255,.5)}
   html[data-theme="3d"] .chip{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 3px 6px -2px rgba(0,0,0,.7)}
   html[data-theme="3d"] #galCard{background:none;border:0;box-shadow:none;padding:0}
   html[data-theme="3d"] #galCard .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   html[data-theme="3d"] #chart{overflow:visible}
-  html[data-theme="3d"] #chart path[stroke-width="2.5"]{filter:drop-shadow(0 1px 0 rgba(255,255,255,.35)) drop-shadow(0 4px 0 color-mix(in srgb,var(--hc) 45%,#000)) drop-shadow(0 12px 7px rgba(0,0,0,.85))}
-  html[data-theme="3d"] #chart .x3r{filter:drop-shadow(0 1px 0 rgba(255,255,255,.3)) drop-shadow(0 3px 0 color-mix(in srgb,var(--hc) 40%,#000)) drop-shadow(0 8px 5px rgba(0,0,0,.8))}
-  html[data-theme="3d"] #chart path[d$="Z"][style*="--hc"]{filter:drop-shadow(0 1px 0 rgba(255,255,255,.5)) drop-shadow(0 5px 3px rgba(0,0,0,.9))}
+  html[data-theme="3d"] #chart :is(path[stroke-width="2.5"],.x3l,.x3r){filter:drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2)) drop-shadow(2.5px 2.5px 0 rgba(0,0,0,.2))}
+  html[data-theme="3d"] #chart :is(path[d$="Z"][style*="--hc"],rect[width="7"]){filter:drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25)) drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25)) drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25)) drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25)) drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25)) drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.25))}
   html[data-theme="3d"] #chart text{filter:drop-shadow(0 2px 1px rgba(0,0,0,.9))}
   html[data-theme="3d"] #chart .x3a{filter:blur(7px)}
 </style>
@@ -658,7 +656,7 @@
     <div class="srow" id="eyeRow" style="display:none"><span class="sl">Zatamnjenje podloge</span><input type="range" id="eyeS" min="0" max="100" value="35" aria-label="Zatamnjenje podloge" autocomplete="off"></div>
     <div class="srow"><span class="sl">Zvuk i vibracija skale</span><button class="sw2" type="button" id="sndBtn" role="switch" aria-checked="true"></button></div>
     </div>
-    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 02:03</div>
+    <div class="ver" style="margin:18px 0 6px"><span>verzija</span> 13.11. 02:08</div>
   </div>
   <div id="sub-n" class="sub subn">
     <div class="rrow"><input type="date" id="rdate" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"><input type="time" id="rtime" value="08:00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
@@ -708,7 +706,7 @@
 <script>
 (function(){
   var KEY2='kilogram.v2',KEY1='kilogram.v1';
-  var PALETTE=[['#3985f7','Plava'],['#f16b65','Koraljna'],['#11b882','Zelena'],['#f5ca45','Žuta'],['#f28a38','Narančasta'],['#e879b5','Roza'],['#a586f5','Ljubičasta'],['#929ba8','Siva']],pcolor=null;
+  var PALETTE=[['#3985f7','Plava'],['#f16b65','Koraljna'],['#11b882','Zelena'],['#f5ca45','Žuta'],['#f28a38','Narančasta'],['#e879b5','Roza'],['#a586f5','Ljubičasta'],['#929ba8','Siva'],['#e2b93b','Zlatna'],['#cfd5de','Srebrna']],pcolor=null;
   var THEMES=['m','ml','mb','mp','3d','auto'],NAMES={'3d':'3D luksuz','80':'80-e','m':'Moderna tamna','ml':'Moderna svijetla','mb':'Moderna crna','mp':'Za oči'},TCOL={'3d':'#08090c','80':'#07060d','m':'#0f1115','ml':'#eef0f4','mb':'#000000','mp':'#f1e9d8'};
   function eff(){return S.theme==='auto'?((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'m':'ml'):S.theme}
   function isLt(){var e=eff();return e==='ml'||e==='mp'}
@@ -1110,8 +1108,7 @@
         if(eff()==='3d')g+='<path class="x3a" d="'+lp+' L'+pts[pts.length-1][0]+','+bot+' L'+pts[0][0]+','+bot+' Z" transform="translate(0,14)" fill="#000" opacity=".55"/>';
         g+='<path d="'+lp+' L'+pts[pts.length-1][0]+','+bot+' L'+pts[0][0]+','+bot+' Z" fill="url(#ag)" stroke="none"/>';
         g+='<path d="'+lp+'" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".38" filter="url(#gl)"/>';
-        if(eff()==='3d'){g+='<path class="x3s" d="'+lp+'" transform="translate(0,12)" fill="none" stroke="#000" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/><path d="'+lp+'" transform="translate(0,6)" fill="none" style="stroke:color-mix(in srgb,var(--acc) 42%,#000)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>'}
-        g+='<path d="'+lp+'" fill="none" stroke="var(--acc)" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" class="glow"/>';
+        g+='<path d="'+lp+'" fill="none" stroke="var(--acc)" stroke-width="'+(eff()==='3d'?4:2.75)+'" stroke-linecap="round" stroke-linejoin="round" class="glow'+(eff()==='3d'?' x3l':'')+'"/>';
         if(eff()==='3d')g+='<path d="'+lp+'" transform="translate(0,-1.2)" fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/>';
       }
       if(S.cfg.tr&&vw.length>=3){
@@ -1698,7 +1695,7 @@
     $('pdel').style.display=(pmode==='edit'&&S.people.length>1)?'':'none';
   }
   function drawSw(){
-    var sw='';PALETTE.forEach(function(c){sw+='<button type="button" class="sw'+(pcolor===c[0]?' on':'')+'" data-c="'+c[0]+'" style="background:'+c[0]+'" title="'+T(c[1])+'"></button>'});
+    var sw='';PALETTE.forEach(function(c){sw+='<button type="button" class="sw'+(pcolor===c[0]?' on':'')+'" data-c="'+c[0]+'" style="background:'+(c[1]==='Zlatna'?'linear-gradient(135deg,#fff1b8,#e2b93b 45%,#9a7414)':c[1]==='Srebrna'?'linear-gradient(135deg,#ffffff,#cfd5de 45%,#8a919c)':c[0])+'" title="'+T(c[1])+'"></button>'});
     var cu=(S.cust||[]).slice();if(pcolor&&!PALETTE.some(function(c){return c[0]===pcolor})&&cu.indexOf(pcolor)<0)cu.push(pcolor);
     cu.forEach(function(c){sw+='<button type="button" class="sw'+(pcolor===c?' on':'')+'" data-c="'+c+'" style="background:'+c+'"></button>'});
     sw+='<button type="button" class="sw cust" data-cust="1" title="'+T('Odaberi boju')+'"></button>';
