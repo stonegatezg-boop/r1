@@ -1,0 +1,234 @@
+<title>TeleBridge Mjerenje</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap"><style>
+/* Kladionicki listic: uski kondenzirani naslovi, mono za kvote, zelena = pogodak, crvena = promasaj */
+:root{--bg:#eef1ef;--card:#ffffff;--fg:#17201c;--mut:#5d6b64;--line:#d3dbd6;--acc:#0f6b4f;
+ --won:#13804f;--lost:#c03a2b;--late:#a86400;--wait:#5d6b64;--promo:#7a5ea8;
+ --disp:"Barlow Condensed","Arial Narrow",sans-serif;--body:"Barlow",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111714;--card:#18201c;--fg:#e4ebe7;--mut:#91a199;--line:#2a3530;--acc:#4fc39a;
+ --won:#45c486;--lost:#ef6b5b;--late:#e2a23f;--wait:#91a199;--promo:#b39ae0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111714;--card:#18201c;--fg:#e4ebe7;--mut:#91a199;--line:#2a3530;--acc:#4fc39a;
+ --won:#45c486;--lost:#ef6b5b;--late:#e2a23f;--wait:#91a199;--promo:#b39ae0;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 var(--body);padding:24px 16px 48px}
+main{max-width:1100px;margin:0 auto;display:grid;gap:28px}
+h1{font:700 2.4rem/1 var(--disp);letter-spacing:.01em;margin:0}
+h2{font:700 1.4rem/1.1 var(--disp);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px}
+h3{font:700 1.15rem/1.1 var(--disp);margin:0}
+.sub{color:var(--mut);margin:6px 0 0}
+.legend{color:var(--mut);font-size:.9rem;max-width:70ch}
+.tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;white-space:nowrap}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right}
+thead th{font:600 .78rem var(--body);text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+tbody th{text-align:left;font-weight:600;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+td{font-family:var(--mono);font-size:.88rem}
+.pos{color:var(--won);font-weight:600} .neg{color:var(--lost);font-weight:600}
+.day{background:var(--card);border:1px solid var(--line);border-radius:6px}
+.day+.day{margin-top:10px}
+summary{cursor:pointer;padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline}
+summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.date{font:700 1.3rem var(--disp);text-transform:uppercase}
+.cnt{color:var(--mut);font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:12px;padding:0 16px 16px}
+.who{border-top:3px solid var(--line);padding-top:8px;min-width:0}
+.mix{color:var(--mut);font-size:.8rem;margin:2px 0 8px}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+li{display:grid;gap:2px;min-width:0}
+.what{overflow-wrap:anywhere}
+.meta{color:var(--mut);font-size:.82rem}
+.odds{font-family:var(--mono);color:var(--fg);font-weight:600}
+.pl{font-family:var(--mono);font-weight:600}
+.pill{justify-self:start;font:600 .7rem var(--body);text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:3px;border:1px solid currentColor}
+.s-won,.s-half_won{color:var(--won)} .s-lost,.s-half_lost{color:var(--lost)} .s-late{color:var(--late)}
+.s-pending,.s-unknown,.s-void{color:var(--wait)} .k-vip_claim,.k-del{color:var(--promo)} .k-result{color:var(--acc)}
+footer{color:var(--mut);font-size:.8rem}
+</style>
+<main><header><h1>TeleBridge Mjerenje</h1>
+<p class="sub">23 providera · 66 signala · azurirano 17.11.2026 23:36 · bez trgovanja, simulacija na Dukascopy M1</p></header>
+<section><h2>Ljestvica providera</h2><div class="tbl"><table><thead><tr><th>Provider</th><th>Signali</th><th>Kopirao</th>
+<th>Drugi kopirali</th><th>Zavrseno</th><th>Ceka</th><th>Win</th><th>Ukupno R</th><th>Prosjek R</th><th>V8 n</th><th>V8 R</th><th>Obrisano</th></tr></thead>
+<tbody><tr><th scope="row">James Gold Master</th><td>7</td><td></td>
+          <td></td><td>3</td><td>4</td><td>100%</td>
+          <td class="pos">+1.55</td><td class="pos">+0.52</td><td>1</td><td class="pos">+0.54</td><td></td></tr><tr><th scope="row">GOLDHUNTER PAUL 🦁 WORLDWIDE COMMUNITY 👑</th><td>6</td><td></td>
+          <td></td><td>1</td><td>5</td><td>100%</td>
+          <td class="pos">+1.14</td><td class="pos">+1.14</td><td>1</td><td class="pos">+1.14</td><td></td></tr><tr><th scope="row">Elite Gold Market</th><td>2</td><td></td>
+          <td></td><td>1</td><td>1</td><td>100%</td>
+          <td class="pos">+1.11</td><td class="pos">+1.11</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">XAUUSD BTC GOLD FOREX SIGNALS™</th><td>2</td><td></td>
+          <td></td><td>1</td><td>1</td><td>100%</td>
+          <td class="pos">+0.48</td><td class="pos">+0.48</td><td>1</td><td class="pos">+0.48</td><td></td></tr><tr><th scope="row">GOLD Snipers</th><td>3</td><td></td>
+          <td></td><td>1</td><td>2</td><td>100%</td>
+          <td class="pos">+0.39</td><td class="pos">+0.39</td><td>1</td><td class="pos">+0.39</td><td></td></tr><tr><th scope="row">GOLD EMPIRE</th><td>1</td><td></td>
+          <td></td><td>1</td><td></td><td>100%</td>
+          <td class="pos">+0.31</td><td class="pos">+0.31</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">TFXC SIGNALS UK 🇬🇧🔥</th><td>2</td><td></td>
+          <td>2</td><td>1</td><td>1</td><td>100%</td>
+          <td class="pos">+0.22</td><td class="pos">+0.22</td><td>1</td><td class="pos">+0.22</td><td></td></tr><tr><th scope="row">FXTradingVision l Forex &amp; Crypto Signals 🚀</th><td>9</td><td></td>
+          <td>4</td><td>4</td><td>5</td><td>100%</td>
+          <td class="pos">+0.20</td><td class="pos">+0.05</td><td>2</td><td class="pos">+0.03</td><td></td></tr><tr><th scope="row">Wolf Fx VIP</th><td>3</td><td></td>
+          <td></td><td>1</td><td>2</td><td>100%</td>
+          <td class="pos">+0.17</td><td class="pos">+0.17</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">Forexero - Forex Signals</th><td>1</td><td></td>
+          <td></td><td>1</td><td></td><td>100%</td>
+          <td class="pos">+0.08</td><td class="pos">+0.08</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">EVOLUTE | OFFICIAL</th><td>3</td><td></td>
+          <td></td><td>1</td><td>2</td><td>100%</td>
+          <td class="pos">+0.03</td><td class="pos">+0.03</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">Turbo Traders International 🌎</th><td>3</td><td></td>
+          <td></td><td>2</td><td>1</td><td>100%</td>
+          <td class="pos">+0.03</td><td class="pos">+0.01</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">XAUUSD GOLD SIGNALS❤️</th><td>2</td><td></td>
+          <td></td><td>1</td><td>1</td><td>100%</td>
+          <td class="pos">+0.02</td><td class="pos">+0.02</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">Ben, Gold Trader</th><td>3</td><td></td>
+          <td></td><td>1</td><td>2</td><td>100%</td>
+          <td class="pos">+0.01</td><td class="pos">+0.01</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">GARY GOLD TRADER</th><td>2</td><td></td>
+          <td></td><td>1</td><td>1</td><td>0%</td>
+          <td class="neg">-1.03</td><td class="neg">-1.03</td><td>1</td><td class="neg">-1.03</td><td></td></tr><tr><th scope="row">Jessica&#x27;s Gold Signals</th><td>2</td><td></td>
+          <td></td><td>0</td><td>2</td><td>–</td>
+          <td class="">+0.00</td><td>–</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">TFXC SIGNALS</th><td>2</td><td>2</td>
+          <td></td><td>0</td><td></td><td>–</td>
+          <td class="">+0.00</td><td>–</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">ALPHA PIPS</th><td>2</td><td></td>
+          <td></td><td>0</td><td>2</td><td>–</td>
+          <td class="">+0.00</td><td>–</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">TSA 🚀 FREE TRADES</th><td>4</td><td>4</td>
+          <td></td><td>0</td><td></td><td>–</td>
+          <td class="">+0.00</td><td>–</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">GTMoFx🤴🏽(goldtradermo)</th><td>2</td><td></td>
+          <td></td><td>0</td><td>2</td><td>–</td>
+          <td class="">+0.00</td><td>–</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">PipXpert - Forex Signals</th><td>1</td><td></td>
+          <td></td><td>0</td><td>1</td><td>–</td>
+          <td class="">+0.00</td><td>–</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">Gold Trader Sunny 🏆</th><td>3</td><td></td>
+          <td></td><td>0</td><td>3</td><td>–</td>
+          <td class="">+0.00</td><td>–</td><td>0</td><td class="">+0.00</td><td></td></tr><tr><th scope="row">Gold Sniper 🦁</th><td>1</td><td></td>
+          <td></td><td>0</td><td>1</td><td>–</td>
+          <td class="">+0.00</td><td>–</td><td>0</td><td class="">+0.00</td><td></td></tr></tbody></table></div>
+<p class="legend">R = dobit u jedinicama rizika po signalu (rizik podijeljen na sve TP-ove, pravila SL-a kao TeleBridge EA, spread odbijen).
+<b>Kopirao</b> = signal je isti kao raniji tudi (unutar 60 min, ulaz i SL unutar 0.05%) - ne racuna se, zasluga ide originalu.
+<b>V8</b> = samo signali u prozoru 01:00-10:45 (Zagreb), kao V8 1000. Signali u Shabbatu se ne racunaju.
+Rezultat dana dolazi kad Dukascopy objavi cijene (nakon ponoci UTC).</p></section>
+<section><h2>Signali po danima</h2><details class="day" open><summary><span class="date">uto 17.11.</span>
+          <span class="cnt">38 signala · 4 kopija</span></summary><div style="padding:0 16px 16px"><ul><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill k-vip_claim">kopija od FXTradingVision l Forex &amp; Crypto Signals 🚀</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>TSA 🚀 FREE TRADES</b> · XAUUSD <b>SELL</b> 3850 · SL 3870 · TP 3846 / 3844 / 3841 / 3830</div>
+              <div class="meta">22:53:57 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>FXTradingVision l Forex &amp; Crypto Signals 🚀</b> · XAUUSD <b>SELL</b> 3850 · SL 3870 · TP 3846 / 3845 / 3820</div>
+              <div class="meta">22:53:26 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Turbo Traders International 🌎</b> · XAUUSD <b>BUY</b> 3863.22–3868.03 · SL 3848 · TP 3867 / 3872 / 3890</div>
+              <div class="meta">17:31:47 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill k-vip_claim">kopija od FXTradingVision l Forex &amp; Crypto Signals 🚀</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>TSA 🚀 FREE TRADES</b> · XAUUSD <b>SELL</b> 3880 · SL 3900 · TP 3876 / 3874 / 3871 / 3860</div>
+              <div class="meta">16:56:48 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>FXTradingVision l Forex &amp; Crypto Signals 🚀</b> · XAUUSD <b>SELL</b> 3880 · SL 3900 · TP 3876 / 3875 / 3840</div>
+              <div class="meta">16:56:13 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill k-vip_claim">kopija od FXTradingVision l Forex &amp; Crypto Signals 🚀</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>TSA 🚀 FREE TRADES</b> · XAUUSD <b>SELL</b> 3866 · SL 3885 · TP 3862 / 3860 / 3857 / 3846</div>
+              <div class="meta">15:49:07 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>FXTradingVision l Forex &amp; Crypto Signals 🚀</b> · XAUUSD <b>SELL</b> 3866 · SL 3885 · TP 3862 / 3861 / 3830</div>
+              <div class="meta">15:48:37 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>James Gold Master</b> · XAUUSD <b>SELL</b> 3863.5 · SL 3873.5 · TP 3853.5 / 3843.5</div>
+              <div class="meta">15:26:04 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>James Gold Master</b> · XAUUSD <b>SELL</b> 3852.5–3852.5 · SL 3862.5 · TP 3842.5 / 3832.5</div>
+              <div class="meta">15:01:05 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span><span class="pill s-late">vijest: USD Core Retail Sales m/m</span></div>
+              <div class="what"><b>GOLDHUNTER PAUL 🦁 WORLDWIDE COMMUNITY 👑</b> · XAUUSD <b>BUY</b> 3837 · SL 3817 · TP 3857 / 3877 / 3908</div>
+              <div class="meta">14:39:46 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span><span class="pill s-late">vijest: USD Core Retail Sales m/m</span></div>
+              <div class="what"><b>Gold Trader Sunny 🏆</b> · XAUUSD <b>BUY</b> 3831–3839 · SL 3827 · TP 3841 / 3843 / 3845</div>
+              <div class="meta">14:38:54 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span><span class="pill s-late">vijest: USD Core Retail Sales m/m</span></div>
+              <div class="what"><b>Gold Sniper 🦁</b> · XAUUSD <b>BUY</b> 3945–3947 · SL 3930 · TP 3951 / 3957 / 3962 / 3968</div>
+              <div class="meta">14:38:09 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Wolf Fx VIP</b> · XAUUSD <b>SELL</b> 3860.34 · SL 3882.34 · TP 1 / 3825.32</div>
+              <div class="meta">13:55:13 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>James Gold Master</b> · XAUUSD <b>SELL</b> 3859–3859 · SL 3869 · TP 3849 / 3839</div>
+              <div class="meta">13:43:24 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>ALPHA PIPS</b> · XAUUSD <b>BUY</b> 3859–3862 · SL 3846 · TP 3865 / 3868 / 3871 / 3874 / 3880 / 3895</div>
+              <div class="meta">13:13:59 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Gold Trader Sunny 🏆</b> · XAUUSD <b>SELL</b> 3871–3879 · SL 3883 · TP 3869 / 3867 / 3865 / 4</div>
+              <div class="meta">12:49:15 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>GOLD Snipers</b> · XAUUSD <b>SELL</b> 3863–3865 · SL 3875 · TP 3858 / 3853 / 3848 / 3828</div>
+              <div class="meta">12:35:09 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>EVOLUTE | OFFICIAL</b> · XAUUSD <b>BUY</b> 3857 · SL 3849 · TP 3861 / 3866 / 3873</div>
+              <div class="meta">11:39:59 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Gold Trader Sunny 🏆</b> · XAUUSD <b>BUY</b> 3841–3849 · SL 3837 · TP 3851 / 3853 / 3855</div>
+              <div class="meta">11:17:54 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>GTMoFx🤴🏽(goldtradermo)</b> · XAUUSD <b>SELL</b> 3867–3871 · SL 3876 · TP 3865 / 3863 / 3861 / 3859 / 3857</div>
+              <div class="meta">10:54:19 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>XAUUSD BTC GOLD FOREX SIGNALS™</b> · XAUUSD <b>BUY</b> 3863–3870 · SL 3847 · TP 3875 / 3880 / 3885 / 3890</div>
+              <div class="meta">10:37:26 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>GOLDHUNTER PAUL 🦁 WORLDWIDE COMMUNITY 👑</b> · XAUUSD <b>BUY</b> 3837 · SL 3817 · TP 3857 / 3877 / 3908</div>
+              <div class="meta">10:19:31 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>GOLDHUNTER PAUL 🦁 WORLDWIDE COMMUNITY 👑</b> · XAUUSD <b>BUY</b> 3851 · SL 3840 · TP 3856 / 3861 / 3867 / 3872 / 3878</div>
+              <div class="meta">10:18:31 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>XAUUSD GOLD SIGNALS❤️</b> · XAUUSD <b>SELL</b> 3868 · SL 3878 · TP 3864 / 3860 / 3855 / 3850</div>
+              <div class="meta">10:11:11 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>PipXpert - Forex Signals</b> · XAUUSD <b>BUY</b> 3871 · SL 3849 · TP 3874 / 3884 / 3898</div>
+              <div class="meta">09:57:55 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>James Gold Master</b> · XAUUSD <b>SELL</b> 3870–3870 · SL 3880 · TP 3860 / 3850</div>
+              <div class="meta">09:46:31 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>GTMoFx🤴🏽(goldtradermo)</b> · XAUUSD <b>BUY</b> 3862–3866.5 · SL 3856 · TP 3868.4 / 3870 / 3872 / 3874 / 3876</div>
+              <div class="meta">09:41:30 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>EVOLUTE | OFFICIAL</b> · XAUUSD <b>BUY</b> 3866 · SL 3860 · TP 3869 / 3875 / 3880</div>
+              <div class="meta">09:24:41 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>Jessica&#x27;s Gold Signals</b> · XAUUSD <b>SELL</b> 3868–3878 · SL 3884 · TP 3866 / 3864 / 3862 / 3860 / 3858</div>
+              <div class="meta">09:08:02 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>Ben, Gold Trader</b> · XAUUSD <b>BUY</b> 3866.6–3876.6 · SL 3862.6 · TP 3880.6 / 3886</div>
+              <div class="meta">08:20:26 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>Elite Gold Market</b> · XAUUSD <b>BUY</b> 3876.87 · SL 3871.87 · TP 3881.87</div>
+              <div class="meta">08:10:04 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill k-vip_claim">kopija od TFXC SIGNALS UK 🇬🇧🔥</span></div>
+              <div class="what"><b>TFXC SIGNALS</b> · XAUUSD <b>BUY</b> 3871.7 · SL 3857.7 · TP 3873.8 / 3875.9 / 3885.7</div>
+              <div class="meta">07:23:46 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>TFXC SIGNALS UK 🇬🇧🔥</b> · XAUUSD <b>BUY</b> 3871.7 · SL 3857.7 · TP 3873.8 / 3875.9 / 3885.7</div>
+              <div class="meta">07:23:45 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>GARY GOLD TRADER</b> · XAUUSD <b>SELL</b> 3875–3880 · SL 3885 · TP 50</div>
+              <div class="meta">06:10:47 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>FXTradingVision l Forex &amp; Crypto Signals 🚀</b> · XAUUSD <b>SELL</b> 3872 · SL 3890 · TP 3868 / 3867 / 3830</div>
+              <div class="meta">03:18:21 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>GOLD Snipers</b> · XAUUSD <b>SELL</b> 3867–3869 · SL 3879 · TP 3862 / 3857 / 3852 / 3832</div>
+              <div class="meta">03:00:26 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>FXTradingVision l Forex &amp; Crypto Signals 🚀</b> · XAUUSD <b>SELL</b> 3856 · SL 3870 · TP 3852 / 3851 / 3820</div>
+              <div class="meta">01:23:58 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Wolf Fx VIP</b> · XAUUSD <b>SELL</b> 3864.54 · SL 3887.45 · TP 1 / 3832.45</div>
+              <div class="meta">00:58:42 · regex</div></li></ul></div></details><details class="day" open><summary><span class="date">pon 16.11.</span>
+          <span class="cnt">28 signala · 2 kopija</span></summary><div style="padding:0 16px 16px"><ul><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.01 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>FXTradingVision l Forex &amp; Crypto Signals 🚀</b> · XAUUSD <b>SELL</b> 3866 · SL 3890 · TP 3862 / 3861 / 3830</div>
+              <div class="meta">20:28:33 · regex · TP1 trailed_out +0.0 · TP2 trailed_out +0.0 · TP3 trailed_out +0.0</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Ben, Gold Trader</b> · XAUUSD <b>SELL</b> 3870–3880 · SL 3885 · TP 3866 / 3863</div>
+              <div class="meta">18:43:59 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill k-vip_claim">kopija od FXTradingVision l Forex &amp; Crypto Signals 🚀</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>TSA 🚀 FREE TRADES</b> · XAUUSD <b>SELL</b> 3863 · SL 3880 · TP 3859 / 3857 / 3854 / 3843</div>
+              <div class="meta">18:43:43 · regex · TP1 tp_hit +0.2 · TP2 tp_hit +0.3 · TP3 tp_hit +0.5 · TP4 window_end +0.0</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.17 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>FXTradingVision l Forex &amp; Crypto Signals 🚀</b> · XAUUSD <b>SELL</b> 3863 · SL 3880 · TP 3859 / 3858 / 3830</div>
+              <div class="meta">18:43:06 · regex · TP1 tp_hit +0.2 · TP2 tp_hit +0.3 · TP3 window_end +0.0</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span><span class="pill s-late">vijest: USD Fed Chairman Warsh Speaks</span></div>
+              <div class="what"><b>GOLDHUNTER PAUL 🦁 WORLDWIDE COMMUNITY 👑</b> · XAUUSD <b>SELL</b> 3873 · SL 3894 · TP 3863 / 3853 / 3843 / 3833 / 3823</div>
+              <div class="meta">18:01:15 · regex</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.17 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Wolf Fx VIP</b> · XAUUSD <b>SELL</b> 3866.43 · SL 3887.45 · TP 1 / 3832.45</div>
+              <div class="meta">16:36:32 · regex · TP1 window_end +0.2 · TP2 window_end +0.2</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>GOLDHUNTER PAUL 🦁 WORLDWIDE COMMUNITY 👑</b> · XAUUSD <b>SELL</b> 3907–3908 · SL 3928 · TP 3900 / 3890 / 3880 / 3870 / 3860</div>
+              <div class="meta">15:35:54 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.08 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Forexero - Forex Signals</b> · XAUUSD <b>SELL</b> 3867 · SL 3917 · TP 3862 / 3842 / 3817</div>
+              <div class="meta">15:00:40 · regex · TP1 tp_hit +0.1 · TP2 trailed_out +0.1 · TP3 trailed_out +0.1</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.52 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>James Gold Master</b> · XAUUSD <b>SELL</b> 3871 · SL 3881 · TP 3861 / 3851</div>
+              <div class="meta">14:26:31 · llm · TP1 trailed_out +0.5 · TP2 trailed_out +0.5</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.01 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Ben, Gold Trader</b> · XAUUSD <b>SELL</b> 3875–3885 · SL 3889.5 · TP 3871 / 3867</div>
+              <div class="meta">13:26:39 · llm · TP1 trailed_out +0.0 · TP2 trailed_out +0.0</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.49 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>James Gold Master</b> · XAUUSD <b>SELL</b> 3874.5 · SL 3884.5 · TP 3864.5 / 3854.5</div>
+              <div class="meta">12:24:58 · llm · TP1 trailed_out +0.5 · TP2 trailed_out +0.5</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.31 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>GOLD EMPIRE</b> · XAUUSD <b>SELL</b> 3873 · SL 3896 · TP 3862 / 3850 / 3835</div>
+              <div class="meta">12:05:07 · regex · TP1 trailed_out +0.3 · TP2 trailed_out +0.3 · TP3 trailed_out +0.3</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.03 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>EVOLUTE | OFFICIAL</b> · XAUUSD <b>SELL</b> 3870 · SL 3877 · TP 3867 / 3860 / 3850</div>
+              <div class="meta">11:54:32 · regex · TP1 trailed_out +0.0 · TP2 trailed_out +0.0 · TP3 trailed_out +0.0</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.01 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Turbo Traders International 🌎</b> · XAUUSD <b>SELL</b> 3870–3873 · SL 3885 · TP 3866 / 3862 / 3849 / 4</div>
+              <div class="meta">11:53:14 · regex · TP1 trailed_out +0.0 · TP2 trailed_out +0.0 · TP3 trailed_out +0.0 · TP4 trailed_out +0.0</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+1.11 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Elite Gold Market</b> · XAUUSD <b>BUY</b> 3866.69 · SL 3861.69 · TP 3871.69</div>
+              <div class="meta">11:45:48 · regex · TP1 tp_hit +1.1</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.02 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>XAUUSD GOLD SIGNALS❤️</b> · XAUUSD <b>BUY</b> 3866 · SL 3857 · TP 3870 / 3875 / 3880 / 3885</div>
+              <div class="meta">11:44:07 · regex · TP1 trailed_out +0.0 · TP2 trailed_out +0.0 · TP3 trailed_out +0.0 · TP4 trailed_out +0.0</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.01 R</span><span class="pill s-pending">izvan V8</span></div>
+              <div class="what"><b>Turbo Traders International 🌎</b> · XAUUSD <b>SELL</b> 3869 · SL 3884 · TP 3865 / 3860 / 3847 / 4</div>
+              <div class="meta">11:42:12 · regex · TP1 trailed_out +0.0 · TP2 trailed_out +0.0 · TP3 trailed_out +0.0 · TP4 trailed_out +0.0</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.39 R</span></div>
+              <div class="what"><b>GOLD Snipers</b> · XAUUSD <b>SELL</b> 3863–3865 · SL 3875 · TP 3858 / 3853 / 3848 / 3828</div>
+              <div class="meta">10:19:38 · llm · TP1 tp_hit +0.4 · TP2 trailed_out +0.4 · TP3 trailed_out +0.4 · TP4 trailed_out +0.4</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+1.14 R</span></div>
+              <div class="what"><b>GOLDHUNTER PAUL 🦁 WORLDWIDE COMMUNITY 👑</b> · XAUUSD <b>SELL</b> 3874.2–3874.2 · SL 3890.31 · TP 3868 / 3863 / 3858 / 3853 / 3848 / 3843</div>
+              <div class="meta">10:05:15 · llm · TP1 tp_hit +0.4 · TP2 tp_hit +0.7 · TP3 tp_hit +1.0 · TP4 tp_hit +1.3 · TP5 tp_hit +1.6 · TP6 tp_hit +1.9</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-lost">-1.03 R</span></div>
+              <div class="what"><b>GARY GOLD TRADER</b> · XAUUSD <b>SELL</b> 3863–3870 · SL 3873 · TP 100</div>
+              <div class="meta">10:04:22 · regex · TP1 sl_hit -1.0</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.54 R</span></div>
+              <div class="what"><b>James Gold Master</b> · XAUUSD <b>SELL</b> 3859–3859 · SL 3869 · TP 3849 / 3839</div>
+              <div class="meta">09:44:41 · llm · TP1 trailed_out +0.5 · TP2 trailed_out +0.5</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>ALPHA PIPS</b> · XAUUSD <b>BUY</b> 3845–3848 · SL 3837 · TP 3851 / 3854 / 3857 / 3860 / 3865 / 3880</div>
+              <div class="meta">08:02:35 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.48 R</span></div>
+              <div class="what"><b>XAUUSD BTC GOLD FOREX SIGNALS™</b> · XAUUSD <b>SELL</b> 3850–3855 · SL 3867 · TP 3840 / 3830 / 3825</div>
+              <div class="meta">07:11:34 · llm · TP1 tp_hit +0.5 · TP2 trailed_out +0.5 · TP3 trailed_out +0.5</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill k-vip_claim">kopija od TFXC SIGNALS UK 🇬🇧🔥</span></div>
+              <div class="what"><b>TFXC SIGNALS</b> · XAUUSD <b>BUY</b> 3834.9 · SL 3820.9 · TP 3837 / 3839.1 / 3848.9</div>
+              <div class="meta">07:01:28 · regex · TP1 tp_hit +0.1 · TP2 tp_hit +0.3 · TP3 trailed_out +0.2</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.22 R</span></div>
+              <div class="what"><b>TFXC SIGNALS UK 🇬🇧🔥</b> · XAUUSD <b>BUY</b> 3834.9 · SL 3820.9 · TP 3837 / 3839.1 / 3848.9</div>
+              <div class="meta">07:01:28 · regex · TP1 tp_hit +0.1 · TP2 tp_hit +0.3 · TP3 trailed_out +0.2</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-pending">ceka cijene</span></div>
+              <div class="what"><b>Jessica&#x27;s Gold Signals</b> · XAUUSD <b>SELL</b> 3878–3888 · SL 3892 · TP 3876 / 3874 / 3872 / 3870 / 3868</div>
+              <div class="meta">06:24:35 · llm</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.01 R</span></div>
+              <div class="what"><b>FXTradingVision l Forex &amp; Crypto Signals 🚀</b> · XAUUSD <b>SELL</b> 3874 · SL 3890 · TP 3870 / 3869 / 3845</div>
+              <div class="meta">05:27:50 · regex · TP1 trailed_out +0.0 · TP2 trailed_out +0.0 · TP3 trailed_out +0.0</div></li><li class="tip"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill s-won">+0.01 R</span></div>
+              <div class="what"><b>FXTradingVision l Forex &amp; Crypto Signals 🚀</b> · XAUUSD <b>SELL</b> 3875 · SL 3890 · TP 3871 / 3870 / 3845</div>
+              <div class="meta">03:50:35 · regex · TP1 trailed_out +0.0 · TP2 trailed_out +0.0 · TP3 trailed_out +0.0</div></li></ul></div></details></section>
+<footer>Snima se 33 providera; parser: regex + Claude za slike i neobicne formate.</footer></main>
